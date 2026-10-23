@@ -1,0 +1,46 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.raad.sauditv.screensaver'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.raad.sauditv.screensaver'
+        minSdk 21
+        targetSdk 34
+        // both apps: the VERSION file at the repository root (android/build.gradle)
+        versionCode rootProject.ext.appVersionCode
+        versionName String.valueOf(rootProject.ext.appVersionCode)
+    }
+
+    signingConfigs {
+        // the release key from ~/.sauditv/keystore.properties (android/build.gradle); without it, the debug key
+        if (rootProject.ext.releaseSigning) {
+            release {
+                storeFile rootProject.ext.releaseSigning.storeFile
+                storePassword rootProject.ext.releaseSigning.storePassword
+                keyAlias rootProject.ext.releaseSigning.keyAlias
+                keyPassword rootProject.ext.releaseSigning.keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.findByName('release') ?: signingConfigs.debug
+        }
+    }
+
+    // the page is built by ../../src/build.py into dist/
+    sourceSets {
+        main { assets.srcDirs = ['../../dist', '../../assets/shared', '../launcher/src/main/assets', '../../assets'] }   // page, teams-ar.json, Thmanyah fonts, backgrounds/
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}

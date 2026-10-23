@@ -1,0 +1,4 @@
+# keep shell scripts and the TV-side scripts runnable after a Windows checkout
+*.sh text eol=lf
+*.py text eol=lf
+VERSION text eol=lf

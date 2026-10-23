@@ -1,0 +1,5 @@
+# Only useful to the TV's own home screen. optimize/install.sh launcher disables these by itself, AFTER our
+# home screen is confirmed working; optimize/restore.sh always re-enables them with the stock home.
+# Not meant to be applied by hand.
+com.tcl.tv.tclhome_passive             # TCL home helper, ~80 MB
+com.google.android.leanbacklauncher.recommendations   # recommendation rows for the old Android TV home

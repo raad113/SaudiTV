@@ -1,0 +1,65 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.raad.sauditv.home'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.raad.sauditv.home'
+        minSdk 26
+        // 34: Google Play Protect blocks a new sideloaded install of an app built for an older Android («Unsafe app
+        // blocked»). The Wi-Fi name needs ACCESS_FINE_LOCATION and the Bluetooth tile BLUETOOTH_CONNECT, both granted
+        // over ADB at install (optimize/install.sh); receivers are registered with RECEIVER_(NOT_)EXPORTED.
+        targetSdk 34
+        // both apps: the VERSION file at the repository root (android/build.gradle)
+        versionCode rootProject.ext.appVersionCode
+        versionName String.valueOf(rootProject.ext.appVersionCode)
+    }
+
+    signingConfigs {
+        // the release key from ~/.sauditv/keystore.properties (android/build.gradle); without it, the debug key
+        if (rootProject.ext.releaseSigning) {
+            release {
+                storeFile rootProject.ext.releaseSigning.storeFile
+                storePassword rootProject.ext.releaseSigning.storePassword
+                keyAlias rootProject.ext.releaseSigning.keyAlias
+                keyPassword rootProject.ext.releaseSigning.keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.findByName('release') ?: signingConfigs.debug
+        }
+    }
+
+    // wallpapers are the screensaver's Saudi photos, copied in at build time
+    sourceSets {
+        main { assets.srcDirs += ["$buildDir/generated/wallpapers", "$buildDir/generated/web"] }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint { abortOnError false }
+}
+
+def copyWallpapers = tasks.register('copyWallpapers', Copy) {
+    from('../../assets/backgrounds') { include '*.jpg' }
+    into "$buildDir/generated/wallpapers/wallpapers"
+}
+preBuild.dependsOn copyWallpapers
+
+// the optional home-screen card is the screensaver's page in card-only mode, with its woff2 fonts
+def copyWeb = tasks.register('copyWeb', Copy) {
+    from('../../dist') { include 'tv.html'; into 'web' }
+    from('../../assets/fonts') { include '*.woff2'; into 'fonts' }
+    into "$buildDir/generated/web"
+}
+preBuild.dependsOn copyWeb

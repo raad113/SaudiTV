@@ -1,0 +1,16 @@
+# Extra clean-up: turned OFF (pm disable-user --user 0) by optimize/setup-new-tv.sh, on top of
+# optimize/lists/tcl-safe.txt (telemetry, ads, demos). One package per line, "#" starts a comment; packages missing
+# on a model are skipped. Your household's own picks go in EXTRA_OFF in household.env (see household.env.example).
+# Undo one:  optimize/venv/bin/python -I optimize/tv.py "pm enable <package>"
+# Undo all (keeps our home screen; optimize/restore.sh would also put the stock home back):
+#   grep -vE '^\s*(#|$)' optimize/extra/disable.txt | awk '{print "pm enable " $1}' | optimize/venv/bin/python -I optimize/tv.py --batch
+
+# Hisense and Google extras
+fusion.android.tv.demo                 # Hisense shop demo
+com.cvte.tv.hisenseproductregister     # Hisense product registration
+com.android.tv.feedbackconsent         # feedback consent prompt
+com.google.android.feedback            # Google feedback
+
+# Recommendation rows (tcl-safe.txt turns it off too). Some factory managers turn it back on by themselves:
+# re-running the script turns it off again.
+com.google.android.tvrecommendations

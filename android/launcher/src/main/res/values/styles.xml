@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Home" parent="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Activity</item>
+    </style>
+    <!-- DetailActivity, the page's own background so nothing flashes black -->
+    <color name="detail_bg">#FF0F0D18</color>
+    <style name="Detail" parent="Home">
+        <item name="android:windowBackground">@color/detail_bg</item>
+        <item name="android:colorBackground">@color/detail_bg</item>
+    </style>
+</resources>

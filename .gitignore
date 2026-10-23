@@ -1,0 +1,31 @@
+# builds
+*.apk
+android/.gradle/
+android/build/
+android/*/build/
+android/out/
+android/local.properties
+__pycache__/
+node_modules/
+
+# signing: the release key and its passwords live OUTSIDE the repository (~/.sauditv/), never here
+*.p12
+*.jks
+*.keystore
+keystore.properties
+
+# the household's own settings (where you live, your apps): household.env.example is the template
+household.env
+household-*.env
+!household.env.example
+
+# TV tools: the Python venv, the ADB key the TVs trust, the TV's address, backups and run logs
+optimize/venv/
+optimize/adbkey/
+optimize/adbkey*
+optimize/.tv_host
+optimize/backup-*.txt
+optimize/run/
+optimize/run-*/
+optimize/*.log
+optimize/lists/mine.txt

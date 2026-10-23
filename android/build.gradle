@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
+
+// ---- Version, shared by both apps --------------------------------------------------------------------------------
+// The VERSION file at the repository root holds one number (e.g. 9034): it is the versionCode and the versionName of
+// both APKs, and the GitHub release is tagged v<number>. Raise it for every build you install: Android refuses an
+// equal or lower versionCode (a downgrade). VERSION_CODE (or CI's GITHUB_RUN_NUMBER) in the environment overrides
+// it for a single build.
+def versionFile = file('../VERSION')
+ext.appVersionCode = (System.getenv('VERSION_CODE') ?: System.getenv('GITHUB_RUN_NUMBER')
+        ?: (versionFile.isFile() ? versionFile.text.trim() : '1')) as int
+
+// ---- Release signing ---------------------------------------------------------------------------------------------
+// The key lives OUTSIDE the repository: ~/.sauditv/keystore.properties (or the file named by SAUDITV_SIGNING) with
+//   storeFile=sauditv-release.jks      (relative to that file, or an absolute path)
+//   storePassword=...   keyAlias=sauditv   keyPassword=...
+// Both apps must be signed with the same key (the home screen reads the screensaver's settings through a
+// signature permission), and every update must use the key the installed apps were signed with.
+// Without the file, release builds are signed with this computer's debug key: fine for trying things out, but such
+// an APK can't update apps installed from the GitHub releases.
+def signingFile = file(System.getenv('SAUDITV_SIGNING') ?: "${System.getProperty('user.home')}/.sauditv/keystore.properties")
+ext.releaseSigning = null
+if (signingFile.isFile()) {
+    def p = new Properties()
+    signingFile.withInputStream { p.load(it) }
+    def store = new File(p.getProperty('storeFile', 'sauditv-release.jks'))
+    if (!store.isAbsolute()) store = new File(signingFile.parentFile, store.path)
+    if (store.isFile() && p.getProperty('storePassword') && p.getProperty('keyAlias')) {
+        ext.releaseSigning = [storeFile: store, storePassword: p.getProperty('storePassword'),
+                              keyAlias: p.getProperty('keyAlias'),
+                              keyPassword: p.getProperty('keyPassword', p.getProperty('storePassword'))]
+    } else {
+        logger.quiet("SaudiTV: ${signingFile} is incomplete (storeFile ${store} missing, or no storePassword/keyAlias): " +
+                "release APKs are signed with the DEBUG key")
+    }
+} else {
+    logger.quiet("SaudiTV: no ${signingFile}: release APKs are signed with the DEBUG key " +
+            "(they can't update apps installed from the GitHub releases; see docs/SETUP.md, signing)")
+}

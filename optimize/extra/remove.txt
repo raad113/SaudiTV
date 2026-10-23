@@ -1,0 +1,7 @@
+# Extra clean-up: REMOVED for the TV's user (pm uninstall --user 0) by optimize/setup-new-tv.sh, only after it asks
+# [y/N]. Packages missing on a model are skipped. Your household's own picks go in EXTRA_REMOVE in household.env.
+# Undo: a preinstalled (system) app comes back with
+#   optimize/venv/bin/python -I optimize/tv.py "cmd package install-existing <package>"
+# an app that came from the Play Store is installed again from the Play Store.
+
+android.autoinstalls.config.hkc        # Hisense list of promoted apps it installs by itself

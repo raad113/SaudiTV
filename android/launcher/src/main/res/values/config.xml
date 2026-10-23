@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launcher settings. Edit, rebuild saudi-tv-home.apk (README, "Build"), then install it with optimize/install.sh.
+  Package names on your TV: optimize/venv/bin/python -I optimize/tv.py 'pm list packages'
+-->
+<resources>
+    <!-- Default dock apps, left to right (apps not installed are skipped). On the TV, long-press OK on any
+         app to add it, remove it or move it, or from ADB with optimize/dock.sh; that choice is saved on the TV
+         and replaces this list. -->
+    <string-array name="dock_apps">
+        <item>com.google.android.youtube.tv</item>
+        <item>com.netflix.ninja</item>
+        <item>com.netflix.mediaclient</item>   <!-- Netflix on some TCL / Android TV builds -->
+        <item>net.mbc.shahidTV</item>
+        <item>com.amazon.amazonvideo.livingroom</item>
+        <item>com.disney.disneyplus</item>
+        <item>com.apple.atve.androidtv.appletv</item>
+    </string-array>
+
+    <!-- Never shown as tiles: system helpers, and the Live TV app (it's in the Inputs menu). -->
+    <string-array name="hidden_apps">
+        <item>com.tcl.tv</item>
+        <item>com.tcl.suspension</item>
+        <item>com.tcl.t_solo</item>
+        <item>com.tcl.dashboard</item>
+        <!-- the Live TV app of MediaTek sets such as Hisense (it was a tile before); it stays installed and enabled for the
+             inputs, and is still reached from the Inputs menu (live_tv_package) -->
+        <item>com.mediatek.wwtv.tvcenter</item>
+    </string-array>
+
+    <!-- The TV's Live TV / tuner app, listed last in the Inputs menu. Empty to leave it out.
+         Common ones: com.tcl.tv (TCL), com.mediatek.wwtv.tvcenter (Xiaomi, many MediaTek sets),
+         com.google.android.tv (Google Live Channels), com.sony.dtv.tvx (Sony). -->
+    <!-- the MediaTek one (Hisense and others); com.tcl.tv on TCL sets -->
+    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
+
+    <!-- The manufacturer's own source picker, used if switching to an input directly fails. -->
+    <string name="input_picker_package" translatable="false">com.tcl.suspension</string>
+
+    <!-- Tiles per row in the grid. -->
+    <integer name="columns">5</integer>
+</resources>
