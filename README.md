@@ -170,7 +170,7 @@ Arabic). Verse and hadith texts are never typed by hand: verses come from the Qu
 
 ## Credits · الشكر
 
-- Based on UrTV by tshi-dev, used with the author's permission (portions © tshi-dev).
+- Based on UrTV by tshi-dev, (portions © tshi-dev).
 - Home screen adapted from [mihirgupta0900/tv-home](https://github.com/mihirgupta0900/tv-home) (MIT,
   [android/launcher/LICENSE-tv-home](android/launcher/LICENSE-tv-home)).
 - Photos: Unsplash photographers, listed in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md).
