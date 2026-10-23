@@ -104,7 +104,9 @@ final class Prefs {
         {"shows", "جديد المسلسلات"}, {"prayers", "مواقيت الصلاة اليوم"}, {"forecast", "طقس الأيام القادمة"},
         {"matches", "مباريات فرقك القادمة"}, {"verse", "آية أو حديث اليوم"},
         // three more cards the page now has
-        {"standings", "ترتيب دوري روشن"}, {"news", "أخبار السعودية"}, {"tech", "أخبار التقنية والذكاء الاصطناعي"},
+        {"standings", "ترتيب دوري روشن"}, {"news", "أخبار السعودية"},
+        {"local", "أخبار المدينة"},   // the news of the city set above (the page's loadLocalNews)
+        {"tech", "أخبار التقنية والذكاء الاصطناعي"},
         {"none", "لا شيء"},
     };
 

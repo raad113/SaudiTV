@@ -129,6 +129,7 @@
      headline is clamped at 3 whole lines and the summary at as many whole lines as fit (dvSideFit) */
   .dv-side > *{flex:none}
   .dv-sum.none{color:#9C9279}
+  .dv-news .h[dir=auto]{text-align:right}   /* an English title of the city's news (dvNews), as the shows' */
   .dv-ok{font-size:16px;color:#9C9279;margin-top:6px}
   /* the shows page (dvShows), laid out like the news page: each row a poster thumbnail, the series and
      a line of facts; the focused one on the left with a larger poster and its summary. Posters: 2:3, sized before
@@ -272,6 +273,9 @@
   /* the source / age line at least 14px, and the headline at least 16px so it stays above it */
   .week li.news-item span.nw{font-size:max(16px,.8em)}
   .week li.news-item .dt{font-size:max(14px,.62em)}
+  /* the city's news keeps each title in its own language: an English one (dir=auto) reads left to right and keeps
+     the card's right edge, as the shows' names do */
+  .week li.news-item span.nw[dir=auto]{text-align:right}
   /* rotation indicator at the bottom of a rotating card: a 2px line that fills from the right over
      CONFIG.rotateMs (rotRestart), and one dot per panel, the current one larger and gold */
   .rot{margin-top:1.2vh}
@@ -700,14 +704,14 @@ const CONFIG = {
             : [_Q.has('team1') ? _Q.get('team1') : '136013', _Q.has('team2') ? _Q.get('team2') : '136137'])
     .map(x=>(x||'').trim()).filter(x=>/^\d+$/.test(x)).slice(0, 10),
   sportsKey: '123',
-  // the card beside the clock: shows | prayers | forecast | matches | verse | standings | news | tech | none
-  // (#week=0 from older builds = none); standings, news and tech added
-  panel: (p => ['shows','prayers','forecast','matches','verse','standings','news','tech','none'].includes(p) ? p : 'shows')
+  // the card beside the clock: shows | prayers | forecast | matches | verse | standings | news | local | tech | none
+  // (#week=0 from older builds = none); standings, news and tech added; local = news of the city (loadLocalNews)
+  panel: (p => ['shows','prayers','forecast','matches','verse','standings','news','local','tech','none'].includes(p) ? p : 'shows')
          (_Q.get('panel') || (_Q.get('week') === '0' ? 'none' : 'shows')),
   // the card can rotate through several panels (#panels=prayers,forecast,matches&rotate=10),
   // on the home screen and on the screensaver
   // shows too (it was missing here, so a rotation that listed it never showed it)
-  panels: _list('panels').filter(p => ['prayers','forecast','matches','verse','standings','news','tech','shows'].includes(p)),
+  panels: _list('panels').filter(p => ['prayers','forecast','matches','verse','standings','news','local','tech','shows'].includes(p)),
   rotateMs: Math.max(5, _num('rotate', 10)) * 1000,
   // minutes from adhan to iqama (Ministry of Islamic Affairs defaults); Friday Dhuhr has none
   iqama: {Fajr:25, Dhuhr:20, Asr:20, Maghrib:10, Isha:20},
@@ -723,7 +727,7 @@ const CONFIG = {
   // #widget=1: only the card, on a transparent page (the launcher's home screen shows it)
   widget: _Q.get('widget') === '1',
   // #detail=<panel>: that one panel full screen (the launcher opens it from the home card)
-  detail: (p => ['prayers','forecast','matches','standings','news','tech','shows','verse'].includes(p) ? p : '')(_Q.get('detail') || ''),   // shows, verse
+  detail: (p => ['prayers','forecast','matches','standings','news','local','tech','shows','verse'].includes(p) ? p : '')(_Q.get('detail') || ''),   // shows, verse, local
   // #ticker=1: only the market ticker tape, on a transparent page (bootTicker)
   ticker: _Q.get('ticker') === '1',
   // #home=1: the launcher's home screen (bootHome); dockh / dockb / pillsh: the room its own views
@@ -1815,7 +1819,7 @@ function cardHasData(P){
   if(P === 'shows') return WEEK_POOL.length > 0;
   if(P === 'forecast') return FORECAST.length > 0;
   if(P === 'standings') return STANDINGS.length > 0;
-  if(P === 'news' || P === 'tech') return (NEWS[P] || []).length > 0;
+  if(isNewsPanel(P)) return (NEWS[P] || []).length > 0;   // news, local, tech
   return true;
 }
 // the index of the panel d steps on from i in list L (wrapping) that has data; i when none has
@@ -1886,9 +1890,10 @@ function renderPanel(animate, own){   // own = the rotation's own paint (paintCa
   else if(P === 'forecast') rows = forecastRows();
   else if(P === 'matches') rows = matchRows();
   else if(P === 'standings') rows = standingRows();
-  else if(P === 'news' || P === 'tech') rows = newsRows(P);
+  else if(isNewsPanel(P)) rows = newsRows(P);
   else if(P === 'verse'){ const q = quoteOfDay(); title = q.title; rows = q.rows; }
   if(PANEL_TITLE[P]) title = PANEL_TITLE[P];
+  if(P === 'local') title = localTitle();   // «أخبار <city>»
   if(P === 'forecast' && CONFIG.city) title += ' · ' + CONFIG.city;   // whose weather it is
   if(!rows.length){
     paintCard(`<li class="empty">${P === 'matches' ? 'لا مباريات هذا الأسبوع' : 'لا تتوفر بيانات الآن'}</li>`, title, animate, own);
@@ -1898,7 +1903,7 @@ function renderPanel(animate, own){   // own = the rotation's own paint (paintCa
     const start = (LIST_PAGE * WEEK_ROWS) % rows.length;
     rows = Array.from({length: WEEK_ROWS}, (_, i) => rows[(start + i) % rows.length]);
   }
-  if((P === 'news' || P === 'tech') && rows.length > NEWS_ROWS){   // one page of news
+  if(isNewsPanel(P) && rows.length > NEWS_ROWS){   // one page of news
     const start = (LIST_PAGE % Math.ceil(rows.length / NEWS_ROWS)) * NEWS_ROWS;
     rows = rows.slice(start, start + NEWS_ROWS);
   }
@@ -1956,7 +1961,7 @@ function matchRows(){
     });
 }
 
-// ---- standings, news and tech panels
+// ---- standings, news, local news and tech panels
 // Saudi Pro League table from ESPN (no key). Names: "Al Hilal", "Al Qadsiah", "Neom SC"; TheSportsDB says "Al-Hilal".
 const STANDINGS_URL = 'https://site.api.espn.com/apis/v2/sports/soccer/ksa.1/standings';
 const standKey = s => String(s || '').toLowerCase().normalize('NFD')   /* accents fall to the next step */
@@ -2050,7 +2055,9 @@ const NEWS_FEEDS = {
     {url: 'https://news.google.com/rss/search?q=%D8%A7%D9%84%D8%B0%D9%83%D8%A7%D8%A1+%D8%A7%D9%84%D8%A7%D8%B5%D8%B7%D9%86%D8%A7%D8%B9%D9%8A+OR+%D8%A7%D9%84%D8%AA%D9%82%D9%86%D9%8A%D8%A9+when:2d&hl=ar&gl=SA&ceid=SA:ar', source: null},
   ],
 };
-const NEWS = {news: [], tech: []};   // [{headline, source, t}] newest first
+const NEWS = {news: [], tech: [], local: []};   // [{headline, source, t}] newest first
+// the panels drawn as news items: Saudi news, the city's news (loadLocalNews) and tech
+const isNewsPanel = P => P === 'news' || P === 'local' || P === 'tech';
 
 // "headline - Source": the source is after the last " - ", unless the item's <source> (which can itself
 // contain " - ", e.g. "ارقام : ... - تاسي") is what the title ends with
@@ -2109,10 +2116,10 @@ function newsSummary(x, desc){
 const NEWS_ROWS = 3, NEWS_KEEP = 6, NEWS_PAGE_MS = 15000;
 const NEWS_DETAIL_KEEP = 15;   // the detail page's list
 let NEWS_VISIT = 0;   // counts the rotation's switches: a flip armed for one visit never runs in another
-function newsPaged(P){ return (P === 'news' || P === 'tech') && (NEWS[P] || []).length > NEWS_ROWS; }
+function newsPaged(P){ return isNewsPanel(P) && (NEWS[P] || []).length > NEWS_ROWS; }
 function newsFlipArm(){
   const P = CONFIG.panel, visit = ++NEWS_VISIT;
-  if(P !== 'news' && P !== 'tech') return;   // paged or not is decided at the flip: the list may arrive meanwhile
+  if(!isNewsPanel(P)) return;   // paged or not is decided at the flip: the list may arrive meanwhile
   setTimeout(() => {
     if(visit !== NEWS_VISIT || CONFIG.panel !== P || !newsPaged(P) || LIST_PAGE !== 0) return;
     LIST_PAGE = 1;
@@ -2120,15 +2127,15 @@ function newsFlipArm(){
   }, CONFIG.rotateMs / 2);
 }
 
-function newsRow(x, now){
+function newsRow(x, now, kind){
   const ago = Number.isFinite(x.t) ? agoAr(now - x.t) : '';
-  const dt = [esc(x.source), ago].filter(Boolean).join(' · ');
-  return `<li class="news-item"><span class="nw">${esc(x.headline)}</span><span class="dt">${dt}</span></li>`;   // class
+  const dt = [newsSource(kind, x.source), ago].filter(Boolean).join(' · ');
+  return `<li class="news-item"><span class="nw"${bidiAttr(kind, x.headline)}>${esc(x.headline)}</span><span class="dt">${dt}</span></li>`;   // class
 }
 
 function newsRows(kind){
   const now = Date.now();
-  return (NEWS[kind] || []).map(x => newsRow(x, now));
+  return (NEWS[kind] || []).map(x => newsRow(x, now, kind));
 }
 
 // one feed -> list ([] when the response is not an RSS document with items)
@@ -2166,6 +2173,228 @@ async function loadNews(kind){
   return true;   // answered (see firstLoad)
 }
 
+// ---- local news: the city the TV is set to (#city, #lat, #lon)
+// The place's English name, county and region come from a reverse geocoder (no key: BigDataCloud, then Nominatim,
+// then Photon), asked once per lat/lon and kept in localStorage. A Saudi or other Arab city is searched in Arabic by
+// the name the settings hold (#city), anywhere else in English. Each search: Google News RSS (the country's edition,
+// the last 3 days), then Bing News RSS when Google gave fewer than LOCAL_FEW items (Google answers some VPN exits
+// with HTTP 403 or a consent page; Bing gives the TV's WebView its news page, read as cards: bingCards). Still fewer
+// for the city: the county (US) or the region too, e.g. «منطقة القصيم» for الرس. Kept: items that name the city (or
+// that area), at most LOCAL_DAYS old, each story once, newest first. Titles stay in their language; one without
+// Arabic letters gets dir="auto" (bidiAttr).
+const AR_RE = /[\u0600-\u06FF]/;
+const ARAB_CC = ['SA','AE','KW','QA','BH','OM','YE','IQ','JO','SY','LB','PS','EG','SD','LY','TN','DZ','MA','MR'];
+const GN_EN = ['GB','CA','AU','IN','IE','NZ','ZA','SG','PH','PK','NG','KE','MY'];   // Google News editions in English
+const LOCAL_FEW = 3, LOCAL_DAYS = 3;
+// listings, not news: school sports schedules, obituaries, property, weather and directory pages
+const LOCAL_JUNK = /^(MaxPreps|NFHS Network|Dignity Memorial|Legacy\.com|Realtor\.com|Zillow|Redfin|Trulia|Apartments\.com|IQAir|AccuWeather|Weather Underground|Psychology Today|Yelp|Tripadvisor)\b/i;
+const localTitle = () => 'أخبار ' + CONFIG.city;
+// an English title, source or summary of the city's news reads left to right; the other panels are unchanged
+const bidiAttr = (P, s) => P === 'local' && s && !AR_RE.test(s) ? ' dir="auto"' : '';
+const newsSource = (P, s) => !s ? '' : P === 'local' ? `<bdi>${esc(s)}</bdi>` : esc(s);   // bdi: not a span (.week li span rules)
+
+async function fetchJson(url){
+  const r = await fetchT(url, 12000);
+  if(!r.ok) throw 'HTTP ' + r.status;
+  return r.json();
+}
+// each -> {name, county, region, cc} in English; county: the area between the region and the city, if any
+const GEO_AT = () => `lat=${CONFIG.latitude}&lon=${CONFIG.longitude}`;
+const BDC = lang => `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&localityLanguage=${lang}`;
+const GEOCODERS = [
+  ['bigdatacloud', async () => {
+    const j = await fetchJson(BDC('en'));
+    const adm = (j.localityInfo && j.localityInfo.administrative) || [];
+    // "city" can be a bigger neighbour (a town comes back as its neighbour in city, itself in locality): the
+    // locality, when it is a place of its own in the administrative list
+    const name = j.locality && adm.some(a => a.name === j.locality) ? j.locality : (j.city || j.locality || '');
+    const county = adm.filter(a => a.adminLevel >= 5 && a.adminLevel <= 7 && a.name !== name && a.name !== j.principalSubdivision).pop();
+    return {name, county: county ? county.name : '', region: j.principalSubdivision || '', cc: j.countryCode || ''};
+  }],
+  // the WebView's own User-Agent (a page cannot set one); asked only when BigDataCloud failed, once per place
+  ['nominatim', async () => {
+    const j = await fetchJson(`https://nominatim.openstreetmap.org/reverse?${GEO_AT()}&format=jsonv2&zoom=10&accept-language=en`);
+    const a = j.address || {};
+    return {name: a.city || a.town || a.village || a.municipality || a.hamlet || '', county: a.county || a.state_district || '',
+            region: a.state || a.region || '', cc: String(a.country_code || '').toUpperCase()};
+  }],
+  ['photon', async () => {
+    const f = ((await fetchJson(`https://photon.komoot.io/reverse?${GEO_AT()}&lang=en`)).features || [])[0];
+    const q = (f && f.properties) || {};
+    return {name: q.city || q.town || q.village || '', county: q.county || '', region: q.state || '', cc: String(q.countrycode || '').toUpperCase()};
+  }],
+];
+let LOCAL_PLACE = null;
+async function localPlace(){
+  if(LOCAL_PLACE) return LOCAL_PLACE;
+  const key = 'sauditv-place:' + CONFIG.latitude + ',' + CONFIG.longitude;
+  try{ const c = JSON.parse(localStorage.getItem(key) || 'null'); if(c && c.name) return LOCAL_PLACE = c; }catch(e){}
+  for(const [label, ask] of GEOCODERS){
+    let p = null;
+    try{ p = await ask(); }catch(e){ console.warn('SaudiTV: local news: no place from ' + label + ' (' + e + ')'); }
+    if(!p || !p.name) continue;
+    // an Arab country: the region's Arabic name too, for the wider search (kept only once it is known)
+    if(ARAB_CC.includes(p.cc)){
+      try{ p.regionAr = (await fetchJson(BDC('ar'))).principalSubdivision || ''; }
+      catch(e){
+        try{ p.regionAr = ((await fetchJson(`https://nominatim.openstreetmap.org/reverse?${GEO_AT()}&format=jsonv2&zoom=10&accept-language=ar`)).address || {}).state || ''; }
+        catch(e2){ console.warn('SaudiTV: local news: no Arabic region name (' + e + '; ' + e2 + ')'); return p; }
+      }
+    }
+    try{ localStorage.setItem(key, JSON.stringify(p)); }catch(e){}
+    return LOCAL_PLACE = p;
+  }
+  return null;
+}
+
+// the searches for place p (null: the geocoders did not answer): the city, then the wider area.
+// [{what, q, ed, mkt, terms}]: q the search, ed Google's edition, mkt Bing's market (else the VPN exit's, e.g.
+// en-GB, which matched «جريدة الرياض» rather than Riyadh), terms the names an item must contain one of
+function localSearches(p){
+  const cc = p ? p.cc : '';
+  const arabic = AR_RE.test(CONFIG.city) && (!cc || ARAB_CC.includes(cc));
+  if(!arabic && !(p && p.name)) return [];
+  const ed = arabic ? 'hl=ar&gl=SA&ceid=SA:ar' : GN_EN.includes(cc) ? `hl=en-${cc}&gl=${cc}&ceid=${cc}:en` : 'hl=en-US&gl=US&ceid=US:en';
+  const mkt = arabic ? 'ar-SA' : GN_EN.includes(cc) ? 'en-' + cc : 'en-US';
+  const name = arabic ? CONFIG.city : p.name;
+  const out = [{what: 'city', q: arabic ? `"${name}"` : `"${name}" ${p.region || ''}`.trim(), ed, mkt, terms: [name]}];
+  const area = arabic ? (p && p.regionAr) : (p.county || p.region);
+  // the area's own name without its kind, as headlines write it ("Orange County" -> "Orange", «أمطار القصيم»)
+  const core = String(area || '').replace(/\s+(County|Parish|Borough|District|Governorate|Province|Region)$/i, '')
+    .replace(/^(منطقة|محافظة|إمارة|ولاية)\s+/, '').trim();
+  if(core && core !== name)
+    out.push({what: 'area', q: `"${area}"` + (cc === 'US' && p.county && p.region ? ' ' + p.region : ''), ed, mkt, terms: [name, core]});
+  return out;
+}
+
+// does the text name the place? English: the whole word, as written ("Reading", not "reading");
+// Arabic: also joined to a prefix (بالرياض، والرياض) and after لـ, which drops the alif (للرياض)
+function namesPlace(text, term){
+  if(!term || !text) return false;
+  if(AR_RE.test(term)) return text.includes(term) || (term.startsWith('ال') && text.includes('لل' + term.slice(2)));
+  return new RegExp('(^|[^A-Za-z])' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![A-Za-z])').test(text);
+}
+
+// Bing's link to an item goes through its redirect (apiclick.aspx?...&url=<the article>): the article itself
+function unBing(link){
+  try{ const u = new URL(link); if(/(^|\.)bing\.com$/.test(u.hostname) && /^https?:/.test(u.searchParams.get('url') || '')) return u.searchParams.get('url'); }catch(e){}
+  return link;
+}
+// Bing answers a phone's browser (the TV's WebView says "Mobile") with its news page instead of RSS: the first
+// results as cards, each with url, data-title, data-author and an age (en "45m" "3h" "2d", ar «12 من الساعات»)
+function bingAge(s, now){
+  s = String(s || '').trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  const n = parseInt(s, 10);
+  if(!(n >= 0)) return NaN;
+  const ms = /^\d+\s*m(in)?$/i.test(s) || /دقي|دقائق/.test(s) ? 6e4 : /^\d+\s*h$/i.test(s) || /ساع/.test(s) ? 36e5
+           : /^\d+\s*d$/i.test(s) || /يوم|أيام/.test(s) ? 864e5 : NaN;   // months, years: left out
+  return now - n * ms;
+}
+function bingCards(text){
+  const doc = new DOMParser().parseFromString(text, 'text/html'), now = Date.now();
+  return Array.from(doc.querySelectorAll('[data-title][url]')).map(c => ({
+    headline: plainText(c.getAttribute('data-title')), source: plainText(c.getAttribute('data-author')),
+    t: bingAge((c.querySelector('.timestamp') || {}).textContent, now), link: unBing(String(c.getAttribute('url') || '').trim()), desc: ''}));
+}
+// what came back instead of RSS, for the log: where it ended up and its title (a consent page, a block page)
+function notRss(r, text){
+  let at = '';
+  try{ const u = new URL(r.url); at = u.host + u.pathname; }catch(e){}
+  const t = /<title[^>]*>([^<]{0,60})/i.exec(text);
+  return 'not RSS: ' + at + (t ? ' "' + t[1].trim() + '"' : '');
+}
+
+// one RSS search -> [{headline, source, t, link, desc}]; throws when nothing usable answered (e.g. a consent page)
+async function localFeed(kind, url){
+  const r = await fetchT(url, 15000);
+  if(!r.ok) throw 'HTTP ' + r.status;
+  const text = await r.text();
+  if(!/<item[\s>]/.test(text)){
+    if(/<rss[\s>]/.test(text)) return [];   // no results
+    const cards = kind === 'bing' ? bingCards(text) : [];
+    if(cards.length) return cards;
+    throw notRss(r, text);   // e.g. a consent page
+  }
+  const doc = new DOMParser().parseFromString(text, 'text/xml');
+  if(doc.getElementsByTagName('parsererror').length) throw 'bad XML';
+  const txt = (el, tag) => { const n = el.getElementsByTagName(tag)[0]; return n ? n.textContent : ''; };
+  return Array.from(doc.getElementsByTagName('item')).map(it => {
+    const title = plainText(txt(it, 'title')), t = Date.parse(txt(it, 'pubDate') || '');
+    let link = txt(it, 'link').trim();
+    if(kind === 'google'){   // "headline - Source"; the description is only links to the same story: no summary
+      const s = splitNewsTitle(title, plainText(txt(it, 'source')));
+      return {headline: s.headline, source: s.source, t, link, desc: ''};
+    }
+    // Bing: the publisher in <News:Source>, a summary in <description>, the link through Bing's redirect
+    const src = plainText(txt(it, 'News:Source'));
+    link = unBing(link);
+    return {headline: src && title.endsWith(' - ' + src) ? title.slice(0, -src.length - 3).trim() : title, source: src, t, link,
+            desc: plainText(txt(it, 'description'))};
+  });
+}
+
+const localKey = x => x.headline.toLowerCase().replace(/[\s"'“”‘’«».,:;!?()|\-–—]+/g, '');
+// a and b together: each story once (same headline, or same link), newest first
+function localMerge(a, b){
+  const seen = new Set();
+  return a.concat(b).filter(x => {
+    const k = localKey(x);
+    if(seen.has(k) || (x.link && seen.has(x.link))) return false;
+    seen.add(k); if(x.link) seen.add(x.link);
+    return true;
+  }).sort((x, y) => y.t - x.t);
+}
+
+// a search s: Google, then Bing while fewer than LOCAL_FEW. Resolves to {items, answered, used}
+async function localSearch(s){
+  const since = Date.now() - LOCAL_DAYS * 86400000;
+  const keep = x => x.headline && Number.isFinite(x.t) && x.t >= since && x.t <= Date.now() + 3600000
+    && !LOCAL_JUNK.test(x.source || '') && !/\bobituary\b/i.test(x.headline)
+    && s.terms.some(n => namesPlace(x.headline, n) || namesPlace(x.desc, n));
+  const feeds = [
+    ['google', `https://news.google.com/rss/search?q=${encodeURIComponent(s.q + ' when:' + LOCAL_DAYS + 'd')}&${s.ed}`],
+    ['bing', `https://www.bing.com/news/search?q=${encodeURIComponent(s.q)}&format=rss&qft=${encodeURIComponent('interval="8"')}&mkt=${s.mkt}`],   // the past week
+  ];
+  let items = [], answered = false;
+  const used = [];
+  for(const [kind, url] of feeds){
+    try{
+      const got = (await localFeed(kind, url)).filter(keep);
+      answered = true;
+      if(got.length){ used.push(kind + ' (' + s.what + ')'); items = localMerge(items, got); }
+    }catch(e){ console.warn('SaudiTV: local news: ' + kind + ' failed for the ' + s.what + ' (' + e + ')'); }
+    if(items.length >= LOCAL_FEW) break;
+  }
+  return {items, answered, used};
+}
+
+// resolves to false when nothing answered (see firstLoad), or nothing was found while the place is still unknown
+// (the geocoders are asked again); an answer with no recent item empties the card (cardHasData then passes over it)
+let LOCAL_LOG = '';
+async function loadLocalNews(){
+  const place = await localPlace(), searches = localSearches(place);
+  let items = [], answered = false;
+  const used = [];
+  for(const s of searches){   // the city; the wider area only while there are fewer than LOCAL_FEW
+    const r = await localSearch(s);
+    answered = answered || r.answered;
+    items = localMerge(items, r.items);
+    used.push(...r.used);
+    if(items.length >= LOCAL_FEW) break;
+  }
+  if(!answered || (!place && !items.length)) return false;   // keep the last good list
+  // which sources served it, in the TV's log when that changes (a VPN exit can block one)
+  const how = used.join(', ') || 'none';
+  if(how !== LOCAL_LOG){ LOCAL_LOG = how; console.warn('SaudiTV: local news from ' + how + ': ' + items.length + ' items'); }
+  NEWS.local = items.slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_KEEP).map(x => {
+    const desc = x.desc; delete x.desc;
+    if(CONFIG.detail) x.summary = desc ? newsSummary(x, desc) : '';
+    return x;
+  });
+  if(CONFIG.panel === 'local') renderPanel(false);
+  return true;
+}
+
 // a loader's first run that got no answer tries again soon, instead of leaving the panel empty until
 // its regular refresh (30 min; standings 3 h, prayers 6 h). The page often starts with no network: the launcher
 // started while the TV sleeps (Low Power Standby blocks the app: every request ends in ERR_NAME_NOT_RESOLVED),
@@ -2190,11 +2419,12 @@ function startPanelData(list, matchesLoaded){
     if(!matchesLoaded){ firstLoad(loadMatches, 'matches'); setInterval(loadMatches, 30*60*1000); }
   }
   ['news', 'tech'].forEach(k => { if(list.includes(k)){ firstLoad(() => loadNews(k), k); setInterval(() => loadNews(k), 30*60*1000); } });
+  if(list.includes('local')){ firstLoad(loadLocalNews, 'local'); setInterval(loadLocalNews, 30*60*1000); }   // the city's news
   // the shows in a rotation (a single shows card is loaded by boot / cardStart)
   if(list.length > 1 && list.includes('shows')){ firstLoad(loadWeek, 'shows'); setInterval(loadWeek, 6*3600*1000); }
   // a single news card is only redrawn by its 30-min refresh: keep its "minutes ago" current
-  if(CONFIG.panels.length <= 1 && (list.includes('news') || list.includes('tech'))){
-    setInterval(() => { if(CONFIG.panel === 'news' || CONFIG.panel === 'tech') renderPanel(false); }, 5*60*1000);
+  if(CONFIG.panels.length <= 1 && list.some(isNewsPanel)){
+    setInterval(() => { if(isNewsPanel(CONFIG.panel)) renderPanel(false); }, 5*60*1000);
     // and turn its page (three items each) every NEWS_PAGE_MS
     setInterval(() => { if(newsPaged(CONFIG.panel)){ LIST_PAGE++; renderPanel(true); } }, NEWS_PAGE_MS);
   }
@@ -2490,7 +2720,7 @@ function applyBackground(force){
 // ◀ ▶ switch to the next / previous page of the card's list (#panels; RTL: left = next), wrapping.
 // answered / failed: per page, by its first load (see dvStart)
 const DV = {answered:{}, failed:{}, html:null, items:[], focus:0};
-const DV_PAGES = ['prayers', 'forecast', 'matches', 'standings', 'news', 'tech', 'shows', 'verse'];   // shows, verse
+const DV_PAGES = ['prayers', 'forecast', 'matches', 'standings', 'news', 'local', 'tech', 'shows', 'verse'];   // shows, verse, local
 // the pages ◀ ▶ go through: the card's list (#panels) as far as the detail window has pages for it; without
 // a list of two or more that holds the opened page, all of them
 const DV_LIST = (L => L.length > 1 && L.includes(CONFIG.detail) ? L : DV_PAGES)(CONFIG.panels.filter(p => DV_PAGES.includes(p)));
@@ -2510,6 +2740,8 @@ const DV_ICON = {
   standings: DV_SVG('<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5.5H4v1.5a3 3 0 0 0 3.3 3M17 5.5h3v1.5a3 3 0 0 1-3.3 3"/><path d="M12 14v4"/><path d="M9.5 20.5l.8-2.5h3.4l.8 2.5z"/>'),
   // newspaper
   news: DV_SVG('<path d="M4 5h13v15H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v9a2 2 0 0 1-2 2h-1"/><path d="M7.5 9h6M7.5 12.5h6M7.5 16h4"/>'),
+  // a map pin: the city's news
+  local: DV_SVG('<path d="M12 21.5s-6.5-5.9-6.5-11.2a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11.2-6.5 11.2z"/><circle cx="12" cy="10.3" r="2.4"/>'),
   // chip
   tech: DV_SVG('<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5" rx=".5"/><path d="M9.5 2.5V6M14.5 2.5V6M9.5 18v3.5M14.5 18v3.5M2.5 9.5H6M2.5 14.5H6M18 9.5h3.5M18 14.5h3.5"/>'),
   // a TV screen on its stand (shows); an open book (verse)
@@ -2522,6 +2754,7 @@ function dvTitle(){
   if(P === 'forecast') return 'الطقس · ' + CONFIG.city;
   if(P === 'shows') return 'جديد المسلسلات · ' + PANEL_TITLE.shows;
   if(P === 'verse') return quoteOfDay().title;
+  if(P === 'local') return localTitle();
   return PANEL_TITLE[P] || '';
 }
 
@@ -2683,8 +2916,8 @@ function dvNews(P){
   if(!DV.items.length) return '';
   const now = Date.now();
   return '<div class="dv-news"><div class="dv-list">' + DV.items.map((x, i) => {
-    const meta = [esc(x.source), Number.isFinite(x.t) ? agoAr(now - x.t) : ''].filter(Boolean).join(' · ');
-    return `<div class="dv-item" data-i="${i}"><div class="h">${esc(x.headline)}</div><div class="dv-meta">${meta}</div></div>`;
+    const meta = [newsSource(P, x.source), Number.isFinite(x.t) ? agoAr(now - x.t) : ''].filter(Boolean).join(' · ');
+    return `<div class="dv-item" data-i="${i}"><div class="h"${bidiAttr(P, x.headline)}>${esc(x.headline)}</div><div class="dv-meta">${meta}</div></div>`;
   }).join('') + '</div><div class="dv-side"></div></div>';
 }
 // focus item i: its row framed and kept in view, its summary on the left
@@ -2702,9 +2935,10 @@ function dvNewsFocus(i){
   }
   const x = DV.items[i];
   if(CONFIG.detail === 'shows'){ side.innerHTML = dvShowSide(x); dvSideFit(side); return; }   // the shows page
-  const meta = [esc(x.source), Number.isFinite(x.t) ? agoAr(Date.now() - x.t) : ''].filter(Boolean).join(' · ');
-  side.innerHTML = `<div class="h">${esc(x.headline)}</div><div class="dv-meta">${meta}</div>`
-    + (x.summary ? `<div class="dv-sum">${esc(x.summary)}</div>` : '<div class="dv-sum none">لا يوجد ملخص</div>')
+  const P = CONFIG.detail;
+  const meta = [newsSource(P, x.source), Number.isFinite(x.t) ? agoAr(Date.now() - x.t) : ''].filter(Boolean).join(' · ');
+  side.innerHTML = `<div class="h"${bidiAttr(P, x.headline)}>${esc(x.headline)}</div><div class="dv-meta">${meta}</div>`
+    + (x.summary ? `<div class="dv-sum"${bidiAttr(P, x.summary)}>${esc(x.summary)}</div>` : '<div class="dv-sum none">لا يوجد ملخص</div>')
     + (x.link ? '<div class="dv-ok">OK لقراءة الخبر كاملاً</div>' : '');
   dvSideFit(side);
   if(document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(() => dvSideFit(side));
@@ -2723,7 +2957,7 @@ function dvSideFit(side){
 function renderDetail(){
   const body = document.querySelector('#dv .dv-body');
   if(!body) return;
-  const P = CONFIG.detail, news = P === 'news' || P === 'tech' || P === 'shows';   // shows, a list like news
+  const P = CONFIG.detail, news = isNewsPanel(P) || P === 'shows';   // shows, a list like news; local
   const was = news ? DV.items[DV.focus] : null;   // keep the focused item across a refresh
   let html = '';
   try{
@@ -2753,7 +2987,7 @@ function detailKey(e){
   // ◀ = the next page, ▶ = the previous one (RTL)
   if(k === 'ArrowLeft' || k === 'ArrowRight'){ dvGo(k === 'ArrowLeft' ? 1 : -1); return; }
   const P = CONFIG.detail;
-  if(P === 'news' || P === 'tech' || P === 'shows'){   // shows (OK does nothing there)
+  if(isNewsPanel(P) || P === 'shows'){   // shows (OK does nothing there); local
     if(!DV.items.length) return;
     if(k === 'ArrowDown') dvNewsFocus(DV.focus + 1);
     else if(k === 'ArrowUp') dvNewsFocus(DV.focus - 1);
@@ -2786,6 +3020,7 @@ function dvStart(P){
     if(!DV_STARTED.has('matches')) firstLoad(loadMatches, 'matches');
   }
   if(P === 'news' || P === 'tech'){ watch(() => loadNews(P), P); setInterval(() => loadNews(P), 30*60*1000); setInterval(renderDetail, 5*60*1000); }
+  if(P === 'local'){ watch(loadLocalNews, P); setInterval(loadLocalNews, 30*60*1000); setInterval(renderDetail, 5*60*1000); }
   if(P === 'shows'){ watch(loadWeek, 'shows'); setInterval(loadWeek, 6*3600*1000); }   // (verse: offline)
 }
 // the card shows the page last seen here when the home screen is back (bootRotatingWidget's sauditvHold)

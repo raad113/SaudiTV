@@ -16,7 +16,7 @@ import java.util.List;
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.CITIES
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.SET
  *       [--es city 'الرس'] [--es lat 25.86 --es lon 43.49] [--es teams '136013:Al-Hilal,150643:Al-Zulfi']
- *       [--es panel prayers | prayers,forecast,news] [--es home_panel none] [--es minrating 7] [--es genres Drama,Comedy] [--es langs English]
+ *       [--es panel prayers | prayers,forecast,news,local] [--es home_panel none] [--es minrating 7] [--es genres Drama,Comedy] [--es langs English]
  *       [--es autoupdate true|false]
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.UPDATE
  *
@@ -93,15 +93,15 @@ public class SaverReceiver extends BroadcastReceiver {
             if (teams.size() > Prefs.MAX_TEAMS) return "error: at most " + Prefs.MAX_TEAMS + " teams";
         }
         String panel = i.getStringExtra("panel"), home = i.getStringExtra("home_panel");
-        // both cards can rotate through up to 8 panels (all of them), comma-separated
+        // both cards can rotate through up to 9 panels (all of them, local news too), comma-separated
         // (e.g. prayers,forecast,matches); "none" only on its own
         if (panel != null) {
             panel = panelList(panel);
-            if (panel == null) return "error: panel is one, or up to eight comma-separated, of " + panels() + " (none only alone)";
+            if (panel == null) return "error: panel is one, or up to " + (Prefs.PANELS.length - 1) + " comma-separated, of " + panels() + " (none only alone)";
         }
         if (home != null) {
             home = panelList(home);
-            if (home == null) return "error: home_panel is one, or up to eight comma-separated, of " + panels() + " (none only alone)";
+            if (home == null) return "error: home_panel is one, or up to " + (Prefs.PANELS.length - 1) + " comma-separated, of " + panels() + " (none only alone)";
         }
         String auto = i.getStringExtra("autoupdate");
         if (auto != null && !auto.equals("true") && !auto.equals("false")) return "error: autoupdate is true or false";
@@ -141,7 +141,7 @@ public class SaverReceiver extends BroadcastReceiver {
         return false;
     }
 
-    /** "a, b,c" -> "a,b,c" when every id is a panel, at most 8 (every card), and "none" only alone; else null. */
+    /** "a, b,c" -> "a,b,c" when every id is a panel, at most 9 (every card: PANELS but "none"), and "none" only alone; else null. */
     private static String panelList(String raw) {
         String[] parts = raw.split(",", -1);
         if (parts.length > Prefs.PANELS.length - 1) return null;

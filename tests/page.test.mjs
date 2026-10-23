@@ -75,9 +75,13 @@ const SAMPLE = {
     const ev = (id, h, a, hrs) => ({ idEvent: id, strHomeTeam: h, strAwayTeam: a, strTimestamp: new Date(Date.now() + hrs * 36e5).toISOString() });
     NEXT_LIST = { '136013': [ev('a', 'Al-Hilal', 'Al-Nassr', 3), ev('b', 'Al-Ahli', 'Al-Hilal', 80)] };
   },
+  // the city's news: four items (one page shows three), an English one among them
+  local: () => {
+    NEWS.local = [0, 1, 2, 3].map(i => ({ headline: i ? 'خبر محلي ' + i : 'City council approves the new park', source: i ? 'جريدة' : 'City Herald', t: Date.now() - i * 36e5, link: '' }));
+  },
 };
 const EXPECT = { prayers: [6, 'مواقيت اليوم'], forecast: [5, 'الأيام القادمة'], matches: [2, 'مباريات فرقك'],
-                 verse: [2, null], shows: [1, 'هذا الأسبوع'] };
+                 verse: [2, null], shows: [1, 'هذا الأسبوع'], local: [3, 'أخبار الرياض'] };
 for (const [panel, [rows, title]] of Object.entries(EXPECT)) {
   const { p, ctx, errors } = await open('tv.html', 'teams=136013&panel=' + panel);
   if (SAMPLE[panel]) await p.evaluate(`(${SAMPLE[panel]})(); renderPanel(false);`);
@@ -96,6 +100,15 @@ for (const [panel, [rows, title]] of Object.entries(EXPECT)) {
     return out.sort().join(',');
   });
   check('card verse: a verse one day, a hadith the next', both === 'آية اليوم,حديث اليوم', both);
+  await ctx.close();
+}
+
+{
+  const { p, ctx, errors } = await open('tv.html', 'panel=local');
+  await p.evaluate(`(${SAMPLE.local})(); renderPanel(false);`);
+  const r = await p.evaluate(() => [...document.querySelectorAll('#week-list .nw')].map(e => e.getAttribute('dir') || ''));
+  check('card local: an English title reads left to right (dir=auto), Arabic ones as the page', !errors.length
+    && r.join(',') === 'auto,,', JSON.stringify(r) + errors.join('; '));
   await ctx.close();
 }
 

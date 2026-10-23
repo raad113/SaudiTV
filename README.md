@@ -22,7 +22,7 @@
 ## المزايا
 
 - **بطاقة تتبدّل كل ٣٠ ثانية** جنب الساعة، في شاشة التوقف وفي الواجهة: مواقيت اليوم، آية أو حديث اليوم، طقس الأيام
-  القادمة، مباريات فرقك، ترتيب دوري روشن، أخبار السعودية، أخبار التقنية والذكاء الاصطناعي، جديد المسلسلات. تختار
+  القادمة، مباريات فرقك، ترتيب دوري روشن، أخبار السعودية، أخبار مدينتك، أخبار التقنية والذكاء الاصطناعي، جديد المسلسلات. تختار
   البطاقات وترتيبها لكل شاشة.
 - **صفحات التفاصيل:** OK على البطاقة في الواجهة يفتحها على كامل الشاشة (المواقيت، الأخبار مع نص الخبر، الترتيب،
   المباريات، المسلسلات…)، ويمين ويسار يقلّبون بينها.
@@ -94,8 +94,8 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
 ## Features
 
 - **A card that rotates every 30 s** beside the clock, on the screensaver and the home screen: today's prayers, a verse
-  or hadith of the day, the forecast, your teams' matches, the Saudi Pro League table, Saudi news, tech and AI news,
-  new episodes. Pick the cards and their order for each screen.
+  or hadith of the day, the forecast, your teams' matches, the Saudi Pro League table, Saudi news, your city's news,
+  tech and AI news, new episodes. Pick the cards and their order for each screen.
 - **Detail pages:** OK on the home screen's card opens it full screen (prayers, news with the article text, the table,
   matches, episodes…); left and right step through them.
 - **The ticker:** market prices move along the bottom (TASI, S&P 500, gold, Brent, USD/SAR, Bitcoin…), with an info
@@ -144,8 +144,8 @@ Al-Ittihad and Al-Ahli, and six cards (prayers, forecast, matches, table, Saudi 
 python3 src/build.py                                   # src/template.html -> dist/saudi-tv.html and dist/tv.html
 cd android && gradle assembleRelease                   # Gradle 8.10, JDK 17 (Android Studio's JBR), Android SDK
 ```
-- **Version:** the `VERSION` file (one number, now 9034) is the versionCode and versionName of both apps and the release
-  tag (`v9034`). Raise it for every build you install: Android refuses a downgrade. `VERSION_CODE` (or CI's
+- **Version:** the `VERSION` file (one number, now 9035) is the versionCode and versionName of both apps and the release
+  tag (`v9035`). Raise it for every build you install: Android refuses a downgrade. `VERSION_CODE` (or CI's
   `GITHUB_RUN_NUMBER`) in the environment overrides it for one build.
 - **Signing:** both apps are signed with the project's release key, kept **outside** the repository in
   `~/.sauditv/` (`sauditv-release.jks` and `keystore.properties`). Without it, release builds get the debug key and

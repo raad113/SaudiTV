@@ -7,7 +7,7 @@
 #   optimize/saver.sh find-team الهلال             a club's id (Arabic or English name): id:Name | league
 #   optimize/saver.sh teams 136013:Al-Hilal 150643:Al-Zulfi    followed teams in order (up to 10)
 #   optimize/saver.sh card prayers,forecast,news   beside the clock: one, or several that rotate every 30 s, of
-#                                                  prayers verse forecast matches standings news tech shows; or none
+#                                                  prayers verse forecast matches standings news local tech shows; or none
 #   optimize/saver.sh home-card prayers,news       the home screen's card: the same choices
 #   optimize/saver.sh genres Drama,Comedy          episodes card: Drama Comedy Action Crime Thriller Mystery
 #                                                  Science-Fiction Fantasy Adventure Romance Family History Horror

@@ -81,13 +81,13 @@ cp launcher/build/outputs/apk/release/launcher-release.apk out/saudi-tv-home.apk
 cd ..
 LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
 ```
-- **رقم النسخة:** ملف `VERSION` (الحين 9034). **لازم يزيد** كل بناء تركّبه، وإلا أندرويد يرفض التركيب.
+- **رقم النسخة:** ملف `VERSION` (الحين 9035). **لازم يزيد** كل بناء تركّبه، وإلا أندرويد يرفض التركيب.
 - **مفتاح التوقيع:** `~/.sauditv/sauditv-release.jks` و `~/.sauditv/keystore.properties` (على ويندوز:
   `C:\Users\<اسمك>\.sauditv\`). **خذ منهم نسخة احتياطية** في مكان آمن (مو في المستودع ولا GitHub): إذا ضاعوا، أي تحديث
   جاي ما يركب فوق التطبيقات الموجودة، ولازم تشيلهم وتركّب من جديد (وتضيع إعداداتهم؛ `setup-new-tv.sh` يرجّعها). بدون
   الملف، البناء يتوقّع بمفتاح debug ويطبع تنبيه. و `optimize/adbkey/` هو مفتاح ADB اللي التلفزيون يثق فيه: خاص، لا تشاركه.
 - **إصدار جديد:** ارفع `VERSION`، ابنِ، ادفع للـ `main` (الصفحة)، وبعدين:
-  `gh release create v9035 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9035 --notes "…"`.
+  `gh release create v9036 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9036 --notes "…"`.
 
 ---
 
@@ -169,7 +169,7 @@ optimize/setup-new-tv.sh 192.168.x.y         # the TV's address; without it opti
 The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android Studio's JBR, the two APKs copied to
 `android/out/` as `saudi-tv-screensaver.apk` and `saudi-tv-home.apk`, then
 `LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh`.
-- **Version:** the `VERSION` file (9034 now). It **must go up** with every build you install, or Android refuses it as a
+- **Version:** the `VERSION` file (9035 now). It **must go up** with every build you install, or Android refuses it as a
   downgrade. `VERSION_CODE=…` (or `GITHUB_RUN_NUMBER=…`) overrides it for one build.
 - **Signing key: MUST BACK UP** `~/.sauditv/sauditv-release.jks` and `~/.sauditv/keystore.properties` (Windows:
   `C:\Users\<you>\.sauditv\`) somewhere safe, never in the repository or on GitHub. Without them no later build can update
@@ -178,7 +178,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
   builds are signed with the debug key and Gradle prints a warning. `optimize/adbkey/` is the ADB key the TVs trust:
   private too.
 - **A release:** raise `VERSION`, build, push to `main` (the page), then
-  `gh release create v9035 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9035 --notes "…"`.
+  `gh release create v9036 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9036 --notes "…"`.
   `optimize/install.sh` downloads from `releases/latest/download/`, so the newest release is picked up by itself.
 
 ### 10. The tools
