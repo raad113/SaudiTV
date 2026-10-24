@@ -1,23 +1,23 @@
 {
-  "versionCode": 9036,
-  "versionName": "9036",
-  "tag": "v9036",
-  "notes": "تحديث التطبيقين من التلفاز نفسه: صف «تحديث التطبيق» في الإعدادات يفحص آخر إصدار ويثبّته بعد التحقق من كل ملف، والواجهة الرئيسية تعرض «تحديث متوفر» لما يكون فيه جديد.",
+  "versionCode": 9037,
+  "versionName": "9037",
+  "tag": "v9037",
+  "notes": "إصدار صغير لتجربة التحديث من التلفاز نفسه: لا تغيير في الشاشة، رقم النسخة فقط.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9036,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9036/saudi-tv-screensaver.apk",
-      "sha256": "c7b0c4c7a3acd387884cac3aa39be1da2ab6d34a96007ef15ba91845869c5690",
-      "size": 4991234
+      "versionCode": 9037,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9037/saudi-tv-screensaver.apk",
+      "sha256": "2cdb121dc9b87efa398139cdcd4391fafe2cedd3e4d4ef6401963ec0a5235e09",
+      "size": 4991242
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9036,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9036/saudi-tv-home.apk",
-      "sha256": "7afe7d87d2c88596cd5a9699db76494ebec8dac61bb5e8405c2bbd9120ef1642",
+      "versionCode": 9037,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9037/saudi-tv-home.apk",
+      "sha256": "104bff22277205272716a9bd3382369390d8491c2dd772739cc165e7bdd32cff",
       "size": 2690591
     }
   ]
