@@ -143,6 +143,7 @@ done
 say "update.json"
 NOTES="$notes" "$PYTHON" -I - "$new" "$REPO" android/out "${APKS[@]}" <<'PY'
 import hashlib, json, os, sys
+sys.stdout.reconfigure(encoding="utf-8")   # -I ignores PYTHONIOENCODING; Windows' console code page has no Arabic
 new, repo, out, *apks = sys.argv[1:]
 pkgs = {"saudi-tv-screensaver.apk": "com.raad.sauditv.screensaver", "saudi-tv-home.apk": "com.raad.sauditv.home"}
 entries = []
