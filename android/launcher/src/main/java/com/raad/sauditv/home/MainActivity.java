@@ -104,6 +104,7 @@ public class MainActivity extends Activity {
     private HomePage homePage;   // the page behind everything (was HomeCard, a card-only WebView)
     private QuickPanel quick;   // the quick-settings panel
     private TextView settingsPill;   // the «الإعدادات» pill (the panel gives the focus back to it)
+    private TextView updatePill;   // «تحديث متوفر»: in the row only while the screensaver app found a newer release
     private boolean gridOpen, menuLong;   // the apps grid is up; Menu is held (long press)
 
     private final BroadcastReceiver tick = new BroadcastReceiver() {
@@ -121,6 +122,13 @@ public class MainActivity extends Activity {
     private final BroadcastReceiver configChanged = new BroadcastReceiver() {
         @Override public void onReceive(Context c, Intent i) { homePage.refresh(); }
     };
+
+    // the screensaver app checked for an app update (or installed one) while the home screen is up
+    private final BroadcastReceiver updateState = new BroadcastReceiver() {
+        @Override public void onReceive(Context c, Intent i) { refreshUpdate(); }
+    };
+    /** the screensaver app's last app-update check (its ConfigProvider): available = the newer versionCode, 0 = none */
+    static final android.net.Uri UPDATE = android.net.Uri.parse("content://com.raad.sauditv.screensaver.config/update");
 
     // ---------------------------------------------------------------- lifecycle
 
@@ -162,7 +170,9 @@ public class MainActivity extends Activity {
         tf.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
         listen(tick, tf, false);
         listen(configChanged, new IntentFilter("com.raad.sauditv.screensaver.CONFIG_CHANGED"), true);   // from the screensaver app
+        listen(updateState, new IntentFilter("com.raad.sauditv.screensaver.UPDATE_STATE"), true);   // from the screensaver app
         updateWifi();
+        refreshUpdate();
         homePage.resume();   // the page runs again (it has the clock, the photos and the VPN badge)
         wireFocus();   // the card may have appeared or gone
         View last = lastFocusedId == View.NO_ID ? null : findViewById(lastFocusedId);
@@ -180,6 +190,7 @@ public class MainActivity extends Activity {
         super.onPause();
         unregisterReceiver(tick);
         unregisterReceiver(configChanged);
+        unregisterReceiver(updateState);
         if (inputsPopup != null) inputsPopup.dismiss();
         homePage.pause();
         quick.pause();
@@ -317,7 +328,42 @@ public class MainActivity extends Activity {
             pillRow.addView(p, llp(-2, -1, pills.isEmpty() ? 0 : dp(8), 0, 0, 0));
             pills.add(p);
         }
+        // last in the row, only while an update is available (refreshUpdate); opens the screensaver app's update screen
+        updatePill = pill("تحديث متوفر", R.drawable.ic_sync);
+        updatePill.setOnClickListener(v -> openUpdate());
         return pillRow;
+    }
+
+    /** «تحديث متوفر» (the pill, the quick panel's «سعودي TV» tile): the screensaver app's settings, which check and
+     *  offer «تثبيت» (its SettingsActivity, extra app_update). */
+    void openUpdate() {
+        launch(new Intent().setClassName(SAVER_PKG, SAVER_PKG + ".SettingsActivity")
+                .putExtra("app_update", true).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
+    }
+
+    /** Shows or hides «تحديث متوفر» from the screensaver app's last check; nothing when that app is older (no such
+     *  answer) or missing. */
+    private void refreshUpdate() {
+        long available = 0;
+        try (android.database.Cursor c = getContentResolver().query(UPDATE, null, null, null, null)) {
+            int i = c == null ? -1 : c.getColumnIndex("available");
+            if (i >= 0 && c.moveToFirst()) available = c.getLong(i);
+        } catch (RuntimeException e) {
+            available = 0;
+        }
+        boolean on = available > 0;
+        quick.setUpdate(on);
+        if (on == pills.contains(updatePill)) return;
+        if (on) {
+            pillRow.addView(updatePill, llp(-2, -1, dp(8), 0, 0, 0));
+            pills.add(updatePill);
+        } else {
+            boolean had = updatePill.hasFocus();
+            pillRow.removeView(updatePill);
+            pills.remove(updatePill);
+            if (had) settingsPill.requestFocus();
+        }
+        wireFocus();
     }
 
     /** Pill button: label with a Material icon on its right (Arabic reading order), tinted with the text.

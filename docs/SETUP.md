@@ -68,6 +68,17 @@ optimize/setup-new-tv.sh 192.168.x.y         # عنوان التلفزيون؛ �
   الآن: `optimize/saver.sh update` (يقول من وين جابها، وأي صفحة معروضة). إيقاف: `optimize/saver.sh autoupdate off`.
   الواجهة الرئيسية تعرض الصفحة اللي داخل تطبيقها، فتتحدّث مع تحديث التطبيق.
 - **التطبيقات:** `optimize/install.sh all` يركّب آخر إصدار (فوق المركّب، مع إعداداته، لأن المفتاح نفسه).
+- **التطبيقات من التلفاز نفسه، بدون كمبيوتر:** إعدادات سعودي TV ← «تحديث التطبيق» يعرض النسخة المثبتة و«محدّث» أو
+  «تحديث متوفر: …». تطبيق الإعدادات يفحص كل ٦ ساعات (ومع كل ضغطة على الصف) ملف `update.json` في آخر إصدار
+  (`releases/latest/download/update.json`، وإذا ما وصل له: `update.json` في فرع `main`). لما يلقى نسخة أحدث، الواجهة
+  الرئيسية تعرض «تحديث متوفر» في الشريط العلوي وتحت «سعودي TV» في الإعدادات السريعة، والضغط عليها يفتح التحديث.
+  - «تثبيت» ينزّل الملفات لذاكرة التطبيق، ويتحقق قبل أي تثبيت من حجم كل ملف وبصمته (sha256)، واسم الحزمة، ورقم النسخة،
+    وتوقيع مفتاح المشروع. أي خطأ (ما فيه إنترنت، ملف تالف، إلغاء) يحذف الملفات ويترك التطبيقين مثل ما هم.
+  - يثبّت الواجهة الرئيسية أول، وبعدها تطبيق الإعدادات نفسه آخر شي (هو اللي يثبّت، فتركيبه يقفله): يقفل ويرجع التلفاز
+    للواجهة الرئيسية الجديدة، وأول ما تفتحه بعدها يقول «تم التحديث إلى …».
+  - أول مرة يطلب إذن «تثبيت التطبيقات غير المعروفة» لـ «سعودي TV»، مع زر يفتح الشاشة الصحيحة؛ ارجع بزر الرجوع ويكمل.
+    التلفاز يطلب موافقتك على كل تثبيت (نافذته هو)، إلا لما تطبيق الإعدادات يحدّث نفسه أو تطبيق ثبّته هو قبل.
+  - من ADB: `optimize/saver.sh app-check` (فحص بس، ما يثبّت شي).
 
 ### ٩. البناء والإصدار
 ```
@@ -81,12 +92,22 @@ cp launcher/build/outputs/apk/release/launcher-release.apk out/saudi-tv-home.apk
 cd ..
 LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
 ```
-- **رقم النسخة:** ملف `VERSION` (الحين 9035). **لازم يزيد** كل بناء تركّبه، وإلا أندرويد يرفض التركيب.
+- **رقم النسخة:** ملف `VERSION` (رقم واحد). **لازم يزيد** كل بناء تركّبه، وإلا أندرويد يرفض التركيب.
 - **مفتاح التوقيع:** `~/.sauditv/sauditv-release.jks` و `~/.sauditv/keystore.properties` (على ويندوز:
   `C:\Users\<اسمك>\.sauditv\`). **خذ منهم نسخة احتياطية** في مكان آمن (مو في المستودع ولا GitHub): إذا ضاعوا، أي تحديث
   جاي ما يركب فوق التطبيقات الموجودة، ولازم تشيلهم وتركّب من جديد (وتضيع إعداداتهم؛ `setup-new-tv.sh` يرجّعها). بدون
   الملف، البناء يتوقّع بمفتاح debug ويطبع تنبيه. و `optimize/adbkey/` هو مفتاح ADB اللي التلفزيون يثق فيه: خاص، لا تشاركه.
-- **إصدار جديد:** ارفع `VERSION`، ابنِ، ادفع للـ `main` (الصفحة)، وبعدين:
+- **إصدار جديد:** سكربت واحد يسوي كل شي:
+  ```
+  tools/release.sh --notes "ملاحظة قصيرة بالعربي عن هذا الإصدار"      # أو --notes-file ملف.txt
+  ```
+  يرفع `VERSION` واحد (أو `--version N`)، يبني الصفحة والتطبيقين ويوقّعهم بمفتاح المشروع (ويرفض مفتاح debug)، يكتب
+  `update.json` (رقم النسخة، الملاحظات، ورابط كل APK وبصمته sha256 وحجمه)، يشغّل الفحوصات (`tests/`) وفحص الأسماء
+  القديمة والملفات الخاصة، ثم commit و tag `v<رقم>` ويدفع، وينشئ الإصدار في GitHub بثلاث ملفات: `saudi-tv-screensaver.apk`
+  و `saudi-tv-home.apk` و `update.json`، وبعدها يتأكد إن GitHub يقدّمهم صح. تجربة كاملة بدون نشر: `--dry-run`.
+  - يحتاج: فرع `main` نظيف ومحدّث، `gh` مسجّل دخول، مفتاح التوقيع، Gradle 8.10 و Java حق Android Studio، Python فيه
+    fonttools و brotli و pillow (`PYTHON=…`)، و node مع playwright (`CHROMIUM=…` إذا متصفح Playwright ما نزل).
+  - الإصدار القديم بخطوات يدوية (لو احتجته): ارفع `VERSION`، ابنِ، ادفع للـ `main` (الصفحة)، وبعدين:
   `gh release create v9036 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9036 --notes "…"`.
 
 ---
@@ -164,12 +185,26 @@ optimize/setup-new-tv.sh 192.168.x.y         # the TV's address; without it opti
   its own APK, so it changes with an app update.
 - **The apps:** `optimize/install.sh all` installs the latest release (over the installed apps, keeping their settings:
   same key).
+- **The apps, from the TV itself, no PC:** سعودي TV's settings > «تحديث التطبيق» shows the installed version and
+  «محدّث» (up to date) or «تحديث متوفر: …». The settings app checks every 6 hours (and whenever the row is pressed) the
+  latest release's `update.json` (`releases/latest/download/update.json`; if that can't be reached, `update.json` on
+  `main`). When there is a newer version, the home screen shows a «تحديث متوفر» pill in its top bar and under «سعودي TV»
+  in the quick settings; pressing either opens the update.
+  - «تثبيت» downloads to the app's own cache and, before anything is installed, checks each file's size and sha256, its
+    package name, its versionCode and the project's signing certificate. Any failure (no internet, a damaged file, a
+    cancel) deletes the files and leaves both apps as they were.
+  - It installs the home screen first and the settings app itself last (it is the installer, so installing it ends its
+    process): it closes, the TV is back on the new home screen, and its next launch says «تم التحديث إلى …».
+  - The first time it asks for Android's «install unknown apps» for «سعودي TV», with a button that opens the right
+    screen; Back from there carries on. Android asks the user to confirm each install with its own dialog, except when
+    the settings app updates itself or an app it installed before.
+  - Over ADB: `optimize/saver.sh app-check` (checks only, installs nothing).
 
 ### 9. Building and releasing
 The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android Studio's JBR, the two APKs copied to
 `android/out/` as `saudi-tv-screensaver.apk` and `saudi-tv-home.apk`, then
 `LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh`.
-- **Version:** the `VERSION` file (9035 now). It **must go up** with every build you install, or Android refuses it as a
+- **Version:** the `VERSION` file (one number). It **must go up** with every build you install, or Android refuses it as a
   downgrade. `VERSION_CODE=…` (or `GITHUB_RUN_NUMBER=…`) overrides it for one build.
 - **Signing key: MUST BACK UP** `~/.sauditv/sauditv-release.jks` and `~/.sauditv/keystore.properties` (Windows:
   `C:\Users\<you>\.sauditv\`) somewhere safe, never in the repository or on GitHub. Without them no later build can update
@@ -177,18 +212,31 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
   back). `android/build.gradle` reads `keystore.properties` (or the file named by `SAUDITV_SIGNING`); without it, release
   builds are signed with the debug key and Gradle prints a warning. `optimize/adbkey/` is the ADB key the TVs trust:
   private too.
-- **A release:** raise `VERSION`, build, push to `main` (the page), then
+- **A release:** one script does all of it:
+  ```
+  tools/release.sh --notes "a short Arabic note about this release"      # or --notes-file notes.txt
+  ```
+  It raises `VERSION` by one (or `--version N`), builds the page and both APKs signed with the project's key (a debug
+  key is refused), writes `update.json` (versionCode, versionName, the notes, and each APK's URL, sha256 and size), runs
+  the tests (`tests/`) and the old-name and private-files checks, commits, tags `v<N>` and pushes, creates the GitHub
+  release with three assets (`saudi-tv-screensaver.apk`, `saudi-tv-home.apk`, `update.json`), and checks what GitHub
+  then serves. A full rehearsal that publishes nothing: `--dry-run`.
+  - It needs: a clean `main` up to date with GitHub, `gh` signed in, the signing key, Gradle 8.10 and Android Studio's
+    JBR, a Python with fonttools, brotli and pillow (`PYTHON=…`), and node with playwright (`CHROMIUM=…` when
+    Playwright's own browser is not installed).
+  - The manual way, if ever needed: raise `VERSION`, build, push to `main` (the page), then
   `gh release create v9036 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9036 --notes "…"`.
   `optimize/install.sh` downloads from `releases/latest/download/`, so the newest release is picked up by itself.
 
 ### 10. The tools
 | | |
 |---|---|
-| `optimize/saver.sh` | the screensaver's settings: `show`, `city`, `teams`, `find-team`, `card`, `home-card`, `minrating`, `autoupdate`, `update` |
+| `optimize/saver.sh` | the screensaver's settings: `show`, `city`, `teams`, `find-team`, `card`, `home-card`, `minrating`, `autoupdate`, `update`, `app-check` |
 | `optimize/dock.sh` | the favourites row: `show`, `apps`, `set`, `reset` |
 | `optimize/check-home.sh` | opens an app, presses Home, says whether our home screen came back |
 | `optimize/start-saver.sh` · `shot.sh` | start the screensaver now · screenshots without navigating |
 | `optimize/install.sh` | `saver`, `launcher`, `all`, `extras` (TV Bro and SmartTube) |
+| `tools/release.sh` | a new release of both apps: version, build, `update.json`, tests, tag, GitHub release |
 | `optimize/run.sh` | the step-by-step setup with measurements before and after; `status` |
 | `optimize/keep.sh` · `reset.sh` · `restore.sh` | protected features back on · back to stock · the stock home only |
 

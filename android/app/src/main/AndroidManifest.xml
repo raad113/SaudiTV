@@ -4,13 +4,18 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- «تحديث التطبيق»: installs both apps' updates from the GitHub releases (AppInstaller). The user allows it
+         once («تثبيت التطبيقات غير المعروفة» for سعودي TV); Android confirms each install unless this app is
+         updating itself or an app it installed before (UPDATE_PACKAGES_WITHOUT_USER_ACTION, Android 12+) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
     <!-- the launcher (same signing key) reads the settings for its home-screen card -->
     <permission
         android:name="com.raad.sauditv.screensaver.READ_CONFIG"
         android:protectionLevel="signature" />
 
-    <!-- opens the launcher's «ترتيب المفضلة» from settings -->
+    <!-- opens the launcher's «ترتيب المفضلة» from settings; reads its version for «تحديث التطبيق» -->
     <queries>
         <package android:name="com.raad.sauditv.home" />
     </queries>
@@ -73,6 +78,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- each install session's result (AppInstaller); only Android's installer reaches it, through our PendingIntent -->
+        <receiver
+            android:name=".InstallReceiver"
+            android:exported="false" />
+
         <!-- settings from ADB (agents, optimize/saver.sh); DUMP = only the shell can send it -->
         <receiver
             android:name=".SaverReceiver"
@@ -83,6 +93,7 @@
                 <action android:name="com.raad.sauditv.screensaver.SET" />
                 <action android:name="com.raad.sauditv.screensaver.CITIES" />
                 <action android:name="com.raad.sauditv.screensaver.UPDATE" />
+                <action android:name="com.raad.sauditv.screensaver.APP_CHECK" />
             </intent-filter>
         </receiver>
 

@@ -70,6 +70,9 @@
   صفحته هو. تحديث فوري: `optimize/saver.sh update`.
 - **التطبيقات:** كل نسخة إصدار مرقّم في [Releases](https://github.com/raad113/SaudiTV/releases) (`v9034`…).
   `optimize/install.sh all` يركّب آخر إصدار، و `APK_TAG=v9034 optimize/install.sh all` نسخة معيّنة.
+- **من التلفاز نفسه:** الإعدادات ← «تحديث التطبيق» يحدّث التطبيقين من آخر إصدار بدون كمبيوتر (يتحقق من كل ملف قبل
+  التثبيت)، والواجهة الرئيسية تعرض «تحديث متوفر» لما يكون فيه جديد. الإصدار الجديد: `tools/release.sh`
+  ([docs/SETUP.md](docs/SETUP.md)).
 
 ## البناء
 
@@ -135,8 +138,11 @@ Al-Ittihad and Al-Ahli, and six cards (prayers, forecast, matches, table, Saudi 
   build's marker, and a page downloaded before the app was installed or updated is ignored: the app's own copy is newer.
   Update now: `optimize/saver.sh update`. The home screen shows the page bundled in its own APK.
 - **The apps:** every build is a numbered [release](https://github.com/raad113/SaudiTV/releases) (`v9034`, …) with
-  `saudi-tv-screensaver.apk` and `saudi-tv-home.apk`. `optimize/install.sh all` installs the latest one
+  `saudi-tv-screensaver.apk`, `saudi-tv-home.apk` and `update.json`. `optimize/install.sh all` installs the latest one
   (`releases/latest/download/…`); `APK_TAG=v9034 optimize/install.sh all` a given one.
+- **From the TV itself:** settings > «تحديث التطبيق» updates both apps from the latest release without a PC (every file
+  is checked before it is installed), and the home screen shows «تحديث متوفر» when there is one. A new release:
+  `tools/release.sh` ([docs/SETUP.md](docs/SETUP.md)).
 
 ## Build
 
@@ -144,7 +150,7 @@ Al-Ittihad and Al-Ahli, and six cards (prayers, forecast, matches, table, Saudi 
 python3 src/build.py                                   # src/template.html -> dist/saudi-tv.html and dist/tv.html
 cd android && gradle assembleRelease                   # Gradle 8.10, JDK 17 (Android Studio's JBR), Android SDK
 ```
-- **Version:** the `VERSION` file (one number, now 9035) is the versionCode and versionName of both apps and the release
+- **Version:** the `VERSION` file (one number) is the versionCode and versionName of both apps and the release
   tag (`v9035`). Raise it for every build you install: Android refuses a downgrade. `VERSION_CODE` (or CI's
   `GITHUB_RUN_NUMBER`) in the environment overrides it for one build.
 - **Signing:** both apps are signed with the project's release key, kept **outside** the repository in
@@ -160,6 +166,7 @@ android/launcher      the home screen: dock, apps grid, quick settings, the card
 assets/ photos/       fonts, bundled and hosted photos, Arabic team names, verse and hadith texts
 optimize/             TV tools over ADB (pure Python, no adb binary): setup-new-tv.sh, install.sh, saver.sh, dock.sh…
 .github/tools/        data tools (verses, hadith checks, clubs, photos), run by hand
+tools/release.sh      a new release: version, build, update.json (what the apps' in-app update reads), tests, GitHub
 tests/                checks: build, data, fonts, scripts, private data, the page in a browser
 ```
 

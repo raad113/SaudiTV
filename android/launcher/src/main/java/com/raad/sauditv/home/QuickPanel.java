@@ -76,7 +76,8 @@ final class QuickPanel {
     private final FrameLayout slider;   // the sheet and its shadow, slid in from the right
     private final List<View> tiles = new ArrayList<>();
     private final TextView clock, vpnMark;
-    private TextView wifiSub, vpnSub;
+    private TextView wifiSub, vpnSub, saudiSub;
+    private boolean update;   // the screensaver app found a newer release: «تحديث متوفر» under «سعودي TV»
     private View before, lastTile;   // the focus before it opened; the tile that had it last
     private int homeFocus;
     private boolean open, closeWhenHidden;
@@ -163,8 +164,12 @@ final class QuickPanel {
                 new Intent(Settings.ACTION_DATE_SETTINGS)));
         tile("الحساب", R.drawable.ic_account, () -> settings(new Intent(Settings.ACTION_SYNC_SETTINGS),
                 new Intent(Settings.ACTION_ADD_ACCOUNT)));
-        tile("سعودي TV", R.drawable.ic_tune, () -> settings(
-                new Intent().setClassName(MainActivity.SAVER_PKG, MainActivity.SAVER_PKG + ".SettingsActivity")));
+        // with an update available it opens the update screen, as the «تحديث متوفر» pill does
+        View saudi = tile("سعودي TV", R.drawable.ic_tune, () -> {
+            if (update) a.openUpdate();
+            else settings(new Intent().setClassName(MainActivity.SAVER_PKG, MainActivity.SAVER_PKG + ".SettingsActivity"));
+        });
+        saudiSub = sub(saudi);
         tile("كل الإعدادات", R.drawable.ic_settings, () -> settings());
 
         // two per row, the first on the right; rows share the sheet's height
@@ -267,6 +272,13 @@ final class QuickPanel {
     void setWifi(String name) {
         wifiSub.setText("واي فاي".equals(name) ? "متصل" : name);
         wifiSub.setVisibility(View.VISIBLE);
+    }
+
+    /** «تحديث متوفر» under the «سعودي TV» tile, as the home screen's pill. */
+    void setUpdate(boolean on) {
+        update = on;
+        saudiSub.setText("تحديث متوفر");
+        saudiSub.setVisibility(on ? View.VISIBLE : View.GONE);
     }
 
     void focus() {

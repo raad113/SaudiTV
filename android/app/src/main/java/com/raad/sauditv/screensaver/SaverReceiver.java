@@ -19,6 +19,8 @@ import java.util.List;
  *       [--es panel prayers | prayers,forecast,news,local] [--es home_panel none] [--es minrating 7] [--es genres Drama,Comedy] [--es langs English]
  *       [--es autoupdate true|false]
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.UPDATE
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.APP_CHECK
+ *       (checks the GitHub release for a newer version of both apps; installing is the settings screen's)
  *
  * The answer is in the "data" of am's output. Unknown values are refused with a message, nothing half-saved.
  */
@@ -51,6 +53,20 @@ public class SaverReceiver extends BroadcastReceiver {
                 new Thread(() -> {
                     pending.setResultData("update: " + Updater.check(app, true) + "\nsource: " + Updater.URL_PAGE
                         + "\npage: " + (new Prefs(app).usesDownloadedPage(app) ? "downloaded" : "bundled in the APK"));
+                    pending.finish();
+                }).start();
+                return;
+            }
+            case "com.raad.sauditv.screensaver.APP_CHECK": {
+                final PendingResult pending = goAsync();
+                final Context app = c.getApplicationContext();
+                new Thread(() -> {
+                    AppUpdate.Result r = AppUpdate.check(app, true);
+                    String installed = "screensaver " + AppUpdate.installed(app, app.getPackageName())
+                        + ", home " + AppUpdate.installed(app, AppUpdate.HOME_PKG);
+                    pending.setResultData("app update: " + r.message + "\ninstalled: " + installed
+                        + (r.manifest != null ? "\navailable: " + r.manifest.versionCode : "")
+                        + "\nsource: " + AppUpdate.sp(app).getString("source", "-"));
                     pending.finish();
                 }).start();
                 return;

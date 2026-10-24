@@ -17,6 +17,8 @@
 #   optimize/saver.sh minrating 7.5                episodes card: lowest rating, one of 0 6 6.5 7 7.5 8
 #   optimize/saver.sh autoupdate on|off            the page's auto-update from github.com/raad113/SaudiTV (on by default)
 #   optimize/saver.sh update                       download the latest screen now; says where from and which page shows
+#   optimize/saver.sh app-check                    is there a newer release of both apps? (checks only; installing is
+#                                                  the TV settings' «تحديث التطبيق»)
 # Only ADB can change these (com.raad.sauditv.screensaver/.SaverReceiver needs the shell's DUMP).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -33,6 +35,7 @@ case "${1:-}" in
   show)   send GET ;;
   cities) send CITIES ;;
   update) send UPDATE ;;
+  app-check) send APP_CHECK ;;
   city)
     [ $# -eq 2 ] || [ $# -eq 4 ] || { echo "usage: optimize/saver.sh city NAME [LAT LON]"; exit 1; }
     extra="--es city $(quote "$2")"
@@ -51,5 +54,5 @@ case "${1:-}" in
     case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh autoupdate on|off"; exit 1 ;; esac
     send SET "--es autoupdate $v" ;;
   find-team) shift; "$PY" -I optimize/find-team.py "$@" ;;   # Arabic or English name
-  *) sed -n '2,19p' "$0"; exit 1 ;;
+  *) sed -n '2,21p' "$0"; exit 1 ;;
 esac

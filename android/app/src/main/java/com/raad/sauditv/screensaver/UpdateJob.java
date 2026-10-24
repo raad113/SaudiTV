@@ -8,8 +8,9 @@ import android.content.ComponentName;
 import android.content.Context;
 
 /**
- * Periodic page update. The job is persisted, so after a reboot the system itself starts
- * the app's process again, which also wakes it up for the first screensaver run.
+ * Periodic page update, and the apps' update check (AppUpdate: only checks; installing waits for the user). The job is
+ * persisted, so after a reboot the system itself starts the app's process again, which also wakes it up for the first
+ * screensaver run.
  */
 public class UpdateJob extends JobService {
     private static final int ID = 1;
@@ -30,6 +31,7 @@ public class UpdateJob extends JobService {
         new Thread(new Runnable() {
             @Override public void run() {
                 Updater.check(getApplicationContext(), false);
+                AppUpdate.check(getApplicationContext(), false);   // the settings row and the home screen's pill
                 jobFinished(p, false);
             }
         }).start();

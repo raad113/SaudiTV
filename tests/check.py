@@ -8,6 +8,7 @@ Prints one line per check and exits non-zero if any failed. No network.
 import json
 import py_compile
 import re
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -121,6 +122,21 @@ names = "".join(v for v in (team_ar.values() if isinstance(team_ar, dict) else [
 missing = sorted({c for c in names if not c.isspace() and ord(c) not in font})
 check("Arabic team names: every character in Thmanyah", not missing, missing)
 
+# ---- update.json: what the apps' «تحديث التطبيق» reads (tools/release.sh writes it for each release)
+upd = ROOT / "update.json"
+if upd.is_file():
+    u = json.loads(upd.read_text(encoding="utf-8"))
+    version = int((ROOT / "VERSION").read_text().strip())
+    apks = {a.get("package"): a for a in u.get("apks", [])}
+    check("update.json: both apps", set(apks) == {"com.raad.sauditv.screensaver", "com.raad.sauditv.home"}, sorted(apks))
+    check("update.json: versionCode not above VERSION", isinstance(u.get("versionCode"), int) and u["versionCode"] <= version,
+          (u.get("versionCode"), version))
+    tag = f"https://github.com/raad113/SaudiTV/releases/download/v{u.get('versionCode')}/"
+    check("update.json: each APK from its own release, with sha256 and size",
+          all(a.get("url", "").startswith(tag) and re.fullmatch(r"[0-9a-f]{64}", a.get("sha256", "")) and a.get("size", 0) > 0
+              and a.get("versionCode") == u.get("versionCode") for a in apks.values()), list(apks.values()))
+    check("update.json: Arabic notes", bool(re.search(r"[\u0600-\u06FF]", u.get("notes", ""))), u.get("notes"))
+
 # ---- launcher config
 cfg = ET.parse(ROOT / "android/launcher/src/main/res/values/config.xml").getroot()
 arr = {a.get("name"): [i.text for i in a] for a in cfg.findall("string-array")}
@@ -143,8 +159,9 @@ for f in tracked("*.py"):
     except py_compile.PyCompileError as e:
         ok, err = False, e
     check(f"python compiles: {f.relative_to(ROOT)}", ok, err)
+BASH = shutil.which("bash") or "bash"   # PATH's bash (Git Bash on Windows), not System32's WSL one
 for f in tracked("*.sh"):
-    r = subprocess.run(["bash", "-n", str(f)], capture_output=True, text=True)
+    r = subprocess.run([BASH, "-n", str(f)], capture_output=True, text=True)
     check(f"bash syntax: {f.relative_to(ROOT)}", r.returncode == 0, r.stderr)
 
 # ---- nothing private or secret in the repo

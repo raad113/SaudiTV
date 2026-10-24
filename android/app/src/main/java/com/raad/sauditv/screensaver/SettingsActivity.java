@@ -34,6 +34,12 @@ public class SettingsActivity extends Activity {
 
     private Prefs prefs;
     private LinearLayout list;
+    private View updateRow;   // «تحديث التطبيق»
+    private String justUpdated;   // after this app updated itself: «تم التحديث إلى …» while this screen is open
+    private AlertDialog progress;   // the update's progress (AppInstaller)
+    private TextView progressText;
+    private android.widget.ProgressBar progressBar;
+    private final AppInstaller.Listener installListener = this::onInstallStatus;
 
     /** Arabic locale for this screen, so every dialog title, list and button is laid out right-to-left. */
     @Override
@@ -62,7 +68,31 @@ public class SettingsActivity extends Activity {
         frame.addView(list, new android.widget.FrameLayout.LayoutParams(width, -2, Gravity.CENTER_HORIZONTAL));
         scroll.addView(frame);
         setContentView(scroll);
+        justUpdated = AppUpdate.takeJustUpdated(this);   // the first launch after a self-update
+        if (justUpdated != null) toast("تم التحديث إلى " + AppUpdate.digits(justUpdated));
         render();
+        AppInstaller.setListener(installListener);   // an update still running shows its progress again
+        if (getIntent().getBooleanExtra("app_update", false)) openAppUpdate();   // the home screen's «تحديث متوفر»
+        else quietCheck();
+    }
+
+    @Override
+    protected void onNewIntent(Intent i) {
+        super.onNewIntent(i);
+        if (i.getBooleanExtra("app_update", false)) openAppUpdate();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        resumeAfterPermission();
+    }
+
+    @Override
+    protected void onDestroy() {
+        AppInstaller.clearListener(installListener);
+        if (progress != null) progress.dismiss();
+        super.onDestroy();
     }
 
     private void render() {
@@ -112,6 +142,7 @@ public class SettingsActivity extends Activity {
         }
 
         header("التطبيق");
+        updateRow = row("تحديث التطبيق", appUpdateLabel(), R.drawable.ic_sync, new Runnable() { public void run() { appUpdateNow(); } });
         row("التحديث التلقائي للصفحة", prefs.autoUpdate() ? "يعمل · كل ٦ ساعات" : "متوقف", R.drawable.ic_sync, new Runnable() { public void run() {
             prefs.setAutoUpdate(!prefs.autoUpdate()); render(); } });
         row("تحقق من التحديث الآن", null, R.drawable.ic_sync, new Runnable() { public void run() { updateNow(); } });
@@ -398,6 +429,181 @@ public class SettingsActivity extends Activity {
             final String msg = Updater.check(getApplicationContext(), true);
             runOnUiThread(() -> toast(msg));
         }).start();
+    }
+
+    // ---------- «تحديث التطبيق»: both apps from the GitHub releases (AppUpdate checks, AppInstaller installs) ----------
+
+    /** The installed version, and «محدّث» or «تحديث متوفر: …» from the last check. */
+    private String appUpdateLabel() {
+        String v = "النسخة " + AppUpdate.digits(AppUpdate.installedName(this));
+        if (AppInstaller.running()) return v + " · جارٍ التحديث…";
+        if (justUpdated != null) return "تم التحديث إلى " + AppUpdate.digits(justUpdated);
+        AppUpdate.Manifest m = AppUpdate.available(this);
+        if (m != null) return v + " · تحديث متوفر: " + AppUpdate.digits(m.versionName);
+        return AppUpdate.sp(this).getLong("checked", 0) > 0 ? v + " · محدّث" : v;
+    }
+
+    /** Only the row's second line: a full render() would move the focus. */
+    private void refreshUpdateRow() {
+        if (updateRow == null) return;
+        View texts = ((android.view.ViewGroup) updateRow).getChildAt(1);
+        View val = texts instanceof android.view.ViewGroup ? ((android.view.ViewGroup) texts).getChildAt(1) : null;
+        if (val instanceof TextView) ((TextView) val).setText(appUpdateLabel());
+    }
+
+    /** Opening the settings checks again when the last check is over 6 hours old (UpdateJob's interval). */
+    private void quietCheck() {
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            AppUpdate.Result r = AppUpdate.check(app, false);
+            if (r.code != AppUpdate.SKIPPED) runOnUiThread(() -> { if (!isFinishing()) refreshUpdateRow(); });
+        }).start();
+    }
+
+    /** From the home screen's pill: the row in focus, then the check and the offer. */
+    private void openAppUpdate() {
+        if (updateRow != null) updateRow.requestFocus();
+        appUpdateNow();
+    }
+
+    /** Checks now, then offers «تثبيت». */
+    private void appUpdateNow() {
+        if (AppInstaller.running()) { showProgress(); return; }
+        toast("جارٍ التحقق من التحديث…");
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            final AppUpdate.Result r = AppUpdate.check(app, true);
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                refreshUpdateRow();
+                if (r.code == AppUpdate.AVAILABLE && r.manifest != null) offerInstall(r.manifest);
+                else toast(r.message);
+            });
+        }).start();
+    }
+
+    private void offerInstall(final AppUpdate.Manifest m) {
+        boolean self = false, home = false;
+        for (AppUpdate.Apk a : m.needed(this)) {
+            if (a.pkg.equals(getPackageName())) self = true; else home = true;
+        }
+        StringBuilder msg = new StringBuilder();
+        if (!m.notes.isEmpty()) msg.append(m.notes).append("\n\n");
+        msg.append("المثبتة: ").append(AppUpdate.digits(AppUpdate.installedName(this)))
+           .append(" · حجم التنزيل: ").append(AppUpdate.size(m.bytes(this)));
+        msg.append("\n\nيُنزَّل التحديث ويُتحقَّق منه أولاً، ثم يطلب التلفاز موافقتك على تثبيت ")
+           .append(self && home ? "كل تطبيق (الواجهة الرئيسية ثم الإعدادات)" : "التطبيق").append('.');
+        if (self) msg.append(" في النهاية يُغلق هذا التطبيق ويعود التلفاز إلى الشاشة الرئيسية.");
+        new AlertDialog.Builder(this, DIALOG_THEME)
+            .setTitle("تحديث متوفر: " + AppUpdate.digits(m.versionName))
+            .setMessage(msg)
+            .setPositiveButton("تثبيت", (d, w) -> install(m))
+            .setNegativeButton("لاحقاً", null)
+            .show();
+    }
+
+    private boolean canInstall() {
+        return android.os.Build.VERSION.SDK_INT < 26 || getPackageManager().canRequestPackageInstalls();
+    }
+
+    private void install(AppUpdate.Manifest m) {
+        if (!canInstall()) { askInstallPermission(); return; }
+        showProgress();
+        AppInstaller.start(this, m);
+    }
+
+    /** Once per TV: Android's «تثبيت التطبيقات غير المعروفة» for this app. Back from there continues the update. */
+    private void askInstallPermission() {
+        new AlertDialog.Builder(this, DIALOG_THEME)
+            .setTitle("اسمح لـ «سعودي TV» بتثبيت تحديثاته")
+            .setMessage("مرة واحدة فقط: ليثبّت «سعودي TV» تحديثاته من صفحة المشروع على GitHub يحتاج إذن "
+                + "«تثبيت التطبيقات غير المعروفة».\n\nاضغط «فتح الإعدادات» وفعّل «سعودي TV»، ثم ارجع بزر الرجوع ويكمل التحديث."
+                + "\n\nقبل أي تثبيت يتحقق التطبيق من كل ملف: البصمة، والحزمة، والنسخة، وتوقيع سعودي TV.")
+            .setPositiveButton("فتح الإعدادات", (d, w) -> openInstallSettings())
+            .setNegativeButton("إلغاء", null)
+            .show();
+    }
+
+    private void openInstallSettings() {
+        AppUpdate.sp(this).edit().putLong("askedInstall", System.currentTimeMillis()).apply();
+        Intent[] tries = {
+            new Intent("android.settings.MANAGE_UNKNOWN_APP_SOURCES", Uri.parse("package:" + getPackageName())),
+            new Intent("android.settings.MANAGE_UNKNOWN_APP_SOURCES"),
+            new Intent(Settings.ACTION_SECURITY_SETTINGS),
+            new Intent(Settings.ACTION_SETTINGS),
+        };
+        for (Intent i : tries) {
+            try { startActivity(i); return; } catch (ActivityNotFoundException ignored) { }
+        }
+        AppUpdate.sp(this).edit().remove("askedInstall").apply();
+        toast("تعذّر فتح الإعدادات");
+    }
+
+    /** Back from «تثبيت التطبيقات غير المعروفة» (Android may have restarted this app on the way): go on, or say why not. */
+    private void resumeAfterPermission() {
+        android.content.SharedPreferences sp = AppUpdate.sp(this);
+        long asked = sp.getLong("askedInstall", 0);
+        if (asked == 0) return;
+        sp.edit().remove("askedInstall").apply();
+        if (System.currentTimeMillis() - asked > 30 * 60 * 1000L || AppInstaller.running()) return;
+        if (!canInstall()) { toast("لم يُسمح بتثبيت التحديثات بعد، لم يتغير شيء"); return; }
+        AppUpdate.Manifest m = AppUpdate.available(this);
+        if (m != null) install(m); else appUpdateNow();
+    }
+
+    /** The progress dialog: a line of text, a bar, and «إلغاء» (download, or Android's confirm screen) / «حسناً». */
+    private void showProgress() {
+        if (progress != null) {
+            if (!progress.isShowing()) progress.show();
+            return;
+        }
+        android.content.Context dc = new android.view.ContextThemeWrapper(this, DIALOG_THEME);
+        LinearLayout box = new LinearLayout(dc);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(24), dp(12), dp(24), dp(4));
+        progressText = new TextView(dc);
+        progressText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        progressText.setText("جارٍ التحضير…");
+        box.addView(progressText);
+        progressBar = new android.widget.ProgressBar(dc, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setMax(100);
+        progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(0xFFD6AF6B));
+        progressBar.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(0xFFD6AF6B));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.topMargin = dp(14);
+        box.addView(progressBar, lp);
+        progress = new AlertDialog.Builder(this, DIALOG_THEME)
+            .setTitle("تحديث التطبيق")
+            .setView(box)
+            .setCancelable(false)
+            .setNegativeButton("إلغاء", null)
+            .create();
+        progress.show();
+        progress.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
+            if (AppInstaller.running()) AppInstaller.cancel(this);
+            else { progress.dismiss(); progress = null; }
+        });
+    }
+
+    private void onInstallStatus(AppInstaller.Status s) {
+        if (isFinishing()) return;
+        if (progress == null && s.finished()) return;   // an earlier run's end: nothing to show
+        showProgress();
+        progressText.setText(s.text);
+        progressBar.setIndeterminate(s.percent < 0);
+        if (s.percent >= 0) progressBar.setProgress(s.percent);
+        android.widget.Button b = progress.getButton(AlertDialog.BUTTON_NEGATIVE);
+        b.setText(s.finished() ? "حسناً" : "إلغاء");
+        // no «إلغاء» while Android installs: a session can't be stopped half-way (it installs whole or not at all)
+        b.setVisibility(s.phase == AppInstaller.INSTALLING || s.phase == AppInstaller.VERIFYING ? View.GONE : View.VISIBLE);
+        b.requestFocus();
+        if (s.phase == AppInstaller.CONFIRM) {
+            Intent ask = AppInstaller.takeConfirm();   // Android's own «تثبيت» screen, in this task
+            if (ask != null) {
+                try { startActivity(ask); } catch (RuntimeException e) { toast("تعذّر فتح نافذة التثبيت"); AppInstaller.cancel(this); }
+            }
+        }
+        if (s.finished()) refreshUpdateRow();
     }
 
     private void openDreamSettings() {
