@@ -72,13 +72,16 @@ export PYTHONIOENCODING=utf-8
 GRADLE="${GRADLE:-$(command -v gradle || true)}"
 [ -n "$GRADLE" ] || GRADLE=$(ls -d "$HOME"/.gradle/wrapper/dists/gradle-8.10*-bin/*/gradle-8.10*/bin/gradle 2> /dev/null | head -1 || true)
 [ -n "$GRADLE" ] || die "no gradle: install Gradle 8.10, or set GRADLE"
-if [ -z "${JAVA_HOME:-}" ]; then
+jdk() { [ -n "$1" ] && { [ -x "$1/bin/javac" ] || [ -x "$1/bin/javac.exe" ]; }; }   # a JDK, not only a JRE
+if ! jdk "${JAVA_HOME:-}"; then   # unset, or a JRE (Gradle needs javac): Android Studio's JBR
+  JAVA_HOME=""
   for j in "/c/Program Files/Android/Android Studio/jbr" "/Applications/Android Studio.app/Contents/jbr/Contents/Home" \
            "$HOME/android-studio/jbr" "/opt/android-studio/jbr"; do
-    [ -x "$j/bin/java" ] || [ -x "$j/bin/java.exe" ] && { export JAVA_HOME="$j"; break; }
+    if jdk "$j"; then JAVA_HOME="$j"; break; fi
   done
 fi
-[ -n "${JAVA_HOME:-}" ] || die "no JDK 17: set JAVA_HOME (Android Studio's jbr)"
+[ -n "$JAVA_HOME" ] || die "no JDK 17: set JAVA_HOME to one (Android Studio's jbr)"
+export JAVA_HOME
 sdk="${ANDROID_HOME:-$(sed -n 's/^sdk\.dir=//p' android/local.properties 2> /dev/null | sed 's/\\:/:/g; s/\\\\/\//g')}"
 [ -d "$sdk/build-tools" ] || die "no Android SDK build-tools (android/local.properties sdk.dir or ANDROID_HOME)"
 bt="$sdk/build-tools/$(ls "$sdk/build-tools" | grep -vi rc | sort -V | tail -1)"
