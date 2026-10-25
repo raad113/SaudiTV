@@ -1,24 +1,24 @@
 {
-  "versionCode": 9047,
-  "versionName": "9047",
-  "tag": "v9047",
-  "notes": "الأذان في أوقات الصلاة مع إيقاف إذاعة القرآن مؤقتاً، القناة والمعلق لمباريات أنديتك، شكل جديد للواجهة كخيار، إصلاح عرض الأرقام في التحديث، وإزالة CNN بالعربية.",
+  "versionCode": 9048,
+  "versionName": "9048",
+  "tag": "v9048",
+  "notes": "أصوات أذان جديدة (منها المسجد الحرام) مع سماع الصوت قبل اختياره، الأذان القصير وتذكير قبل ٥ دقائق افتراضياً، اختيار شكل الواجهة، ترتيب البطاقات ونقاطها وسرعتها وسطور شاشة التوقف، «يُتلى الآن» مع اسم القارئ، تبديل تبويبات الأخبار تلقائياً، ٣٠ إطاراً في الثانية افتراضياً، وزر تحديث واحد.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9047,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9047/saudi-tv-screensaver.apk",
-      "sha256": "aea30277a98fb1ce0cc9bb0db7d65fadc0cc1f0bdf33bfc37263d22debfb5d73",
-      "size": 13264739
+      "versionCode": 9048,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9048/saudi-tv-screensaver.apk",
+      "sha256": "d933e58eb1e664b5eb8917a7e11465d33881ae53b2652304daa1792d6903429c",
+      "size": 20004712
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9047,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9047/saudi-tv-home.apk",
-      "sha256": "362cc496a0955b553fc0a0da682d18fd2c411ad1a1fb1cd18cdba7ba3e443006",
-      "size": 2709389
+      "versionCode": 9048,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9048/saudi-tv-home.apk",
+      "sha256": "c75ca4ceae3ef07d5563dbc882bc9e22cda2ebb6bad8c82f7d1019492e3428a0",
+      "size": 2711077
     }
   ]
 }
