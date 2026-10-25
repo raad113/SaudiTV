@@ -60,18 +60,37 @@ with tempfile.TemporaryDirectory() as tmp:
         (("radio-when", "home"), AM + "SET --es radio_when home"),
         (("tape", "gold,btc,cur"), AM + "SET --es tape 'gold,btc,cur'"),
         (("tape", "auto"), AM + "SET --es tape 'auto'"),
+        (("lowpower", "on"), AM + "SET --es lowpower true"),
+        (("lowpower", "off"), AM + "SET --es lowpower false"),
     ]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: sends «{want[len(AM):]}»", code == 0 and out == want, (code, out))
     for args in [("radio",), ("radio", "maybe"), ("radio-volume", "5"), ("radio-volume", "101"), ("radio-volume", "loud"),
                  ("radio-volume",), ("radio-station",), ("radio-hold", "x"), ("radio-when",), ("radio-when", "always"),
-                 ("tape",)]:
+                 ("tape",), ("lowpower",), ("lowpower", "maybe")]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: refused, nothing sent", code != 0 and "am broadcast" not in out, (code, out))
     code, out = saver("help")
     check("saver.sh usage lists the radio commands and the ticker's", code != 0 and all(c in out for c in (
         "radio on|off", "radio-station", "radio-volume", "radio-stations", "radio-test", "radio-hold", "radio-when both|saver|home",
         "tape auto|")), out[-900:])
+    check("saver.sh usage lists lowpower («توفير الطاقة»)", "optimize/saver.sh lowpower on|off" in saver("help")[1], "")
+    # the first-run setup, opened on the TV (am start of SetupActivity; the fake client prints the command it was given)
+    code, out = saver("setup")
+    check("saver.sh setup: opens SetupActivity (am start)", code == 0
+          and "am start -n com.raad.sauditv.screensaver/.SetupActivity" in out and "am broadcast" not in out, (code, out))
+    code, out = saver("help")
+    check("saver.sh usage lists setup", code != 0 and "optimize/saver.sh setup" in out, out[-900:])
+    # the TV shows card is gone: its commands are not there any more (refused like any unknown one) nor in the usage
+    for args in [("genres", "Drama"), ("langs", "English"), ("minrating", "7")]:
+        code, out = saver(*args)
+        check(f"saver.sh {args[0]}: gone (refused, nothing sent)", code != 0 and "am broadcast" not in out, (code, out))
+    code, out = saver("help")
+    check("saver.sh usage: no genres, langs or minrating, and the cards are without shows",
+          not re.search(r"\b(genres|langs|minrating|episodes)\b", out) and "local world tech;" in out
+          and not re.search(r"tech\s*(#\s*)?shows\b", out), out[-900:])
+    sh = (ROOT / "optimize/saver.sh").read_text(encoding="utf-8")
+    check("saver.sh: no genres / langs / minrating extras", not re.search(r"--es (genres|langs|minrating)\b", sh))
 
 # the app's side of the same commands
 rx = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/SaverReceiver.java").read_text(encoding="utf-8")
@@ -81,6 +100,8 @@ check("SaverReceiver: takes radio, radio_station and radio_volume, and checks th
       and rx.index('getStringExtra("radio_volume")') < rx.index("p.setRadioOn("))
 check("SaverReceiver: show (GET) lists radio, radio_station, radio_volume, radio_when, tape and the radio's state now",
       all(f'"\\n{k}: "' in rx for k in ("radio", "radio_station", "radio_volume", "radio_when", "tape", "radio_now")))
+check("SaverReceiver: no genres, langs or minrating (the TV shows card is gone)",
+      not re.search(r'"(genres|langs|minrating)"|\\n(genres|langs|minrating): ', rx), "")
 check("SaverReceiver: takes radio_when and tape, checks them (RadioWhen, Tape.parse) before saving",
       'getStringExtra("radio_when")' in rx and 'getStringExtra("tape")' in rx and "Tape.parse(" in rx
       and rx.index('getStringExtra("tape")') < rx.index("p.setTape(") and rx.index('getStringExtra("radio_when")') < rx.index("p.setRadioWhen("))
@@ -91,6 +112,17 @@ check("manifest: the radio's service and its athan hook need our signature (READ
       and re.search(r'\.RadioReceiver"\s+android:exported="true"\s+android:permission="com\.raad\.sauditv\.screensaver\.READ_CONFIG"', man))
 prefs = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Prefs.java").read_text(encoding="utf-8")
 check("Prefs: the radio is off by default", 'sp.getBoolean("radioOn", false)' in prefs)
+check("Prefs: the settings' one radio choice is stored as radio on/off and radioWhen (what saver.sh radio / radio-when set)",
+      re.search(r'void setRadioMode\(String m\) \{\s*sp\.edit\(\)\.putString\("radioWhen", RadioWhen\.modeWhen\(m, radioWhen\(\)\)\)'
+                r'\.putBoolean\("radioOn", RadioWhen\.modeOn\(m\)\)\.apply\(\);', prefs) is not None)
+check("SaverReceiver: show (GET) has setup_done", '"\\nsetup_done: " + p.setupDone()' in rx)
+check("SaverReceiver: takes lowpower (true|false, checked before saving) and shows it (lowpower: on|off)",
+      'getStringExtra("lowpower")' in rx and rx.index('getStringExtra("lowpower")') < rx.index("p.setLowPower(")
+      and '"\\nlowpower: " + (p.lowPower() ? "on" : "off")' in rx)
+check("Prefs: «توفير الطاقة» is off by default and reaches the page as &lowpower=1",
+      'sp.getBoolean("lowPower", false)' in prefs and '(lowPower() ? "&lowpower=1" : "")' in prefs)
+check("manifest: SetupActivity is there and exported (the home screen and saver.sh setup open it)",
+      re.search(r'android:name="\.SetupActivity"\s+android:exported="true"', man) is not None)
 svc = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/RadioService.java").read_text(encoding="utf-8")
 check("RadioService: the athan's hook (PAUSE_FOR_ATHAN / RESUME_AFTER_ATHAN, hold) is there and documented",
       'ACTION_PAUSE_FOR_ATHAN = "com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN"' in svc

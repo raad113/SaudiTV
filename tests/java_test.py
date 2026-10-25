@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The settings app's plain-Java logic (tests/java/LogicTest.java): a change of country (CountryChange: news, league,
-clubs; never on a reload) and the Quran radio's stations and volume (RadioStations). Compiled and run with javac and
-java, without Android: JAVA_HOME's, else Android Studio's JBR, else the PATH's. No JDK at all: SKIP (exit 0).
+clubs; never on a reload), a new install's guessed place (PlaceGuess) and default cards, older builds' saved cards without the gone TV shows card (PanelMigrate) and the Quran
+radio's stations and volume (RadioStations) and the photos' size for the screen (PhotoSize). Compiled and run with javac and java, without Android: JAVA_HOME's, else Android Studio's JBR, else the PATH's. No JDK at all: SKIP (exit 0).
 
     python3 tests/java_test.py
 """
@@ -14,7 +14,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver"
-CLASSES = ["CountryChange.java", "Leagues.java", "RadioStations.java", "RadioWhen.java", "Tape.java"]   # plain Java only (no android.*)
+CLASSES = ["CountryChange.java", "Leagues.java", "PanelMigrate.java", "PhotoSize.java", "PlaceGuess.java", "RadioStations.java",
+           "RadioWhen.java", "SetupState.java", "Tape.java"]   # plain Java only (no android.*)
 HOME = ROOT / "android/launcher/src/main/java/com/raad/sauditv/home"
 HOME_CLASSES = ["RadioChip.java"]   # the launcher's, plain Java too
 

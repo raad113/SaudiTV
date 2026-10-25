@@ -129,25 +129,8 @@
      headline is clamped at 3 whole lines and the summary at as many whole lines as fit (dvSideFit) */
   .dv-side > *{flex:none}
   .dv-sum.none{color:#9C9279}
-  .dv-news .h[dir=auto]{text-align:right}   /* an English title of the city's news (dvNews), as the shows' */
+  .dv-news .h[dir=auto]{text-align:right}   /* an English title of the city's news (dvNews) */
   .dv-ok{font-size:16px;color:#9C9279;margin-top:6px}
-  /* the shows page (dvShows), laid out like the news page: each row a poster thumbnail, the series and
-     a line of facts; the focused one on the left with a larger poster and its summary. Posters: 2:3, sized before
-     the image arrives; without one, the series' initial on the glass */
-  .dv-shw .pp{position:relative;flex:0 0 auto;aspect-ratio:2/3;border-radius:6px;overflow:hidden;
-    background:rgba(243,238,227,.07);box-shadow:inset 0 0 0 1px rgba(243,238,227,.1)}
-  .dv-shw .pp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .dv-shw .pi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:500;color:#E2C38A}
-  .dv-shw .dv-item{display:flex;align-items:center;gap:14px;padding:6px 14px}
-  .dv-shw .dv-item .pp{width:44px}
-  .dv-shw .dv-item .pi{font-size:22px}
-  .dv-st2{flex:1 1 auto;min-width:0}
-  .dv-shw .dv-item .h{-webkit-line-clamp:1;text-align:right}
-  .dv-shd{display:flex;gap:18px;align-items:flex-start;margin-bottom:10px}
-  .dv-shd > div:last-child{min-width:0;display:flex;flex-direction:column;gap:4px}
-  .dv-shd .pp{width:110px}
-  .dv-shd .pi{font-size:44px}
-  .dv-shd .h{font-size:24px;font-weight:500;line-height:1.35;text-align:right}
   /* the verse / hadith page (dvVerse): the card's quote, large, with its source under it */
   .dv-q{list-style:none;margin:0;padding:28px 40px 24px;background:rgba(28,25,41,.88);border-radius:12px}
   .dv-q li.quote{white-space:normal;font-size:38px;line-height:1.8;color:#FFF7E6}
@@ -274,7 +257,7 @@
   .week li.news-item span.nw{font-size:max(16px,.8em)}
   .week li.news-item .dt{font-size:max(14px,.62em)}
   /* the city's news keeps each title in its own language: an English one (dir=auto) reads left to right and keeps
-     the card's right edge, as the shows' names do */
+     the card's right edge */
   .week li.news-item span.nw[dir=auto]{text-align:right}
   /* rotation indicator at the bottom of a rotating card: a 2px line that fills from the right over
      CONFIG.rotateMs (rotRestart), and one dot per panel, the current one larger and gold */
@@ -300,22 +283,6 @@
   .week li.quote .nar .saw{font-size:1.45em}
   .week li.src{border-bottom:none;padding:.6vh 0 0;font-size:clamp(12px,.95vw,18px);color:#D6AF6B}
   .week .empty{color:#9A9078;font-size:clamp(14px,1.1vw,21px);font-weight:300;margin-top:1vh}
-  /* the shows card: a row of posters (2:3, rounded; the box is sized before the image arrives, so nothing
-     moves when it does), each with its name (one line) and its episode and day under it. No poster: the series'
-     initial on the glass. Still images: nothing animates but the card's own slide-in. */
-  .week li.posters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 .9vw;align-items:start;
-    white-space:normal;border-bottom:none;padding:.4vh 0 0}
-  .week li.posters .pt{min-width:0}
-  .week li.posters .pp{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;
-    background:rgba(243,238,227,.07);box-shadow:inset 0 0 0 1px rgba(243,238,227,.1)}
-  .week li.posters .pp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .week li.posters .pi{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    font-size:clamp(26px,2.4vw,48px);font-weight:500;color:#D6AF6B}
-  .week li.posters .pn{margin-top:.6vh;font-size:clamp(14px,1.05vw,20px);line-height:1.3;text-align:right;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .week li.posters .ps{font-size:clamp(12px,.85vw,16px);line-height:1.3;color:#9FB8A8;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
   .dates{text-align:right;flex-shrink:0}
   .hijri{font-size:clamp(19px,1.86vw,37px);font-weight:500;color:var(--sand);line-height:1.3}
   .greg{margin-top:.55vh;font-size:clamp(12px,1.06vw,21px);font-weight:300;color:var(--dim)}
@@ -718,7 +685,7 @@ const _Q = new URLSearchParams((location.hash || '').replace(/^#/, ''));
 const _list = k => (_Q.get(k) || '').split(',').map(x=>x.trim()).filter(Boolean);
 const _num = (k, d) => { const v = parseFloat(_Q.get(k)); return isNaN(v) ? d : v; };
 // every card (and detail page) the page has; the settings app, the launcher (HomePage.PANELS) and SaverReceiver list the same
-const PANEL_IDS = ['shows','prayers','forecast','matches','verse','hadith','standings','news','local','world','tech'];
+const PANEL_IDS = ['prayers','forecast','matches','verse','hadith','standings','news','local','world','tech'];
 const CONFIG = {
   city: _Q.get('city') || 'الرياض',
   latitude: _num('lat', 24.7136),
@@ -753,26 +720,16 @@ const CONFIG = {
   // logged (tapeTest)
   tapeTest: _num('tapetest', 0) === 1,
   sportsKey: '123',
-  // the card beside the clock: shows | prayers | forecast | matches | verse | hadith | standings | news | local | world
-  // | tech | none (#week=0 from older builds = none); local = news of the city (loadLocalNews); verse = a verse of the
+  // the card beside the clock: prayers | forecast | matches | verse | hadith | standings | news | local | world
+  // | tech | none; local = news of the city (loadLocalNews); verse = a verse of the
   // Quran, hadith = a hadith of Sahih al-Bukhari (loadHadith); world = news of the world
-  panel: (p => PANEL_IDS.includes(p) || p === 'none' ? p : 'shows')
-         (_Q.get('panel') || (_Q.get('week') === '0' ? 'none' : 'shows')),
+  panel: (p => PANEL_IDS.includes(p) || p === 'none' ? p : 'prayers')(_Q.get('panel') || 'prayers'),
   // the card can rotate through several panels (#panels=prayers,forecast,matches&rotate=10),
   // on the home screen and on the screensaver
-  // shows too (it was missing here, so a rotation that listed it never showed it)
   panels: _list('panels').filter(p => PANEL_IDS.includes(p)),
   rotateMs: Math.max(5, _num('rotate', 10)) * 1000,
   // minutes from adhan to iqama (Ministry of Islamic Affairs defaults); Friday Dhuhr has none
   iqama: {Fajr:25, Dhuhr:20, Asr:20, Maghrib:10, Isha:20},
-  // "new this week" filters from the app: TVMaze genres, languages, countries, picked show ids
-  shows: {
-    genres: _list('genres'),
-    langs: _list('langs'),
-    ids: _list('shows').filter(x=>/^\d+$/.test(x)).slice(0, 30),
-    countries: _list('countries').length ? _list('countries') : ['US'],
-    minRating: _num('minrating', 7),
-  },
   weekWindowDays: 7,
   // #widget=1: only the card, on a transparent page (the launcher's home screen shows it)
   widget: _Q.get('widget') === '1',
@@ -783,6 +740,11 @@ const CONFIG = {
   // #home=1: the launcher's home screen (bootHome); dockh / dockb / pillsh: the room its own views
   // take, in dp (= CSS px): the apps row's height and its distance from the bottom edge, the pills' height
   home: _Q.get('home') === '1',
+  // #radiopush=1: the launcher says when the radio changes (window.sauditvRadioChanged): «يُتلى الآن» is not asked for
+  // every 3 s (tickRadio). Without it (the screensaver, whose answer is in its own app; an older launcher) as before
+  radioPush: _Q.get('radiopush') === '1',
+  // #lowpower=1 («توفير الطاقة» in the settings): the ticker tape moves 30 times a second instead of 60 (tapeLay)
+  lowPower: _Q.get('lowpower') === '1',
   homeRoom: {'--dock-h': _num('dockh', NaN), '--dock-b': _num('dockb', NaN), '--pills-h': _num('pillsh', NaN)},
   // the screensaver's anti-ghosting periods in minutes (ssTick): the sides change every swapmin, a
   // photo-only minute every breakmin. Tests only: e.g. #swapmin=4&breakmin=4; #nighth=23.5 dims as at that hour
@@ -889,7 +851,8 @@ if(!CONFIG.ticker){ setInterval(tickVpn, 3000); setTimeout(tickVpn, 300); }   //
 
 // «يُتلى الآن» under the clock while the app's Quran radio plays. The app's SaudiTVRadio.state() (its RadioService):
 // "playing|<station>", "loading|…", "error|…", "paused|…", or '' while off; asked every 3 s (the radio plays natively,
-// a reload of this page never stops it). Shown while it plays; «تعذّر تشغيل …» once every address of the station
+// a reload of this page never stops it), or, on a home screen that says when it changes (#radiopush=1:
+// window.sauditvRadioChanged), only then: each ask there was a query to the screensaver app. Shown while it plays; «تعذّر تشغيل …» once every address of the station
 // failed (the app tries again later); hidden while it loads, pauses or is off, and in a browser (no SaudiTVRadio).
 function tickRadio(){
   const el = document.getElementById('qr'), R = window.SaudiTVRadio;
@@ -908,7 +871,11 @@ function tickRadio(){
   QR_SEND();
 }
 let QR_SEND = () => {};   // home: the chip's box to the launcher (homeQrRect)
-if(!CONFIG.ticker && !CONFIG.widget && !CONFIG.detail){ setInterval(tickRadio, 3000); setTimeout(tickRadio, 500); }
+if(!CONFIG.ticker && !CONFIG.widget && !CONFIG.detail){
+  if(!CONFIG.radioPush) setInterval(tickRadio, 3000);
+  setTimeout(tickRadio, 500);
+}
+window.sauditvRadioChanged = () => tickRadio();   // the launcher: the radio changed (HomePage.radioChanged)
 
 function tickClock(){
   const p = riyadhParts();
@@ -1218,7 +1185,7 @@ let NEXT_LIST = {};   // team id -> upcoming events
 // 1) built-in table, 2) the Arabic label on Wikidata (cached on the device), 3) transliteration meanwhile
 const AR_NAMES = (()=>{ try{ return JSON.parse(localStorage.getItem('arNames') || '{}'); }catch(e){ return {}; } })();
 const AR_PENDING = new Set();
-const AR_KIND = {team:/football|soccer|club|team|منتخب|نادي/i, show:/television|series|sitcom|anime|miniseries|show|مسلسل/i};
+const AR_KIND = {team:/football|soccer|club|team|منتخب|نادي/i};
 const hasArabic = s => /[؀-ۿ]/.test(s);
 
 const TL_WORDS = {the:'ذا',of:'أوف',and:'آند',a:'إيه',in:'إن',on:'أون',to:'تو',us:'أس',fc:'',cf:'',sc:'',afc:'',
@@ -1882,9 +1849,11 @@ function tapeRender(){
 // Lays the run out and (re)starts it: the list repeated until one copy is at least as wide as the strip, that copy
 // twice, and an endless linear move to the right by exactly one copy's width (whole px), TAPE_SPEED px a second.
 // Only when the list or the page's size changes; a restart carries on from where the run was. Reduced motion: one
-// copy, still.
+// copy, still. «توفير الطاقة» (#lowpower=1): the same move in TAPE_LOW_FPS steps a second.
 const TAPE_SPEED = 55;   // CSS px per second
+const TAPE_LOW_FPS = 30;
 let TAPE_ANIM = null;
+
 function tapeLay(){
   const tape = document.getElementById('tape'), run = document.getElementById('tape-run');
   if(!tape || !run || !TAPE_HTML) return;
@@ -1902,8 +1871,12 @@ function tapeLay(){
     const at = TAPE_ANIM ? (Number(TAPE_ANIM.currentTime) || 0) / 1000 * TAPE_SPEED : 0;   // px moved so far
     if(TAPE_ANIM){ TAPE_ANIM.cancel(); TAPE_ANIM = null; }
     if(CARD_STILL || !run.animate) return;
+    // «توفير الطاقة» (#lowpower=1): the same move in TAPE_LOW_FPS steps a second (steps() easing), still the
+    // compositor's own animation. Measured on TV 1 (the screensaver's page, 30 s): 54% of one core instead of 76%. A
+    // move set by the page itself 30 times a second cost more there (86%; on every other requestAnimationFrame 90%)
     TAPE_ANIM = run.animate([{transform:'translate3d(0,0,0)'}, {transform:`translate3d(${w}px,0,0)`}],
-      {duration: w / TAPE_SPEED * 1000, iterations: Infinity, easing: 'linear'});
+      {duration: w / TAPE_SPEED * 1000, iterations: Infinity,
+       easing: CONFIG.lowPower ? `steps(${Math.max(1, Math.round(w / TAPE_SPEED * TAPE_LOW_FPS))}, end)` : 'linear'});
     TAPE_ANIM.currentTime = (at % w) / TAPE_SPEED * 1000;
     if(APPS_OPEN || SS_BREAK) TAPE_ANIM.pause();   // held where it is while the launcher's apps grid is open (or the screensaver's photo-only minute runs)
   });
@@ -1924,175 +1897,19 @@ function tapeStart(){
 }
 // ---- end: the market ticker tape
 
-const SKIP_TYPES = ['News','Talk Show','Sports','Game Show'];
-let NET_OK = 0;   // answers received; a refresh that got none must not replace what is on screen
-async function getJSON(url, fallback){
-  try{ const r = await fetchT(url, 12000); if(!r.ok) return fallback; const j = await r.json(); NET_OK++; return j; }
-  catch(e){ return fallback; }
-}
-// the week's list, kept an hour or two in this app's storage: the home card and the detail page it opens
-// share one download (14 large requests) instead of each fetching it again
-const WEEK_CACHE_KEY = 'sauditv-week2:' + JSON.stringify(CONFIG.shows) + ':' + CONFIG.timezone, WEEK_CACHE_MS = 2*3600*1000;
-// TVMaze's summaries are HTML (<p>, <b>, entities): their text only
+// HTML (<p>, <b>, entities): its text only
 function plainText(h){
   if(!h) return '';
   try{ return (new DOMParser().parseFromString(String(h), 'text/html').body.textContent || '').replace(/\s+/g, ' ').trim(); }
   catch(e){ return String(h).replace(/<[^>]*>/g, '').trim(); }
 }
-// TVMaze's schedule a few requests at a time, each tried twice: all 14 at once often left half of them
-// timed out (the TV's network, the VPN), and the card then had one or two series
-async function getJSONAll(urls, n){
-  const res = new Array(urls.length);
-  let k = 0;
-  await Promise.all(Array.from({length: n}, async () => {
-    while(k < urls.length){ const i = k++; res[i] = (await getJSON(urls[i], null)) || (await getJSON(urls[i], null)); }   // null: no answer
-  }));
-  return res;
-}
-async function loadWeek(){
-  const F = CONFIG.shows, seen = new Set(), out = [], answered = NET_OK;
-  let missed = 0;   // schedule requests with no answer
-  // a fresh enough list saved by the other page of this app (see WEEK_CACHE_KEY)
-  if(!WEEK_POOL.length){
-    try{
-      const c = JSON.parse(localStorage.getItem(WEEK_CACHE_KEY) || 'null'), age = c ? Date.now() - Number(c.at) : NaN;
-      if(c && age >= 0 && age < WEEK_CACHE_MS && Array.isArray(c.pool) && c.pool.length){
-        WEEK_POOL = c.pool; WEEK_PAGE = 0; renderWeekPage(false); return true;
-      }
-    }catch(e){}
-  }
-  const days = [];
-  for(let i=0;i<7;i++) days.push(new Intl.DateTimeFormat('en-CA',{timeZone:CONFIG.timezone}).format(new Date(Date.now()+i*86400000)));
-  const inWeek = d => d && d >= days[0] && d <= days[6];
-  const add = (s, e, picked) => {
-    if(!s || !s.name || seen.has(s.name)) return;
-    seen.add(s.name);
-    const prem = e.number === 1;
-    out.push({
-      name: s.name,
-      ep: e.season ? (prem ? `الموسم ${ar(e.season)}` : `الموسم ${ar(e.season)} · ح ${ar(e.number)}`) : '',
-      date: e.airdate || '',
-      rating: (s.rating && s.rating.average) || 0,
-      prem, picked,
-      // for the detail page (dvShows) and the default order: poster, channel or streaming service,
-      // air time (only when TVMaze has one: web releases often have none), popularity
-      img: (s.image && (s.image.medium || s.image.original)) || '',
-      net: (s.webChannel && s.webChannel.name) || (s.network && s.network.name) || '',
-      at: e.airtime && e.airstamp ? e.airstamp : '',
-      weight: s.weight || 0, web: !!s.webChannel,
-      // season and episode (SxxExx on the detail page), the summary without its HTML (detail page)
-      s: e.season || 0, n: e.number || 0, sum: plainText(s.summary).slice(0, 700)
-    });
-  };
-
-  // shows picked one by one: their next episode, if it airs this week
-  const picked = await Promise.all(F.ids.map(id => getJSON(`https://api.tvmaze.com/shows/${id}?embed=nextepisode`, null)));
-  picked.forEach(s => {
-    const e = s && s._embedded && s._embedded.nextepisode;
-    if(e && inWeek(e.airdate)) add(s, e, true);
-  });
-
-  // the schedule, narrowed by genre and language; skipped when only picked shows were chosen
-  if(!F.ids.length || F.genres.length || F.langs.length){
-    const got = await getJSONAll(days.flatMap(dt => [   // was all at once (getJSONAll)
-      `https://api.tvmaze.com/schedule/web?date=${dt}`,
-      ...F.countries.map(c => `https://api.tvmaze.com/schedule?country=${encodeURIComponent(c)}&date=${dt}`)
-    ]), 3);
-    missed = got.filter(x => !Array.isArray(x)).length;
-    const lists = got.map(x => Array.isArray(x) ? x : []);
-    // the series that pass everything but the rating and the genre / language picks
-    const cands = lists.flat().map(e => ({e, s: e.show || (e._embedded && e._embedded.show) || {}})).filter(({e, s}) => {
-      if(s.type && SKIP_TYPES.includes(s.type)) return false;
-      if(s.genres && s.genres.includes('Soap')) return false;   // no daytime soaps
-      if(!e.number || e.number < 1) return false;
-      if(e.season && e.season > 15) return false;               // keep it to real series
-      return true;
-    });
-    const rt = s => (s.rating && s.rating.average) || 0;
-    const picks = s => (!F.genres.length || (s.genres || []).some(g => F.genres.includes(g)))
-                    && (!F.langs.length || F.langs.includes(s.language));
-    // when nothing passes, relax the filter instead of an empty card: a lower rating, then any rating,
-    // then without the genre / language picks
-    const passes = [s => rt(s) >= F.minRating && picks(s), s => rt(s) >= F.minRating - 1 && picks(s),
-                    s => picks(s), s => rt(s) >= F.minRating];
-    const before = out.length;
-    for(const ok of passes){
-      cands.forEach(({e, s}) => { if(ok(s)) add(s, e, false); });
-      if(out.length > before) break;
-    }
-  }
-
-  // nothing answered (offline): keep the saved list if one is shown
-  // ... the shows' own list (in a rotation #week-list may hold another panel)
-  if(NET_OK === answered && (WEEK_POOL.length
-     || (CONFIG.panels.length < 2 && document.querySelector('#week-list li:not(.empty)')))) return false;
-  if(out.length){                                   // keep the last good list on a failed refresh
-    // with no genres, languages or picked shows, the most popular first (TVMaze's weight; a streaming
-    // release a little ahead), premieres before them; with picks, as before: premieres, then by date
-    const deflt = !F.ids.length && !F.genres.length && !F.langs.length;
-    const pop = o => o.weight + (o.web ? 10 : 0);
-    WEEK_POOL = out.sort((a,b)=> (b.picked - a.picked) || (b.prem - a.prem)
-      || (deflt ? pop(b) - pop(a) : 0) || a.date.localeCompare(b.date)).slice(0, 50);
-    WEEK_PAGE = 0;
-    // a complete list is shared (WEEK_CACHE_KEY); a partial one is shown and fetched again in 2 minutes
-    if(!missed){ try{ localStorage.setItem(WEEK_CACHE_KEY, JSON.stringify({at: Date.now(), pool: WEEK_POOL})); }catch(e){} }
-  }
-  if(missed && WEEK_RETRY < 3){ WEEK_RETRY++; setTimeout(loadWeek, 2*60*1000); }
-  else if(!missed) WEEK_RETRY = 0;
-  renderWeekPage(false);
-  return NET_OK > answered;   // answered (see firstLoad)
-}
-
 const WEEK_ROWS = 5;
-const WEEK_POSTERS = 4;   // the shows card's posters per page
-let WEEK_POOL = [];
-let WEEK_PAGE = 0;
-let SHOWS_VISITED = false;   // swapPanel
-let WEEK_RETRY = 0;          // loadWeek's quick retries of a partial list
-
-function renderWeekPage(animate, own){
-  if(CONFIG.detail){ if(CONFIG.detail === 'shows') renderDetail(); return; }   // as renderPanel
-  if(CONFIG.panel !== 'shows') return;   // a late loadWeek must not paint over another panel of the rotation
-  if(!WEEK_POOL.length){
-    paintCard('<li class="empty">لا جديد هذا الأسبوع</li>', PANEL_TITLE.shows, animate, own);
-    return;
-  }
-  // a row of WEEK_POSTERS posters (was a list of WEEK_ROWS names), each with its name and its episode
-  // and day under it; a series without a poster gets a glass tile with its initial
-  const start = (WEEK_PAGE * WEEK_POSTERS) % WEEK_POOL.length;
-  const rows = [];
-  for(let i = 0; i < Math.min(WEEK_POSTERS, WEEK_POOL.length); i++){
-    rows.push(WEEK_POOL[(start + i) % WEEK_POOL.length]);
-  }
-  paintCard('<li class="posters">' + rows.map(o => {   // through paintCard
-    const sub = [o.n ? 'الحلقة ' + ar(o.n) : '', showDay(o, true)].filter(Boolean).join(' · ') || esc(o.net || '');
-    return `<div class="pt"><div class="pp">${posterImg(o)}</div><div class="pn" dir="auto">${esc(o.name)}</div>`
-         + `<div class="ps">${sub}</div></div>`;
-  }).join('') + '</li>', PANEL_TITLE.shows, animate, own);
-}
-// a series' poster (TVMaze image.medium) or, without one, its initial on the glass. The box keeps its
-// 2:3 size before the image arrives (no layout jump); a poster that fails to load leaves the initial showing.
-function posterImg(o){
-  const ini = `<b class="pi" dir="auto">${esc(String(o.name || '').trim().charAt(0).toUpperCase())}</b>`;
-  return ini + (o.img ? `<img src="${esc(o.img)}" alt="" decoding="async" onerror="this.remove()">` : '');
-}
-// the day an episode airs: الليلة / غداً / the weekday (short on the card); '' without a date
-function showDay(o, short){
-  const tz = CONFIG.timezone, ymd = d => new Intl.DateTimeFormat('en-CA', {timeZone: tz}).format(d);
-  const at = o.at ? new Date(o.at) : null, ok = at && Number.isFinite(at.getTime());
-  const day = ok ? ymd(at) : o.date;
-  if(!day) return '';
-  if(day === ymd(new Date())) return 'الليلة';
-  if(day === ymd(new Date(Date.now() + 86400000))) return 'غداً';
-  return new Intl.DateTimeFormat(GREG, {timeZone: ok ? tz : 'UTC', weekday: short ? 'short' : 'long'})
-    .format(ok ? at : new Date(day + 'T12:00:00Z'));
-}
 
 // ---- the card beside the clock: one of several contents, picked in the app
 let FORECAST = [];
 let WX_NOW = null, WX_HOURS = [];   // current conditions and the next 12 hours (detail page only)
 let LIST_PAGE = 0;
-const PANEL_TITLE = {shows:'هذا الأسبوع', prayers:'مواقيت اليوم', forecast:'الأيام القادمة', matches:'مباريات فرقك',
+const PANEL_TITLE = {prayers:'مواقيت اليوم', forecast:'الأيام القادمة', matches:'مباريات فرقك',
   standings:'ترتيب ' + CONFIG.leagueName, news:'أخبار ' + CONFIG.newsName, tech:'أخبار التقنية والذكاء الاصطناعي', world:'أخبار العالم',
   verse:'آية اليوم', hadith:'حديث اليوم'};
 
@@ -2124,10 +1941,9 @@ function paintCard(html, title, animate, own){
   ul.classList.remove('flip');
   if(animate && !CARD_STILL){ void ul.offsetWidth; ul.classList.add('flip'); cardBusy(CARD_IN_MS, cardIdle); }
 }
-// a rotation passes over a panel with nothing to show (its list empty: not loaded yet, failed, or no
-// series this week) instead of showing it blank; prayers, matches and verse always have rows or their own message
+// a rotation passes over a panel with nothing to show (its list empty: not loaded yet or failed) instead of
+// showing it blank; prayers, matches and verse always have rows or their own message
 function cardHasData(P){
-  if(P === 'shows') return WEEK_POOL.length > 0;
   if(P === 'forecast') return FORECAST.length > 0;
   if(P === 'standings') return STANDINGS.length > 0;
   if(isNewsPanel(P)) return (NEWS[P] || []).length > 0;   // news, local, world, tech
@@ -2146,9 +1962,6 @@ function rotNext(L, i, d){
 function swapPanel(P){
   const card = document.querySelector('.week');
   const show = () => {
-    // the shows turn a page at each visit of a rotation (the later visits show the next five)
-    if(P === 'shows' && CONFIG.panel !== 'shows' && WEEK_POOL.length > WEEK_POSTERS && SHOWS_VISITED) WEEK_PAGE++;
-    if(P === 'shows') SHOWS_VISITED = true;
     CONFIG.panel = P;
     LIST_PAGE = 0;
     CARD_PENDING = null;   // this paint is fresh: what waited during the fade-out is in it
@@ -2196,7 +2009,6 @@ function rotFreeze(){
 function renderPanel(animate, own){   // own = the rotation's own paint (paintCard)
   if(CONFIG.detail){ renderDetail(); return; }   // the full-screen page instead of the card
   const P = CONFIG.panel;
-  if(P === 'shows'){ renderWeekPage(animate, own); return; }
   let rows = [], title = null;
   if(P === 'prayers') rows = prayerRows();
   else if(P === 'forecast') rows = forecastRows();
@@ -2213,7 +2025,7 @@ function renderPanel(animate, own){   // own = the rotation's own paint (paintCa
     paintCard(`<li class="empty">${P === 'matches' ? 'لا مباريات هذا الأسبوع' : 'لا تتوفر بيانات الآن'}</li>`, title, animate, own);
     return;
   }
-  if(P === 'matches' && rows.length > WEEK_ROWS){        // page through, like the shows
+  if(P === 'matches' && rows.length > WEEK_ROWS){        // page through
     const start = (LIST_PAGE * WEEK_ROWS) % rows.length;
     rows = Array.from({length: WEEK_ROWS}, (_, i) => rows[(start + i) % rows.length]);
   }
@@ -3084,8 +2896,6 @@ function startPanelData(list, matchesLoaded){
   ['news', 'tech', 'world'].forEach(k => { if(list.includes(k)){ firstLoad(() => loadNews(k), k); setInterval(() => loadNews(k), 30*60*1000); } });
   if(list.includes('hadith')) firstLoad(loadHadith, 'hadith');   // a new day's: hadithRows
   if(list.includes('local')){ firstLoad(loadLocalNews, 'local'); setInterval(loadLocalNews, 30*60*1000); }   // the city's news
-  // the shows in a rotation (a single shows card is loaded by boot / cardStart)
-  if(list.length > 1 && list.includes('shows')){ firstLoad(loadWeek, 'shows'); setInterval(loadWeek, 6*3600*1000); }
   // a single news card is only redrawn by its 30-min refresh: keep its "minutes ago" current
   if(CONFIG.panels.length <= 1 && list.some(isNewsPanel)){
     setInterval(() => { if(isNewsPanel(CONFIG.panel)) renderPanel(false); }, 5*60*1000);
@@ -3446,7 +3256,7 @@ function applyBackground(force){
 // ◀ ▶ switch to the next / previous page of the card's list (#panels; RTL: left = next), wrapping.
 // answered / failed: per page, by its first load (see dvStart)
 const DV = {answered:{}, failed:{}, html:null, items:[], focus:0};
-const DV_PAGES = ['prayers', 'forecast', 'matches', 'standings', 'news', 'local', 'world', 'tech', 'shows', 'verse', 'hadith'];
+const DV_PAGES = ['prayers', 'forecast', 'matches', 'standings', 'news', 'local', 'world', 'tech', 'verse', 'hadith'];
 // the pages ◀ ▶ go through: the card's list (#panels) as far as the detail window has pages for it; without
 // a list of two or more that holds the opened page, all of them
 const DV_LIST = (L => L.length > 1 && L.includes(CONFIG.detail) ? L : DV_PAGES)(CONFIG.panels.filter(p => DV_PAGES.includes(p)));
@@ -3472,8 +3282,7 @@ const DV_ICON = {
   tech: DV_SVG('<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5" rx=".5"/><path d="M9.5 2.5V6M14.5 2.5V6M9.5 18v3.5M14.5 18v3.5M2.5 9.5H6M2.5 14.5H6M18 9.5h3.5M18 14.5h3.5"/>'),
   // a globe: the world's news
   world: DV_SVG('<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/>'),
-  // a TV screen on its stand (shows); an open book (verse); a closed book with its ribbon (hadith)
-  shows: DV_SVG('<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M9 21h6M12 17v4"/><path d="M10.5 9v4.5l3.6-2.25z"/>'),
+  // an open book (verse); a closed book with its ribbon (hadith)
   verse: DV_SVG('<path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5v13"/>'),
   hadith: DV_SVG('<path d="M5.5 4.5A1.5 1.5 0 0 1 7 3h11.5v15H7a1.5 1.5 0 0 0-1.5 1.5z"/><path d="M5.5 19.5A1.5 1.5 0 0 0 7 21h11.5v-3"/><path d="M14 3v6l-1.75-1.25L10.5 9V3"/>'),
 };
@@ -3481,7 +3290,6 @@ function dvTitle(){
   const P = CONFIG.detail;
   if(P === 'prayers') return 'مواقيت الصلاة · ' + CONFIG.city;
   if(P === 'forecast') return 'الطقس · ' + CONFIG.city;
-  if(P === 'shows') return 'جديد المسلسلات · ' + PANEL_TITLE.shows;
   if(P === 'local') return localTitle();
   return PANEL_TITLE[P] || '';
 }
@@ -3604,36 +3412,6 @@ function dvStandings(){
     + '</div></div>';
 }
 
-// the week's series (loadWeek's list, up to 50), laid out like the news page: on the right the list
-// (poster, name, channel or streaming service · SxxExx · day and time · rating), ▲▼ moving the focus; on the left
-// the focused series: a larger poster, the same facts and its summary (TVMaze's, in English)
-const dvSE = o => o.s && o.n ? `<span dir="ltr">S${pad(o.s)}E${pad(o.n)}</span>` : '';
-const dvRate = o => o.rating ? '★ ' + ar(o.rating.toFixed(1)).replace('.', DEC) : '';
-function dvShowWhen(o){
-  const at = o.at ? new Date(o.at) : null;
-  if(!at || !Number.isFinite(at.getTime())) return showDay(o, false);
-  const q = new Intl.DateTimeFormat('en-GB', {timeZone:CONFIG.timezone, hour:'2-digit', minute:'2-digit', hour12:false})
-    .formatToParts(at).reduce((a, x) => (a[x.type] = x.value, a), {});
-  return showDay(o, false) + ' ' + fmt12(+q.hour % 24, +q.minute);
-}
-function dvShowMeta(o){
-  return [o.net ? `<span dir="auto">${esc(o.net)}</span>` : '', dvSE(o), dvShowWhen(o), dvRate(o)].filter(Boolean).join(' · ');
-}
-function dvShows(){
-  DV.items = WEEK_POOL.slice();
-  if(!DV.items.length) return '';
-  return '<div class="dv-news dv-shw"><div class="dv-list">' + DV.items.map((o, i) =>
-    `<div class="dv-item" data-i="${i}"><div class="pp">${posterImg(o)}</div><div class="dv-st2">`
-    + `<div class="h" dir="auto">${esc(o.name)}</div><div class="dv-meta">${dvShowMeta(o)}</div></div></div>`
-  ).join('') + '</div><div class="dv-side"></div></div>';
-}
-// the focused series on the left (dvNewsFocus calls it on the shows page)
-function dvShowSide(o){
-  return `<div class="dv-shd"><div class="pp">${posterImg(o)}</div><div><div class="h" dir="auto">${esc(o.name)}</div>`
-    + `<div class="dv-meta">${dvShowMeta(o)}</div></div></div>`
-    + (o.sum ? `<div class="dv-sum" dir="auto">${esc(o.sum)}</div>` : '<div class="dv-sum none">لا يوجد ملخص</div>');
-}
-
 // the day's verse (quoteOfDay) or hadith (hadithRows), as on the card, large, its source under it
 function dvVerse(){
   const rows = CONFIG.detail === 'hadith' ? hadithRows() : quoteOfDay().rows;
@@ -3663,7 +3441,6 @@ function dvNewsFocus(i){
     else if(bot > list.scrollTop + list.clientHeight) list.scrollTop = bot - list.clientHeight;
   }
   const x = DV.items[i];
-  if(CONFIG.detail === 'shows'){ side.innerHTML = dvShowSide(x); dvSideFit(side); return; }   // the shows page
   const P = CONFIG.detail;
   const meta = [newsSource(P, x.source), Number.isFinite(x.t) ? agoAr(Date.now() - x.t) : ''].filter(Boolean).join(' · ');
   side.innerHTML = `<div class="h"${bidiAttr(P, x.headline)}>${esc(x.headline)}</div><div class="dv-meta">${meta}</div>`
@@ -3686,12 +3463,12 @@ function dvSideFit(side){
 function renderDetail(){
   const body = document.querySelector('#dv .dv-body');
   if(!body) return;
-  const P = CONFIG.detail, news = isNewsPanel(P) || P === 'shows';   // shows, a list like news; local
+  const P = CONFIG.detail, news = isNewsPanel(P);   // news, local, world, tech
   const was = news ? DV.items[DV.focus] : null;   // keep the focused item across a refresh
   let html = '';
   try{
     html = P === 'prayers' ? dvPrayers() : P === 'forecast' ? dvForecast() : P === 'matches' ? dvMatches()
-         : P === 'standings' ? dvStandings() : P === 'shows' ? dvShows() : news ? dvNews(P)
+         : P === 'standings' ? dvStandings() : news ? dvNews(P)
          : P === 'verse' || P === 'hadith' ? dvVerse() : '';
   }catch(e){ console.error('SaudiTV: detail ' + (e && e.message)); }
   if(!html) html = `<div class="dv-empty">${DV.answered[P] ? (P === 'matches' ? 'لا مباريات في هذه الفترة' : 'لا تتوفر بيانات الآن')
@@ -3703,8 +3480,7 @@ function renderDetail(){
   const sc2 = body.querySelector('.dv-scroll');
   if(sc2) sc2.scrollTop = top;
   if(news && DV.items.length){
-    let i = was ? DV.items.findIndex(x => P === 'shows' ? x.name === was.name   // shows
-                                          : (x.link && x.link === was.link) || x.headline === was.headline) : 0;
+    let i = was ? DV.items.findIndex(x => (x.link && x.link === was.link) || x.headline === was.headline) : 0;
     dvNewsFocus(i < 0 ? Math.min(DV.focus, DV.items.length - 1) : i);
   }
 }
@@ -3716,7 +3492,7 @@ function detailKey(e){
   // ◀ = the next page, ▶ = the previous one (RTL)
   if(k === 'ArrowLeft' || k === 'ArrowRight'){ dvGo(k === 'ArrowLeft' ? 1 : -1); return; }
   const P = CONFIG.detail;
-  if(isNewsPanel(P) || P === 'shows'){   // shows (OK does nothing there); local
+  if(isNewsPanel(P)){   // local too
     if(!DV.items.length) return;
     if(k === 'ArrowDown') dvNewsFocus(DV.focus + 1);
     else if(k === 'ArrowUp') dvNewsFocus(DV.focus - 1);
@@ -3751,7 +3527,7 @@ function dvStart(P){
   if(P === 'news' || P === 'tech' || P === 'world'){ watch(() => loadNews(P), P); setInterval(() => loadNews(P), 30*60*1000); setInterval(renderDetail, 5*60*1000); }
   if(P === 'hadith') watch(loadHadith, 'hadith');
   if(P === 'local'){ watch(loadLocalNews, P); setInterval(loadLocalNews, 30*60*1000); setInterval(renderDetail, 5*60*1000); }
-  if(P === 'shows'){ watch(loadWeek, 'shows'); setInterval(loadWeek, 6*3600*1000); }   // (verse: offline)
+  // (verse: offline)
 }
 // the card shows the page last seen here when the home screen is back (bootRotatingWidget's sauditvHold)
 function dvSavePos(){
@@ -3910,9 +3686,9 @@ function boot(){
   const ROT = CONFIG.panels.length > 1 ? CONFIG.panels : null;   // rotating card on the screensaver too
   if(ROT) CONFIG.panel = ROT[0];
   if(CONFIG.panel === 'none') document.querySelector('.week').style.display = 'none';
-  else if(CONFIG.panel !== 'shows') renderPanel(false);   // its own data arrives with prayers, weather, matches
+  else renderPanel(false);   // its own data arrives with prayers, weather, matches
   // a first load without an answer tries again soon (firstLoad)
-  firstLoad(loadPrayers, 'prayers'); firstLoad(loadMatches, 'matches'); if(!ROT && CONFIG.panel === 'shows') firstLoad(loadWeek, 'shows'); firstLoad(loadWeather, 'weather');   // !ROT (startPanelData)
+  firstLoad(loadPrayers, 'prayers'); firstLoad(loadMatches, 'matches'); firstLoad(loadWeather, 'weather');
   startPanelData(ROT || [CONFIG.panel], true);   // standings / news / tech (matches load above)
   if(ROT){
     newsFlipArm();   // the first panel, if it is news, pages like the later visits
@@ -3935,10 +3711,8 @@ function boot(){
   setInterval(loadLive, 2*60000);
   setInterval(loadPrayers, 6*3600*1000);
   setInterval(loadMatches, 30*60*1000);
-  if(!ROT && CONFIG.panel === 'shows') setInterval(loadWeek, 6*3600*1000);   // !ROT
   setInterval(loadWeather, 30*60*1000);
   setInterval(()=>{
-    if(CONFIG.panel === 'shows' && WEEK_POOL.length > WEEK_POSTERS){ WEEK_PAGE++; renderWeekPage(true); }
     if(CONFIG.panel === 'matches'){ LIST_PAGE++; renderPanel(matchRows().length > WEEK_ROWS); }
   }, 25*1000);
   setInterval(applyNight, 20*1000);     // was every minute (it writes only a change: see applyNight)
@@ -3946,7 +3720,7 @@ function boot(){
   let lastDay = new Intl.DateTimeFormat('en-CA',{timeZone:CONFIG.timezone}).format(new Date());
   setInterval(()=>{
     const d = new Intl.DateTimeFormat('en-CA',{timeZone:CONFIG.timezone}).format(new Date());
-    if(d !== lastDay){ lastDay = d; loadPhotoIndex().then(() => applyBackground(true)); tickDates(); tickRamadan(); loadPrayers(); loadMatches(); if((ROT || [CONFIG.panel]).includes('shows')) loadWeek(); loadWeather(); renderPanel(false); }   // ROT
+    if(d !== lastDay){ lastDay = d; loadPhotoIndex().then(() => applyBackground(true)); tickDates(); tickRamadan(); loadPrayers(); loadMatches(); loadWeather(); renderPanel(false); }
   }, 60*1000);
 }
 
@@ -4063,15 +3837,13 @@ function cardStart(){
   window.sauditvStep = () => {};   // LEFT/RIGHT on the card; only a rotating card has panels to step through
   if(CONFIG.panels.length > 1){ bootRotatingWidget(); return; }
   const P = CONFIG.panel, own = !CONFIG.home;   // own: the prayers and weather loaders are the card's to start
-  if(P === 'shows'){ firstLoad(loadWeek, 'shows'); setInterval(loadWeek, 6*3600*1000); }
-  else renderPanel(false);
+  renderPanel(false);
   if(P === 'prayers' && own){ firstLoad(loadPrayers, 'prayers'); setInterval(loadPrayers, 6*3600*1000); setInterval(() => renderPanel(false), 15000); }
   if(P === 'forecast' && own){ firstLoad(loadWeather, 'weather'); setInterval(loadWeather, 30*60*1000); }
   if(P === 'matches'){ firstLoad(loadMatches, 'matches'); setInterval(loadMatches, 30*60*1000); setInterval(loadLive, 2*60000); }
   startPanelData([P], false);   // standings / news / tech
   setInterval(() => {
     if(APPS_OPEN) return;   // no page turns behind the apps grid
-    if(P === 'shows' && WEEK_POOL.length > WEEK_POSTERS){ WEEK_PAGE++; renderWeekPage(true); }
     if(P === 'matches'){ LIST_PAGE++; renderPanel(matchRows().length > WEEK_ROWS); }
   }, 25*1000);
   let lastDay = riyadhDayNumber();

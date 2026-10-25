@@ -68,8 +68,9 @@ import java.util.Map;
  * open the quick-settings panel (QuickPanel), like Google TV's; its «كل الإعدادات» tile opens the TV's settings.
  *
  * «تشغيل القرآن» / «إيقاف القرآن» (the radio pill, after «شاشة التوقف»): the Quran radio on and playing now, or off
- * (RadioLink.toggle); its label follows the radio every RADIO_POLL_MS, whoever changed it (the settings, the quick
- * panel's tile, the remote's play/pause). «يُتلى الآن» under the clock is focusable too (HomePage.qrView): OK stops it.
+ * (RadioLink.toggle); its label follows the radio as it changes, whoever changed it (the settings, saver.sh, the quick
+ * panel's tile, the remote's play/pause: the screensaver app tells RadioLink, which tells radioChanged; nothing asks
+ * every few seconds). «يُتلى الآن» under the clock is focusable too (HomePage.qrView): OK stops it.
  *
  * A mouse (Mouse): hover = the D-pad's focus (no scrolling for it), click = OK, the wheel = ▲▼, right-click = Back.
  *
@@ -119,10 +120,8 @@ public class MainActivity extends Activity {
     private TextView updatePill;   // «تحديث متوفر»: in the row only while the screensaver app found a newer release
     private TextView radioPill;    // «تشغيل القرآن» / «إيقاف القرآن» (refreshRadio)
     private Mouse mouse;
-    static final long RADIO_POLL_MS = 2000;
-    private final Runnable radioTick = new Runnable() {
-        @Override public void run() { refreshRadio(); pillRow.postDelayed(this, RADIO_POLL_MS); }
-    };
+    /** the radio changed (RadioLink, while the home screen is in front): the pill, and «يُتلى الآن» on the page */
+    private final Runnable radioListener = this::radioChanged;
     private boolean gridOpen, menuLong;   // the apps grid is up; Menu is held (long press)
 
     private final BroadcastReceiver tick = new BroadcastReceiver() {
@@ -148,6 +147,9 @@ public class MainActivity extends Activity {
     };
     /** the screensaver app's last app-update check (its ConfigProvider): available = the newer versionCode, 0 = none */
     static final android.net.Uri UPDATE = android.net.Uri.parse("content://com.raad.sauditv.screensaver.config/update");
+    /** the screensaver app's first-run setup: done = 1 once finished or skipped (an older app has no such column) */
+    static final android.net.Uri SETUP = android.net.Uri.parse("content://com.raad.sauditv.screensaver.config/setup");
+    private static boolean setupAsked;   // once per start of this app: the first-run setup, while not done
 
     // ---------------------------------------------------------------- lifecycle
 
@@ -196,8 +198,8 @@ public class MainActivity extends Activity {
         listen(updateState, new IntentFilter("com.raad.sauditv.screensaver.UPDATE_STATE"), true);   // from the screensaver app
         updateWifi();
         refreshUpdate();
-        pillRow.removeCallbacks(radioTick);
-        radioTick.run();   // the radio pill's label, now and every RADIO_POLL_MS
+        RadioLink.listen(radioListener);   // the radio pill's label and the page's «يُتلى الآن» follow every change
+        refreshRadio();   // as it is now (it may have changed while another app was in front)
         homePage.resume();   // the page runs again (it has the clock, the photos and the VPN badge)
         applyStyle();   // the tiles' look may have changed in the settings meanwhile
         wireFocus();   // the card may have appeared or gone
@@ -209,6 +211,20 @@ public class MainActivity extends Activity {
         // Catch installs/removals that happened while another app was in front.
         if (getPackageManager().getChangedPackages(packageSeq) != null) buildApps();
         if (firstShow) { firstShow = false; playEntrance(); }
+        if (!setupAsked) { setupAsked = true; openSetupIfNew(); }
+    }
+
+    /** A new install: the screensaver app's first-run setup (its SetupActivity), once per start of this app, while its
+     *  ConfigProvider says it is not done. Nothing when that app is missing or older (no "done" column). */
+    private void openSetupIfNew() {
+        long done = 1;
+        try (android.database.Cursor c = getContentResolver().query(SETUP, null, null, null, null)) {
+            int i = c == null ? -1 : c.getColumnIndex("done");
+            if (i >= 0 && c.moveToFirst()) done = c.getLong(i);
+        } catch (RuntimeException e) {
+            done = 1;
+        }
+        if (done == 0) launch(new Intent().setClassName(SAVER_PKG, SAVER_PKG + ".SetupActivity"));
     }
 
     @Override
@@ -218,7 +234,7 @@ public class MainActivity extends Activity {
         unregisterReceiver(tick);
         unregisterReceiver(configChanged);
         unregisterReceiver(updateState);
-        pillRow.removeCallbacks(radioTick);
+        RadioLink.unlisten(radioListener);
         if (inputsPopup != null) inputsPopup.dismiss();
         homePage.pause();
         quick.pause();
@@ -442,8 +458,11 @@ public class MainActivity extends Activity {
         if (!label.contentEquals(radioPill.getText())) radioPill.setText(label);
     }
 
-    /** the quick panel's radio tile changed it: the pill now, not at the next poll */
-    void radioChanged() { refreshRadio(); }
+    /** the radio changed (RadioLink), or the quick panel's radio tile changed it: the pill and the page's chip now */
+    void radioChanged() {
+        refreshRadio();
+        homePage.radioChanged();
+    }
 
     // ---------------------------------------------------------------- apps
 

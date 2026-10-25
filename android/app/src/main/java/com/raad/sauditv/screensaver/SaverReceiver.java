@@ -22,8 +22,8 @@ import java.util.List;
  *       [--es method auto|umm-al-qura|isna|egypt|kuwait|qatar|dubai|mwl|karachi|diyanet] [--es units auto|c|f]
  *       [--es league auto|ksa.1|eng.1|tsdb.4829…] [--es news_country auto|SA|EG…]
  *       [--es teams '136013:Al-Hilal,E929@ksa.1:Al Hilal,138995@tsdb.4829:Al Ahly']
- *       [--es panel prayers | prayers,forecast,news,local,world,verse,hadith] [--es home_panel none] [--es minrating 7]
- *       [--es genres Drama,Comedy] [--es langs English] [--es autoupdate true|false] [--es numerals latn|arab]
+ *       [--es panel prayers | prayers,forecast,news,local,world,verse,hadith] [--es home_panel none]
+ *       [--es autoupdate true|false] [--es numerals latn|arab] [--es lowpower true|false]   («توفير الطاقة»)
  *       [--es src_news aawsat,okaz] [--es src_tech …] [--es src_local …] [--es src_world …]   ("" = the page's defaults)
  *       [--es tile_shape rounded|circle] [--es focus_style google|apple]   (the home screen's app tiles)
  *       [--es radio on|off] [--es radio_station saudi|cairo|63|https://…] [--es radio_volume 10…100]
@@ -260,9 +260,8 @@ public class SaverReceiver extends BroadcastReceiver {
         }
         String auto = i.getStringExtra("autoupdate");
         if (auto != null && !auto.equals("true") && !auto.equals("false")) return "error: autoupdate is true or false";
-        String rating = i.getStringExtra("minrating");
-        if (rating != null && !Arrays.asList(Prefs.MIN_RATINGS).contains(rating))
-            return "error: minrating is one of " + Prefs.join(Arrays.asList(Prefs.MIN_RATINGS), " ");
+        String lowPower = i.getStringExtra("lowpower");   // «توفير الطاقة»
+        if (lowPower != null && !lowPower.equals("true") && !lowPower.equals("false")) return "error: lowpower is true or false";
         String numerals = i.getStringExtra("numerals");
         if (numerals != null && !numerals.equals("latn") && !numerals.equals("arab"))
             return "error: numerals is latn (0 1 2 3) or arab (٠ ١ ٢ ٣)";
@@ -287,10 +286,6 @@ public class SaverReceiver extends BroadcastReceiver {
             }
             sources.put(page, ids);
         }
-        List<String> genres = codes(i.getStringExtra("genres"), Prefs.GENRES);
-        List<String> langs = codes(i.getStringExtra("langs"), Prefs.LANGS);
-        if (genres != null && genres.contains(null)) return "error: genres are " + names(Prefs.GENRES);
-        if (langs != null && langs.contains(null)) return "error: langs are " + names(Prefs.LANGS);
         // «إذاعة القرآن الكريم»
         String radio = i.getStringExtra("radio");
         if (radio != null) {
@@ -338,10 +333,8 @@ public class SaverReceiver extends BroadcastReceiver {
         if (newsCc != null) p.setNewsCountry("AUTO".equals(newsCc) ? null : newsCc);
         if (panel != null) p.setPanel(panel);
         if (home != null) p.setHomePanel(home);
-        if (rating != null) p.setMinRating(rating);
         if (auto != null) p.setAutoUpdate(Boolean.parseBoolean(auto));
-        if (genres != null) p.setList("genres", genres);
-        if (langs != null) p.setList("langs", langs);
+        if (lowPower != null) p.setLowPower(Boolean.parseBoolean(lowPower));
         if (numerals != null) p.setNumerals(numerals);
         if (shape != null) p.setTileShape(shape);
         if (focus != null) p.setFocusStyle(focus);
@@ -369,9 +362,8 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\nnews_country: " + p.newsCountry() + (news == null ? "" : " " + news.ar) + (p.newsCountryAuto() ? " (auto)" : "")
             + "\nteams: " + Prefs.join(p.teams(), ", ")
             + "\npanel: " + p.panel() + "\nhome_panel: " + p.homePanel()
-            + "\nminrating: " + p.minRating()
-            + "\ngenres: " + Prefs.join(p.list("genres"), ",") + "\nlangs: " + Prefs.join(p.list("langs"), ",")
             + "\nautoupdate: " + p.autoUpdate()
+            + "\nlowpower: " + (p.lowPower() ? "on" : "off")
             + "\nnumerals: " + p.numerals()
             + "\ntile_shape: " + p.tileShape() + "\nfocus_style: " + p.focusStyle()
             + "\nradio: " + (p.radioOn() ? "on" : "off")
@@ -379,6 +371,7 @@ public class SaverReceiver extends BroadcastReceiver {
                 + (RadioStations.CUSTOM.equals(p.radioStation()) ? " " + p.radioUrl() : "")
             + "\nradio_volume: " + p.radioVolume()
             + "\nradio_when: " + p.radioWhen()
+            + "\nsetup_done: " + p.setupDone()
             + "\ntape: " + (p.tapeAuto() ? "auto (" + Prefs.join(p.tapeShown(), ",") + ")" : Prefs.join(p.tape(), ","))
             + sourcesLine(p);
     }

@@ -16,6 +16,31 @@ final class RadioWhen {
         {BOTH, "الشاشة الرئيسية وشاشة التوقف"}, {SAVER, "شاشة التوقف فقط"}, {HOME, "الشاشة الرئيسية فقط"},
     };
 
+    /** «إذاعة القرآن الكريم»'s one choice in the settings and the first-run setup: off, or on and where it plays.
+     *  Stored as before (Prefs: radioOn and radioWhen), so saver.sh radio on|off / radio-when and the home screen's
+     *  «تشغيل / إيقاف القرآن» stay as they are. */
+    static final String OFF = "off";
+    static final String[][] MODES = {
+        {OFF, "متوقفة"}, {BOTH, "تعمل دائمًا"}, {SAVER, "شاشة التوقف فقط"}, {HOME, "الشاشة الرئيسية فقط"},
+    };
+
+    /** the choice the saved radio on/off and when make */
+    static String mode(boolean on, String when) { return on ? of(when) : OFF; }
+
+    /** the radio on for this choice (an unknown one: off) */
+    static boolean modeOn(String mode) {
+        for (String[] c : CHOICES) if (c[0].equals(mode)) return true;
+        return false;
+    }
+
+    /** where it plays for this choice; off (or an unknown one) keeps the saved one (keep) */
+    static String modeWhen(String mode, String keep) { return modeOn(mode) ? mode : of(keep); }
+
+    static String modeLabel(String mode) {
+        for (String[] c : MODES) if (c[0].equals(mode)) return c[1];
+        return MODES[0][1];
+    }
+
     /** a known value, else BOTH */
     static String of(String v) {
         for (String[] c : CHOICES) if (c[0].equals(v)) return v;

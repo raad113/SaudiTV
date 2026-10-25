@@ -53,7 +53,6 @@ SAVER_PANELS="${SAVER_PANELS:-prayers,forecast,matches,standings,news,tech}"   #
 HOME_PANELS="${HOME_PANELS:-prayers,forecast,matches,standings,news,tech}"     # home screen card, rotating
 DOCK_APPS="${DOCK_APPS:-}"                  # favourites row, left to right (apps not installed are left out);
                                             #   empty: the home screen's own default (config.xml), left as it is
-MINRATING="${MINRATING:-}"                  # episodes card's lowest rating (0 6 6.5 7 7.5 8); empty: the app's (7)
 AUTOUPDATE="${AUTOUPDATE:-}"                # the page's auto-update: on / off; empty: the app's default (on)
 NUMERALS="${NUMERALS:-}"                    # «شكل الأرقام»: 0-9 (0 1 2 3) or arabic (٠ ١ ٢ ٣); empty: the app's (0-9)
 TILE_SHAPE="${TILE_SHAPE:-}"                # «شكل التطبيقات», the home screen's apps: rounded or circle; empty: the app's (rounded)
@@ -405,9 +404,6 @@ have_ids=$(sed -n 's/^teams: //p' <<< "$show" | grep -oE '(^|, )(E[0-9]+@[a-z0-9
 if [ "$want_ids" = "$have_ids" ]; then ok "teams: $(sed -n 's/^teams: //p' <<< "$show")"; else saver_set "teams ($want_ids)" teams "${TEAMS[@]}"; fi
 if grep -qxF "panel: $SAVER_PANELS" <<< "$show"; then ok "screensaver card: $SAVER_PANELS"; else saver_set "screensaver card ($SAVER_PANELS)" card "$SAVER_PANELS"; fi
 if grep -qxF "home_panel: $HOME_PANELS" <<< "$show"; then ok "home card: $HOME_PANELS"; else saver_set "home card ($HOME_PANELS)" home-card "$HOME_PANELS"; fi
-if [ -n "$MINRATING" ]; then
-  if grep -qxF "minrating: $MINRATING" <<< "$show"; then ok "episodes: rating $MINRATING and up"; else saver_set "episodes rating ($MINRATING)" minrating "$MINRATING"; fi
-fi
 if [ -n "$AUTOUPDATE" ]; then
   case "$AUTOUPDATE" in on|true) want_au=true ;; *) want_au=false ;; esac
   if grep -qxF "autoupdate: $want_au" <<< "$show"; then ok "page auto-update: $AUTOUPDATE"; else saver_set "page auto-update ($AUTOUPDATE)" autoupdate "$AUTOUPDATE"; fi

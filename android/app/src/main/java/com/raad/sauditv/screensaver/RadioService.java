@@ -517,8 +517,13 @@ public class RadioService extends Service {
 
     // ---------------------------------------------------------------- state
 
+    /** what the home screen was last told (RadioNotify): state, station and error */
+    private static String told = "";
+
     private void setState(int s) {
         state = s;
+        String now = s + "|" + name + "|" + error;
+        if (!now.equals(told)) { told = now; RadioNotify.changed(this); }   // the home screen's pill and «يُتلى الآن»
         if (session == null) return;
         int ps = s == PLAYING ? PlaybackState.STATE_PLAYING : s == LOADING ? PlaybackState.STATE_BUFFERING
             : s == ERROR ? PlaybackState.STATE_ERROR : s == PAUSED ? PlaybackState.STATE_PAUSED : PlaybackState.STATE_STOPPED;

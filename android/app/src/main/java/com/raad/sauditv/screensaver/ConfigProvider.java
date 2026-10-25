@@ -19,6 +19,9 @@ import android.net.Uri;
  * station's), error, when (RadioWhen). The only write: update() of /radio with on = 1 or 0 (the home screen's
  * «تشغيل القرآن» / «إيقاف القرآن» chip and its quick-settings tile: on also plays it now on the home screen, whatever
  * RadioWhen says, and resumes a pause), the same signature permission (writePermission in the manifest).
+ * content://com.raad.sauditv.screensaver.config/setup: done (1/0), the first-run setup finished or skipped
+ * (Prefs.setupDone); the home screen opens SetupActivity once per start while it is 0. An older app without this
+ * answers the settings' columns, no "done": the home screen then opens nothing.
  */
 public class ConfigProvider extends ContentProvider {
     @Override public boolean onCreate() { return true; }
@@ -33,6 +36,11 @@ public class ConfigProvider extends ContentProvider {
             return c;
         }
         Prefs p = new Prefs(getContext());
+        if ("/setup".equals(uri.getPath())) {
+            MatrixCursor c = new MatrixCursor(new String[] {"done"});
+            c.addRow(new Object[] {p.setupDone() ? 1 : 0});
+            return c;
+        }
         if ("/radio".equals(uri.getPath())) {
             MatrixCursor c = new MatrixCursor(new String[] {"on", "state", "name", "error", "when"});
             String st = RadioService.state();

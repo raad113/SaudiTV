@@ -23,10 +23,10 @@
 
 - **بطاقة تتبدّل كل ٣٠ ثانية** جنب الساعة، في شاشة التوقف وفي الواجهة: مواقيت اليوم، آية اليوم، حديث اليوم (من صحيح
   البخاري فقط)، طقس الأيام القادمة، مباريات فرقك، ترتيب الدوري (دوري روشن أو أي دوري تختاره)، أخبار دولتك، أخبار مدينتك، أخبار العالم، أخبار التقنية
-  والذكاء الاصطناعي، جديد المسلسلات. تختار البطاقات وترتيبها لكل شاشة، ومصادر كل صفحة أخبار (تنعرض مع بعض، الأحدث أول).
+  والذكاء الاصطناعي. تختار البطاقات وترتيبها لكل شاشة، ومصادر كل صفحة أخبار (تنعرض مع بعض، الأحدث أول).
 - **شكل الأرقام:** «0 1 2 3» (الافتراضي) أو «٠ ١ ٢ ٣»، في كل مكان: الشاشة والواجهة والإعدادات.
 - **صفحات التفاصيل:** OK على البطاقة في الواجهة يفتحها على كامل الشاشة (المواقيت، الأخبار مع نص الخبر، الترتيب،
-  المباريات، المسلسلات…)، ويمين ويسار يقلّبون بينها.
+  المباريات…)، ويمين ويسار يقلّبون بينها.
 - **الشريط:** أسعار الأسواق تتحرك أسفل الشاشة (تاسي، S&P 500، الذهب، برنت، الدولار/الريال، بيتكوين…)، وفوقه شريط
   معلومات: الصلاة القادمة، رمضان، المباراة القادمة.
 - **حماية من احتراق الشاشة:** كل ساعة تتبادل الساعة والبطاقة أماكنهم بتلاشي هادئ، دقيقة صورة بس عند :١٥ و :٤٥ (الشريط
@@ -103,11 +103,11 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
 
 - **A card that rotates every 30 s** beside the clock, on the screensaver and the home screen: today's prayers, the verse
   of the day, the hadith of the day (Sahih al-Bukhari only), the forecast, your teams' matches, a league's table (the
-  Saudi Pro League or any other), your country's news, your city's news, world news, tech and AI news, new episodes. Pick the cards and their order for
+  Saudi Pro League or any other), your country's news, your city's news, world news, tech and AI news. Pick the cards and their order for
   each screen, and each news page's sources (read together, newest first).
 - **Number style:** «0 1 2 3» (the default) or «٠ ١ ٢ ٣», everywhere: the screen, the home screen and the settings.
 - **Detail pages:** OK on the home screen's card opens it full screen (prayers, news with the article text, the table,
-  matches, episodes…); left and right step through them.
+  matches…); left and right step through them.
 - **The ticker:** market prices move along the bottom (TASI, S&P 500, gold, Brent, USD/SAR, Bitcoin…), with an info
   strip above it: the next prayer, Ramadan, the next match.
 - **Burn-in protection:** every hour the clock and the card swap sides with a slow fade, a photo-only minute at :15 and
@@ -180,8 +180,8 @@ tools/release.sh      a new release: version, build, update.json (what the apps'
 tests/                checks: build, data, fonts, scripts, private data, the page in a browser
 ```
 
-**Data** (free, no keys): Aladhan (prayer times), Open-Meteo (weather), Yahoo and CoinGecko (markets), TVMaze
-(episodes), ESPN (clubs, matches and the table of any league it carries) and TheSportsDB (the leagues ESPN does not
+**Data** (free, no keys): Aladhan (prayer times), Open-Meteo (weather), Yahoo and CoinGecko (markets), ESPN
+(clubs, matches and the table of any league it carries) and TheSportsDB (the leagues ESPN does not
 carry), GeoNames and CLDR (the bundled countries and cities), Open-Meteo's geocoding (a city's search), news feeds (Asharq Al-Awsat, Okaz, Al-Watan, Sky News
 Arabia, BBC Arabic, CNN Arabic, Al Jazeera, France 24, Tech-WD, AIT News; Google News for the sites without a feed
 that answers, Bing for the city's news). Verse and hadith texts are never typed by hand: verses come from the Quran API

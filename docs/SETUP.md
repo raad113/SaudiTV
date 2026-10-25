@@ -22,7 +22,7 @@
 ### ٣. إعدادات بيتك: `household.env`
 انسخ `household.env.example` إلى `household.env` وعدّله: المدينة وإحداثياتها ودولتها (`COUNTRY`) ومنطقتها الزمنية، طريقة الحساب
 (`METHOD`)، وحدة الحرارة (`UNITS`)، دوري الترتيب (`LEAGUE`)، دولة الأخبار (`NEWS_COUNTRY`)، المنطقة الزمنية للتلفزيون، الفرق، بطاقة شاشة التوقف
-وبطاقة الواجهة، صف المفضلة، شكل الأرقام (`NUMERALS`)، شكل التطبيقات وشكل التحديد في الواجهة (`TILE_SHAPE` و `FOCUS_STYLE`)، أقل تقييم للمسلسلات، التحديث التلقائي، تطبيقات زيادة تنطفي أو تنحذف، ومدة إطفاء الشاشة.
+وبطاقة الواجهة، صف المفضلة، شكل الأرقام (`NUMERALS`)، شكل التطبيقات وشكل التحديد في الواجهة (`TILE_SHAPE` و `FOCUS_STYLE`)، التحديث التلقائي، تطبيقات زيادة تنطفي أو تنحذف، ومدة إطفاء الشاشة.
 - الملف **ما يُرفع لـ git أبداً** (فيه مكان سكنك). بدونه: الرياض، أم القرى، الأندية السعودية الكبيرة، وست بطاقات.
 - تلفزيون ثاني بإعدادات مختلفة: `household-tv2.env` و `HOUSEHOLD_ENV=household-tv2.env optimize/setup-new-tv.sh <IP>`.
 - أرقام الفرق: `optimize/saver.sh find-team الهلال`، وأندية أي دوري في ESPN: `optimize/saver.sh clubs eng.1` (المنتخبات:
@@ -114,9 +114,9 @@ LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
   `gh release create v9036 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9036 --notes "…"`.
 
 ### ١٠. إذاعة القرآن الكريم
-- إعدادات سعودي TV ← «إذاعة القرآن الكريم» (متوقفة افتراضياً): تشغيل وإيقاف، «المحطة» (إذاعة القرآن الكريم من السعودية
-  ومن القاهرة أول، ثم قرّاء mp3quran.net، مع بحث و«رابط من عندي»)، «مستوى صوت الإذاعة» (١٠ إلى ١٠٠٪، غير صوت التلفاز)،
-  و«معاينة الإذاعة»، و«متى تعمل الإذاعة»: الشاشة الرئيسية وشاشة التوقف (الافتراضي)، أو شاشة التوقف فقط، أو الشاشة الرئيسية فقط.
+- إعدادات سعودي TV ← «إذاعة القرآن الكريم» (متوقفة افتراضياً): خيار واحد، «متوقفة» أو «تعمل دائمًا» (الشاشة الرئيسية وشاشة
+  التوقف) أو «شاشة التوقف فقط» أو «الشاشة الرئيسية فقط»، وتحته «المحطة» (إذاعة القرآن الكريم من السعودية ومن القاهرة أول،
+  ثم قرّاء mp3quran.net، مع بحث و«رابط من عندي»)، «مستوى صوت الإذاعة» (١٠ إلى ١٠٠٪، غير صوت التلفاز)، و«معاينة الإذاعة».
   وفي الإعدادات السريعة للواجهة زر «إذاعة القرآن»، وفي صف الأزرار فوق زر «تشغيل القرآن» / «إيقاف القرآن» (الإيقاف يطفيها
   تماماً)، و«يُتلى الآن» تحت الساعة تقدر توقفها منه بـ OK.
 - تشتغل ما دامت الواجهة أو شاشة التوقف قدامك، وتوقف لما يفتح أي تطبيق ثاني (يوتيوب، نتفليكس…) أو تنطفي الشاشة، وترجع
@@ -129,6 +129,9 @@ LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
 - **تغيير الدولة:** اختيار مدينة في دولة ثانية من الإعدادات يجيب أخبار الدولة (لو لها قائمة أخبار، وإلا تبقى أخبارك
   ويقولها صف «دولة الأخبار»)، ودوريها الأول في الترتيب، وأول ثلاثة أندية في جدوله. مرة وحدة وقت التغيير، وتقدر تغيّرها بعدين.
   `optimize/saver.sh` ما يسوي كذا: كل قيمة بأمرها.
+- **معالج الإعداد:** أول تشغيل بعد تثبيت جديد فقط يطلع معالج من أربع خطوات: مدينتك (المكتشفة تلقائياً، «التالي» يعتمدها أو «تغيير»)،
+  بطاقات شاشة التوقف، إذاعة القرآن الكريم، وفريقك المفضل، ثم «تم!» و«ابدأ». «تخطي» يبقي الافتراضي. التلفزيونات اللي كانت
+  مركّبة قبل ما يطلع لها. تفتحه أي وقت من الإعدادات ← «معالج الإعداد»، أو `optimize/saver.sh setup`.
 
 ---
 
@@ -153,7 +156,7 @@ Copy `household.env.example` to `household.env` and edit it: the city, its coord
 zone, the prayer method (`METHOD`), the temperature unit (`UNITS`), the table's league (`LEAGUE`), the news country
 (`NEWS_COUNTRY`), the TV's time zone, the teams, the
 screensaver's and the home screen's cards, the favourites row, the number style (`NUMERALS`), the home screen's app
-tiles and focused-app look (`TILE_SHAPE`, `FOCUS_STYLE`), the episodes' lowest rating, the page auto-update, extra
+tiles and focused-app look (`TILE_SHAPE`, `FOCUS_STYLE`), the page auto-update, extra
 apps to turn off or remove, and when the screen turns off.
 - git **never tracks** it (it says where you live). Without it: Riyadh, Umm al-Qura, the big Saudi clubs, six cards.
 - A second TV with other settings: `household-tv2.env`, and `HOUSEHOLD_ENV=household-tv2.env optimize/setup-new-tv.sh <IP>`.
@@ -256,7 +259,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 ### 10. The tools
 | | |
 |---|---|
-| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `minrating`, `autoupdate`, `update`, `app-check`, `radio`, `radio-station`, `radio-volume`, `radio-when`, `radio-stations`, `radio-test`, `radio-hold`, `tape` |
+| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `autoupdate`, `lowpower`, `update`, `app-check`, `radio`, `radio-station`, `radio-volume`, `radio-when`, `radio-stations`, `radio-test`, `radio-hold`, `tape` |
 | `optimize/dock.sh` | the favourites row: `show`, `apps`, `set`, `reset` |
 | `optimize/check-home.sh` | opens an app, presses Home, says whether our home screen came back |
 | `optimize/start-saver.sh` · `shot.sh` | start the screensaver now · screenshots without navigating |
@@ -270,8 +273,9 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
   from Cairo first, then mp3quran.net's reciters; a search, and «رابط من عندي» for any http(s) stream), «مستوى صوت
   الإذاعة» (10–100 %, apart from the TV's volume) and «معاينة الإذاعة». The home screen's quick settings have a
   «إذاعة القرآن» tile, and its top row a «تشغيل القرآن» / «إيقاف القرآن» pill (stop turns the radio off, so it stays off);
-  OK on «يُتلى الآن» under the clock stops it too. «متى تعمل الإذاعة»: the home screen and the screensaver (the default),
-  only the screensaver (silent on the home screen unless «تشغيل القرآن» is pressed there), or only the home screen.
+  OK on «يُتلى الآن» under the clock stops it too. The settings' row is one choice: «متوقفة», «تعمل دائمًا» (the home
+  screen and the screensaver), «شاشة التوقف فقط» (silent on the home screen unless «تشغيل القرآن» is pressed there) or
+  «الشاشة الرئيسية فقط»; stored as before (`radio on|off` and `radio-when both|saver|home` set the same two values).
 - The screensaver app plays it natively (`RadioService`, Android's MediaPlayer: MP3/AAC over HTTP or ICY, and HLS), so a
   page reload never cuts it, while the home screen (or its full-screen card) or the screensaver is in front. Another app
   taking the audio focus (YouTube, Netflix, any player) stops it; it plays again when our home screen or screensaver is
@@ -294,5 +298,10 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
   country's news (when it has a news list; else the news stay and «دولة الأخبار» says so), its top league in the table
   and the top 3 clubs of that table (else a list of October 2026). Once, at the change, never on a reload or a re-pick in
   the same country (older builds' settings count as Saudi Arabia); `optimize/saver.sh` sets each value itself.
+- **The first-run setup:** a new install only (`setupDone` false; any TV set up before gets true on its first read) shows
+  a four-step wizard: the city (the detected one: «التالي» takes it, or «تغيير»), the screensaver's cards, the Quran radio, the
+  favourite team; then «تم!» and «ابدأ» (the home screen). «تخطي» keeps the defaults. The home screen opens it once per
+  start while the screensaver app's ConfigProvider `/setup` says not done, and the settings open it first. Again any time:
+  the settings' «معالج الإعداد» or `optimize/saver.sh setup`.
 
 What was learned on real TCL sets, and what must stay on: [OPTIMIZE.md](OPTIMIZE.md).

@@ -191,6 +191,29 @@ final class Geo {
     /** reads the cities of every country ahead of a search (while the name is being typed) */
     static void preloadNames(Context c) { names(c); }
 
+    // ---------- the pickers' cities (Pickers, in the settings and the setup) are kept only while one of them is open:
+    // names alone is about 11 MB of the heap (names.tsv's 2.8 million characters, Arabic, so 2 bytes each, plus its
+    // index), CITIES up to CACHE countries (the US: 16,000 cities). They lived on in the screensaver's process, which
+    // also runs the dream, until it was killed.
+    private static final java.util.concurrent.atomic.AtomicInteger PICKERS = new java.util.concurrent.atomic.AtomicInteger();
+
+    /** a screen with the place pickers opened (SettingsActivity, SetupActivity: onCreate) */
+    static void pickerOpened() { PICKERS.incrementAndGet(); }
+
+    /** ... closed (their onDestroy): the last one lets go of the cities read for the pickers, off the main thread (a read
+     *  still going holds the lock: it finishes first, then goes too). Read again by the next picker. */
+    static void pickerClosed() {
+        if (PICKERS.decrementAndGet() > 0) return;
+        PICKERS.set(0);
+        new Thread(() -> {
+            synchronized (Geo.class) {
+                if (PICKERS.get() > 0) return;   // one opened meanwhile: it may use them
+                names = new java.lang.ref.SoftReference<>(null);
+                CITIES.clear();
+            }
+        }, "geo-release").start();
+    }
+
     /** cities of any country whose Arabic or English name starts with q, then those that hold it elsewhere (each
      *  biggest first), at most ALL_MAX. Not on the main thread */
     static List<Place> searchAll(Context c, String q) {

@@ -20,13 +20,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +29,7 @@ public class SettingsActivity extends Activity {
     private static final int DIALOG_THEME = android.R.style.Theme_Material_Dialog_Alert;
 
     private Prefs prefs;
+    private Pickers pickers;   // the place and «إضافة فريق» (shared with SetupActivity)
     private ScrollView scroll;
     private Mouse mouse;
     private LinearLayout list;
@@ -47,8 +41,8 @@ public class SettingsActivity extends Activity {
     private final List<View> rows = new ArrayList<>();
     private View updateRow;   // «تحديث التطبيق»
     private View previewRow;   // «معاينة الإذاعة»
+    private boolean setupOpened;   // «معالج الإعداد» was opened from here
     private RadioHolder preview;   // the radio's preview, playing while this screen is in front
-    private int countrySeq;   // the last change of country (its clubs arrive later)
     private final Runnable previewTick = new Runnable() {
         @Override public void run() {
             setRowValue(previewRow, previewLabel());
@@ -76,7 +70,15 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Geo.pickerOpened();   // its place pickers' cities are let go when the last such screen closes (onDestroy)
         prefs = new Prefs(this);
+        pickers = new Pickers(this, prefs, this::render);
+        // a new install's first-run setup first (SetupState), unless the home screen's «تحديث متوفر» opened this
+        if (!prefs.setupDone() && !getIntent().getBooleanExtra("app_update", false)) {
+            startActivity(new Intent(this, SetupActivity.class));
+            finish();
+            return;
+        }
         UpdateJob.schedule(this);
         if (b != null) {
             focusKey = b.getString("focusKey");
@@ -128,6 +130,12 @@ public class SettingsActivity extends Activity {
     }
 
     @Override
+    protected void onRestart() {
+        super.onRestart();
+        if (setupOpened) { setupOpened = false; render(); }   // back from «معالج الإعداد»: its choices shown here
+    }
+
+    @Override
     protected void onPause() {
         stopPreview();   // the preview only plays while these settings are in front
         super.onPause();
@@ -145,6 +153,7 @@ public class SettingsActivity extends Activity {
     protected void onDestroy() {
         AppInstaller.clearListener(installListener);
         if (progress != null) progress.dismiss();
+        Geo.pickerClosed();   // the cities read for the place pickers go with the last screen that had them
         super.onDestroy();
     }
 
@@ -173,7 +182,8 @@ public class SettingsActivity extends Activity {
             startActivity(new Intent(SettingsActivity.this, MainActivity.class)); } });
 
         header("الموقع");
-        row("المدينة", cityLabel(), R.drawable.ic_place, new Runnable() { public void run() { pickCountry(); } });
+        // «(تلقائي)»: the place a new install guessed (PlaceDetect), until one is picked
+        row("المدينة", pickers.cityLabel() + (prefs.cityAuto() ? " (تلقائي)" : ""), R.drawable.ic_place, new Runnable() { public void run() { pickers.pickCountry(); } });
         row("طريقة الحساب", Geo.methodLabel(prefs.prayerMethod()) + (prefs.methodAuto() ? " (تلقائي)" : ""),
             R.drawable.ic_place, new Runnable() { public void run() { pickMethod(); } });
         row("وحدة الحرارة", unitsLabel(prefs.units()) + (prefs.unitsAuto() ? " (تلقائي)" : ""),
@@ -201,12 +211,11 @@ public class SettingsActivity extends Activity {
         // the ticker tape (the home screen's and the screensaver's): its items in order, or each country's own
         row("عناصر شريط الأسعار", tapeLabel(), R.drawable.ic_category, new Runnable() { public void run() { pickTape(); } });
 
-        // «إذاعة القرآن الكريم» (RadioService): on or off, the station, its volume, and a preview here
+        // «إذاعة القرآن الكريم» (RadioService): one choice, off or where it plays (RadioWhen.MODES), the station, its
+        // volume, and a preview here
         header("إذاعة القرآن الكريم");
-        row("إذاعة القرآن الكريم", prefs.radioOn() ? "تعمل على " + RadioWhen.label(prefs.radioWhen()) : "متوقفة", R.drawable.ic_radio,
-            new Runnable() { public void run() { prefs.setRadioOn(!prefs.radioOn()); changed(); render(); } });
-        row("متى تعمل الإذاعة", RadioWhen.label(prefs.radioWhen()), R.drawable.ic_screensaver,
-            new Runnable() { public void run() { pickRadioWhen(); } });
+        row("إذاعة القرآن الكريم", RadioWhen.modeLabel(prefs.radioMode()), R.drawable.ic_radio,
+            new Runnable() { public void run() { pickRadio(); } });
         row("المحطة", stationLabel(), R.drawable.ic_radio, new Runnable() { public void run() { pickStation(); } });
         row("مستوى صوت الإذاعة", percent(prefs.radioVolume()), R.drawable.ic_volume,
             new Runnable() { public void run() { pickVolume(); } });
@@ -226,24 +235,21 @@ public class SettingsActivity extends Activity {
             }
         }
 
-        if (hasPanel(prefs.panel(), "shows") || hasPanel(prefs.homePanel(), "shows")) {   // only matter for the shows card (in a list too)
-        header("جديد المسلسلات");
-        row("التصنيفات", labels(Prefs.GENRES, prefs.list("genres"), "الكل"),
-            R.drawable.ic_category, new Runnable() { public void run() { pickMany("genres", "التصنيفات", Prefs.GENRES); } });
-        row("اللغات", labels(Prefs.LANGS, prefs.list("langs"), "الكل"),
-            R.drawable.ic_language, new Runnable() { public void run() { pickMany("langs", "اللغات", Prefs.LANGS); } });
-        row("مسلسلات مختارة", showsLabel(), R.drawable.ic_star, new Runnable() { public void run() { manageShows(); } });
-        row("أقل تقييم", "0".equals(prefs.minRating()) ? "بدون حد" : prefs.minRating(),
-            R.drawable.ic_star, new Runnable() { public void run() { pickRating(); } });
-        }
-
         header("التطبيق");
         row("شكل الأرقام", numeralsLabel(), R.drawable.ic_language, new Runnable() { public void run() { pickNumerals(); } });
+        // «توفير الطاقة» (off by default): the ticker tape of the home screen and the screensaver at 30 frames a second
+        // instead of 60 (Prefs.lowPower, the page's #lowpower=1); a home screen in front reloads its page (changed)
+        row("توفير الطاقة", lowPowerLabel(), R.drawable.ic_eco, new Runnable() { public void run() {
+            prefs.setLowPower(!prefs.lowPower()); changed(); render(); } });
         updateRow = row("تحديث التطبيق", appUpdateLabel(), R.drawable.ic_sync, new Runnable() { public void run() { appUpdateNow(); } });
         row("التحديث التلقائي للصفحة", prefs.autoUpdate() ? "يعمل · كل " + num(6) + " ساعات" : "متوقف", R.drawable.ic_sync, new Runnable() { public void run() {
             prefs.setAutoUpdate(!prefs.autoUpdate()); render(); } });
         row("تحقق من التحديث الآن", null, R.drawable.ic_sync, new Runnable() { public void run() { updateNow(); } });
         row("وقت تشغيل شاشة التوقف", "يفتح إعدادات التلفاز (قد تظهر بالإنجليزية)", R.drawable.ic_screensaver, new Runnable() { public void run() { openDreamSettings(); } });
+        // the first-run setup (SetupActivity) again: the city, the cards, the radio, the team
+        row("معالج الإعداد", "المدينة وشاشة التوقف والإذاعة والفريق خطوة بخطوة", R.drawable.ic_settings, new Runnable() { public void run() {
+            setupOpened = true;
+            startActivity(new Intent(SettingsActivity.this, SetupActivity.class)); } });
 
         // the row that had the focus before (by its key; gone: the one now at its place), at the same scroll
         View back = null;
@@ -273,234 +279,6 @@ public class SettingsActivity extends Activity {
 
     // ---------- pickers ----------
 
-    // ---------- the place: the country (every one, CLDR's Arabic names), then its cities (GeoNames, biggest first; the
-    // Saudi ones from the regions list, as before). The city keeps its country and its time zone.
-
-    // The bundled lists are read off the main thread (loadThen): the US alone has 16,000 cities, read and listed on it
-    // they froze this screen («… isn't responding»). A country's list shows its biggest Geo.TOP cities; the search
-    // («بحث في مدن …») looks through all of them, also off the main thread.
-    private void pickCountry() {
-        final android.content.Context app = getApplicationContext();
-        loadThen(() -> Geo.countries(app), this::showCountries);
-    }
-
-    private void showCountries(final List<Geo.Country> all) {
-        if (all == null || all.isEmpty()) { pickCity(); return; }   // no bundled list (an incomplete build): the Saudi regions
-        final int head = 1;   // first «اكتب اسم مدينتك» (any country's city by its name), then the countries
-        String[] labels = new String[all.size() + head];
-        labels[0] = "اكتب اسم مدينتك";
-        int sel = -1;
-        String cur = prefs.country().isEmpty() ? "SA" : prefs.country();
-        for (int i = 0; i < all.size(); i++) {
-            labels[i + head] = all.get(i).ar;
-            if (all.get(i).cc.equals(cur)) sel = i + head;
-        }
-        AlertDialog d = dialog().setTitle("الدولة")
-            .setItems(labels, (x, i) -> { if (i < head) typeCity(); else pickCityOf(all.get(i - head)); }).create();
-        d.show();
-        if (sel >= 0) d.getListView().setSelection(sel);   // the current country in front
-    }
-
-    /** «اكتب اسم مدينتك»: a city of any country by its Arabic or English name (Geo.searchAll, off the main thread);
-     *  picking one sets its country too, as picking it from the country's list does */
-    private void typeCity() {
-        final android.content.Context app = getApplicationContext();
-        new Thread(() -> Geo.preloadNames(app), "geo").start();   // every country's cities read while the name is typed
-        ask("اسم مدينتك بالعربية أو الإنجليزية", q -> {
-            final long t0 = android.os.SystemClock.uptimeMillis();
-            loadThen(() -> placesFor(app, q), f -> showPlaces(f, q, t0));
-        });
-    }
-
-    /** the cities a search found and their rows */
-    private static final class Found {
-        final List<Geo.Place> places = new ArrayList<>();
-        final List<String> rows = new ArrayList<>();
-    }
-
-    /** the rows «المدينة، الدولة», with the region between when two found share a name («…، إلينوي، الولايات المتحدة») */
-    private static Found placesFor(android.content.Context app, String q) {
-        Found f = new Found();
-        f.places.addAll(Geo.searchAll(app, q));
-        java.util.Map<String, Integer> same = new java.util.HashMap<>();
-        for (Geo.Place p : f.places) { Integer n = same.get(p.name); same.put(p.name, n == null ? 1 : n + 1); }
-        for (Geo.Place p : f.places) {
-            Geo.Country k = Geo.country(app, p.cc);
-            String region = "";
-            if (same.get(p.name) > 1) {
-                Geo.City x = Geo.cityOf(app, p);
-                if (x != null && !x.region.isEmpty() && !Geo.key(x.region).equals(Geo.key(p.name))) region = x.region + "، ";
-            }
-            f.rows.add("‏" + p.name + "، " + region + (k == null ? p.cc : k.shortAr));   // an RLM first: a Latin name on the right too
-        }
-        return f;
-    }
-
-    private void showPlaces(final Found f, final String q, final long t0) {
-        if (f == null || f.places.isEmpty()) { toast("لا توجد نتائج، جرّب اسماً آخر أو اختر الدولة"); return; }
-        final android.content.Context app = getApplicationContext();
-        AlertDialog d = dialog().setTitle("«⁨" + q + "⁩»")   // the query isolated (FSI … PDI)
-            .setItems(f.rows.toArray(new String[0]), (x, i) -> {
-                final Geo.Place p = f.places.get(i);
-                loadThen(() -> Geo.cityOf(app, p), city -> {
-                    if (city == null) toast("تعذّر قراءة المدينة");
-                    else setPlace(city.name, city.lat, city.lon, p.cc, city.tz);
-                });
-            }).create();
-        d.show();
-        d.getListView().post(() -> android.util.Log.i("SaudiTV-Settings", "places «" + q + "» (" + f.places.size()
-            + ") shown in " + (android.os.SystemClock.uptimeMillis() - t0) + " ms"));
-    }
-
-    private void pickCityOf(final Geo.Country c) {
-        if ("SA".equals(c.cc)) { pickCity(); return; }
-        final android.content.Context app = getApplicationContext();
-        final long t0 = android.os.SystemClock.uptimeMillis();
-        loadThen(() -> Geo.top(Geo.cities(app, c.cc), Geo.TOP), l -> showCities(c, l, null, t0));
-    }
-
-    /** a country's biggest cities, or those a search kept (query); first a search, then «ابحث عن مدينة أخرى». t0: when
-     *  the country was picked (the time to the list shown goes to the log, tag SaudiTV-Settings), 0 for none */
-    private void showCities(final Geo.Country c, final List<Geo.City> found, final String query, final long t0) {
-        final List<Geo.City> list = found == null ? new ArrayList<Geo.City>() : found;
-        final android.content.Context app = getApplicationContext();
-        final int head = 2;
-        String[] labels = new String[list.size() + head];
-        labels[0] = query == null ? "بحث في مدن " + c.shortAr + "…" : "بحث آخر…";
-        labels[1] = "ابحث عن مدينة أخرى";
-        int sel = -1;
-        String[] cur = prefs.city();
-        for (int i = 0; i < list.size(); i++) {
-            Geo.City x = list.get(i);
-            // the region beside the name, unless it is the same place (القاهرة, الإسكندرية · الاسكندرية); an RLM first, so a
-            // Latin name keeps the right edge like the Arabic ones
-            String rg = x.region.isEmpty() || Geo.fold(x.region).equals(Geo.fold(x.name)) ? "" : "  ·  " + x.region;
-            labels[i + head] = "‏" + x.name + rg;
-            if (x.name.equals(cur[0]) && x.lat.equals(cur[1]) && x.lon.equals(cur[2])) sel = i + head;
-        }
-        if (list.isEmpty() && query != null) toast("لا توجد نتائج، جرّب «ابحث عن مدينة أخرى»");
-        AlertDialog d = dialog()
-            .setTitle(query == null ? c.ar : c.shortAr + ": «⁨" + query + "⁩»")   // the query isolated (FSI … PDI)
-            .setItems(labels, (x, i) -> {
-                if (i == 0) ask("اسم المدينة بالعربية أو الإنجليزية",
-                    q -> loadThen(() -> Geo.search(app, c.cc, q), l -> showCities(c, l, q, 0)));
-                else if (i == 1) searchCity(c);
-                else {
-                    Geo.City city = list.get(i - head);
-                    setPlace(city.name, city.lat, city.lon, c.cc, city.tz);
-                }
-            }).create();
-        d.show();
-        if (sel >= 0) d.getListView().setSelection(sel);
-        if (t0 > 0) d.getListView().post(() -> android.util.Log.i("SaudiTV-Settings", "cities " + c.cc + " shown in "
-            + (android.os.SystemClock.uptimeMillis() - t0) + " ms"));
-    }
-
-    interface Got<T> { void got(T v); }
-
-    /** work off the main thread, then done with its answer (null when it failed) on it; «جارٍ التحميل…» shows when it
-     *  takes more than 150 ms (Back there drops the answer) */
-    private <T> void loadThen(final java.util.concurrent.Callable<T> work, final Got<T> done) {
-        final AlertDialog[] wait = {null};
-        final boolean[] over = {false};
-        final Runnable showWait = () -> {
-            if (over[0] || isFinishing()) return;
-            wait[0] = dialog().setMessage("جارٍ التحميل…").setCancelable(true).show();
-        };
-        list.postDelayed(showWait, 150);
-        new Thread(() -> {
-            T r;
-            try { r = work.call(); } catch (Exception e) { r = null; }
-            final T got = r;
-            runOnUiThread(() -> {
-                over[0] = true;
-                list.removeCallbacks(showWait);
-                boolean dropped = wait[0] != null && !wait[0].isShowing();
-                if (wait[0] != null) wait[0].dismiss();
-                if (!isFinishing() && !dropped) done.got(got);
-            });
-        }, "geo").start();
-    }
-
-    /** any place of the country, from Open-Meteo's GeoNames search (no key), in Arabic where it has the name */
-    private void searchCity(final Geo.Country c) {
-        ask("اسم المدينة أو القرية", q -> fetch("https://geocoding-api.open-meteo.com/v1/search?count=20&language=ar&countryCode="
-            + c.cc + "&name=" + Uri.encode(q), json -> {
-                JSONArray a = new JSONObject(json).optJSONArray("results");
-                if (a == null || a.length() == 0) { toast("لا توجد نتائج"); return; }
-                final int n = a.length();
-                final String[] names = new String[n], lats = new String[n], lons = new String[n], zones = new String[n], rows = new String[n];
-                for (int i = 0; i < n; i++) {
-                    JSONObject x = a.getJSONObject(i);
-                    names[i] = x.optString("name");
-                    lats[i] = String.valueOf(x.optDouble("latitude"));
-                    lons[i] = String.valueOf(x.optDouble("longitude"));
-                    zones[i] = x.optString("timezone", "");
-                    String region = x.optString("admin1", "");
-                    rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
-                }
-                dialog().setTitle("اختر المكان")
-                    .setItems(rows, (d, i) -> setPlace(names[i], lats[i], lons[i], c.cc, zones[i])).show();
-            }));
-    }
-
-    /** the city, its country and time zone (none known: the nearest bundled city's) */
-    private void setPlace(final String name, final String lat, final String lon, final String cc, String tz) {
-        if (tz == null || tz.isEmpty()) {   // the nearest bundled city's (reads the country's list: off the main thread)
-            final android.content.Context app = getApplicationContext();
-            loadThen(() -> {
-                Geo.City near = Geo.nearest(app, cc, Double.parseDouble(lat), Double.parseDouble(lon));
-                return near == null ? "" : near.tz;
-            }, z -> savePlace(name, lat, lon, cc, z == null ? "" : z));
-            return;
-        }
-        savePlace(name, lat, lon, cc, tz);
-    }
-
-    private void savePlace(String name, String lat, String lon, String cc, String tz) {
-        String before = prefs.country(), news = prefs.newsCountry();
-        prefs.setCity(name, lat, lon, cc, tz);
-        // another country than before (never a re-pick in the same one): its news and its football (CountryChange)
-        CountryChange.Plan plan = CountryChange.plan(before, cc, news, Prefs.hasNewsList(cc));
-        if (plan != null) applyCountry(plan);
-        changed();
-        render();
-    }
-
-    /** a change of country: the news now, the table's league now, its top 3 clubs once the table is read */
-    private void applyCountry(final CountryChange.Plan plan) {
-        if (plan.newsMissing == null) prefs.setNewsOf(plan.news); else prefs.setNewsKept(plan.news, plan.newsMissing);
-        final String newsPart = plan.newsMissing == null ? "أخبار " + prefs.newsCountryName()
-            : "بقيت أخبار " + prefs.newsCountryName();
-        final Leagues.League l = plan.league;
-        if (l == null) { toast(newsPart + " · لا يوجد دوري لهذه الدولة، بقيت الفرق كما هي"); return; }
-        prefs.setLeague(l.id);
-        final int seq = ++countrySeq;
-        final android.content.Context app = getApplicationContext();
-        new Thread(() -> {
-            List<String[]> table = null;
-            try { table = TopClubs.table(l); }
-            catch (Exception e) { android.util.Log.w("SaudiTV-Settings", "table " + l.id + ": " + e); }
-            List<String[]> clubs = CountryChange.clubs(l.id, table);
-            final List<String> names = new ArrayList<>();
-            if (seq == countrySeq && !clubs.isEmpty()) {
-                List<String> v = new ArrayList<>();
-                for (String[] c : clubs) {
-                    String ar = clubName(app, c[1], false).replace("|", " ").replace(";", " ");
-                    v.add(c[0] + "|" + ar);
-                    names.add(ar);
-                }
-                prefs.setList("teams", v);
-            }
-            runOnUiThread(() -> {
-                if (seq != countrySeq) return;
-                changed();
-                if (isFinishing()) return;
-                render();
-                toast(newsPart + " · " + l.ar + " · " + (names.isEmpty() ? "بقيت الفرق كما هي" : Prefs.join(names, "، ")));
-            });
-        }, "country").start();
-    }
 
     /** «دولة الأخبار»'s note after a change to a country without a news list of its own */
     private String newsMissingNote() {
@@ -510,11 +288,6 @@ public class SettingsActivity extends Activity {
         return " · لا توجد قائمة أخبار خاصة ب" + (c == null ? m : c.shortAr);
     }
 
-    private String cityLabel() {
-        Geo.Country c = Geo.country(this, prefs.country());
-        String name = prefs.city()[0];
-        return c == null || name.equals(c.shortAr) ? name : name + "، " + c.shortAr;
-    }
 
     /** «طريقة الحساب»: the country's (تلقائي) or one of Geo.METHODS */
     private void pickMethod() {
@@ -557,7 +330,7 @@ public class SettingsActivity extends Activity {
 
     /** «الدوري في الترتيب»: the first followed club's league (تلقائي), or a country's league */
     private void pickTableLeague() {
-        final List<Leagues.Group> groups = groupsFirst(prefs.country(), false);
+        final List<Leagues.Group> groups = Pickers.groupsFirst(prefs.country(), false);
         String[] labels = new String[groups.size() + 1];
         labels[0] = "تلقائي: " + leagueLabel(prefs.autoLeague());
         for (int i = 0; i < groups.size(); i++) labels[i + 1] = groups.get(i).ar;
@@ -575,13 +348,6 @@ public class SettingsActivity extends Activity {
             }).show();
     }
 
-    /** the leagues' countries, the TV's own first (then the list's order) */
-    private static List<Leagues.Group> groupsFirst(String cc, boolean national) {
-        List<Leagues.Group> out = new ArrayList<>();
-        for (Leagues.Group g : Leagues.GROUPS) if (!cc.isEmpty() && (g.cc.equals(cc) || g.cc.startsWith(cc + "-"))) out.add(g);
-        for (Leagues.Group g : Leagues.GROUPS) if (!out.contains(g)) out.add(g);
-        return out;
-    }
 
     private String newsCountryLabel() {
         Geo.Country c = Geo.country(this, prefs.newsCountry());
@@ -613,50 +379,6 @@ public class SettingsActivity extends Activity {
             }).show();
     }
 
-    private void pickCity() {
-        final Cities.Region[] regions = Cities.REGIONS;
-        String[] labels = new String[regions.length + 1];
-        labels[0] = "بحث عن مدينة أو قرية…";
-        for (int i = 0; i < regions.length; i++) labels[i + 1] = regions[i].name + "  (" + regions[i].cities.length + ")";
-        dialog().setTitle("المنطقة")
-            .setItems(labels, (d, i) -> { if (i == 0) searchCity(); else pickCityIn(regions[i - 1]); })
-            .show();
-    }
-
-    private void pickCityIn(final Cities.Region r) {
-        String[] names = new String[r.cities.length];
-        int sel = -1;
-        for (int i = 0; i < names.length; i++) {
-            names[i] = r.cities[i][0];
-            if (names[i].equals(prefs.city()[0])) sel = i;
-        }
-        dialog().setTitle(r.name)
-            .setSingleChoiceItems(names, sel, (d, i) -> {
-                d.dismiss();
-                savePlace(r.cities[i][0], r.cities[i][1], r.cities[i][2], "SA", Prefs.TZ);   // a Saudi city: Riyadh time
-            }).show();
-    }
-
-    // any place in Saudi Arabia, from Open-Meteo's GeoNames search
-    private void searchCity() {
-        ask("اسم المدينة أو القرية", q -> fetch("https://geocoding-api.open-meteo.com/v1/search?count=20&language=ar&countryCode=SA&name="
-            + Uri.encode(q), json -> {
-                JSONArray a = new JSONObject(json).optJSONArray("results");
-                if (a == null || a.length() == 0) { toast("لا توجد نتائج"); return; }
-                final int n = a.length();
-                final String[] names = new String[n], lats = new String[n], lons = new String[n], rows = new String[n];
-                for (int i = 0; i < n; i++) {
-                    JSONObject c = a.getJSONObject(i);
-                    names[i] = c.optString("name");
-                    lats[i] = String.valueOf(c.optDouble("latitude"));
-                    lons[i] = String.valueOf(c.optDouble("longitude"));
-                    String region = c.optString("admin1", "");
-                    rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
-                }
-                dialog().setTitle("اختر المكان")
-                    .setItems(rows, (d, i) -> savePlace(names[i], lats[i], lons[i], "SA", Prefs.TZ)).show();
-            }));
-    }
 
     /** Followed teams: untick to remove, or add one (presets, league browsing, search). Up to 10. */
     private void manageTeams() {
@@ -673,221 +395,11 @@ public class SettingsActivity extends Activity {
                 render();
             })
             .setNegativeButton("إلغاء", null);
-        if (cur.size() < Prefs.MAX_TEAMS) b.setNeutralButton("إضافة فريق", (d, w) -> pickTeam(0));
+        if (cur.size() < Prefs.MAX_TEAMS) b.setNeutralButton("إضافة فريق", (d, w) -> pickers.pickTeam(0));
         if (!cur.isEmpty()) b.setMultiChoiceItems(labels, keep, (d, i, checked) -> keep[i] = checked);
         b.show();
     }
 
-    private void addTeam(String id, String name) {
-        if (prefs.addTeam(id, name)) toast("تمت متابعة " + name);
-        else toast(prefs.teams().size() >= Prefs.MAX_TEAMS ? "الحد الأعلى " + num(Prefs.MAX_TEAMS) + " فرق" : "متابَع مسبقاً");
-        render();
-    }
-
-    /** «إضافة فريق»: the country (or «منتخبات»), its league, then the club (ESPN's lists; TheSportsDB's for the leagues
-     *  ESPN does not carry); the search by name (TheSportsDB) last, as before */
-    private void pickTeam(final int slot) {
-        final List<Leagues.Group> groups = groupsFirst(prefs.country(), true);
-        String[] labels = new String[groups.size() + 2];
-        labels[0] = "منتخبات";
-        for (int i = 0; i < groups.size(); i++) labels[i + 1] = groups.get(i).ar;
-        labels[labels.length - 1] = "بحث عن أي فريق أو منتخب…";
-        AlertDialog d = dialog().setTitle("إضافة فريق")
-            .setItems(labels, (x, i) -> {
-                if (i == 0) espnTeams(Leagues.NATIONAL, "منتخبات", true);
-                else if (i == labels.length - 1) searchTeam(slot);
-                else pickLeagueOf(slot, groups.get(i - 1));
-            }).create();
-        d.show();
-        String cc = prefs.country();
-        if (!cc.isEmpty() && !groups.isEmpty() && (groups.get(0).cc.equals(cc) || groups.get(0).cc.startsWith(cc + "-")))
-            d.getListView().setSelection(1);   // the country's own clubs in front, as its leagues are first
-    }
-
-    private void pickLeagueOf(final int slot, final Leagues.Group g) {
-        if (g.leagues.length == 1) { clubsOf(slot, g.leagues[0]); return; }
-        String[] names = new String[g.leagues.length];
-        for (int i = 0; i < names.length; i++) names[i] = g.leagues[i].ar;
-        dialog().setTitle(g.ar)
-            .setItems(names, (d, i) -> clubsOf(slot, g.leagues[i])).show();
-    }
-
-    private void clubsOf(int slot, Leagues.League l) {
-        if (l.espn()) espnTeams(l.id, l.ar, false); else tsdbTeams(slot, l);
-    }
-
-    /** a club's (or a national team's) name: the bundled Arabic one (teams-ar.json; a country's for a national team),
-     *  else ESPN's English one */
-    private String clubName(String en, boolean national) { return clubName(this, en, national); }
-
-    private static String clubName(android.content.Context c, String en, boolean national) {
-        String k = Arabic.known(c, en);
-        if (k != null) return k;
-        if (national) { String n = Geo.arabicOf(c, en); if (n != null) return n; }
-        return en;
-    }
-
-    /** the teams of an ESPN league (site.api.espn.com, no key), by name; followed as E<id>@<league> */
-    private void espnTeams(final String slug, final String title, final boolean national) {
-        fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/" + slug + "/teams", json -> {
-            JSONArray sports = new JSONObject(json).optJSONArray("sports");
-            JSONArray leagues = sports == null || sports.length() == 0 ? null : sports.getJSONObject(0).optJSONArray("leagues");
-            JSONArray teams = leagues == null || leagues.length() == 0 ? null : leagues.getJSONObject(0).optJSONArray("teams");
-            if (teams == null || teams.length() == 0) { toast("تعذّر تحميل هذا الدوري"); return; }
-            final List<String[]> rows = new ArrayList<>();   // id, name
-            for (int i = 0; i < teams.length(); i++) {
-                JSONObject t = teams.getJSONObject(i).optJSONObject("team");
-                if (t == null || t.optString("id").isEmpty()) continue;
-                String en = t.optString("displayName", t.optString("name"));
-                rows.add(new String[] {"E" + t.optString("id") + "@" + slug, clubName(en, national)});
-            }
-            showClubs(title, rows, null);
-        });
-    }
-
-    /** a TheSportsDB league's clubs (no ESPN list): its table (the top 5 with the free key) and its list (10 of them),
-     *  then «بحث عن نادٍ آخر…»; followed as <id>@tsdb.<league> */
-    private void tsdbTeams(final int slot, final Leagues.League l) {
-        fetch(SPORTS + "lookupleague.php?id=" + l.tsdb(), json -> {
-            JSONArray ls = new JSONObject(json).optJSONArray("leagues");
-            final String season = ls == null || ls.length() == 0 ? "" : ls.getJSONObject(0).optString("strCurrentSeason", "");
-            fetch(SPORTS + "lookuptable.php?l=" + l.tsdb() + "&s=" + Uri.encode(season), table -> fetch(SPORTS + "search_all_teams.php?l="
-                + Uri.encode(l.en), list -> {
-                    final List<String[]> rows = new ArrayList<>();
-                    java.util.Set<String> seen = new java.util.HashSet<>();
-                    for (String[] src : new String[][] {{table, "table"}, {list, "teams"}}) {
-                        JSONArray a = null;
-                        try { a = new JSONObject(src[0]).optJSONArray(src[1]); } catch (Exception ignored) { }
-                        for (int i = 0; a != null && i < a.length(); i++) {
-                            JSONObject t = a.getJSONObject(i);
-                            String id = t.optString("idTeam");
-                            if (id.isEmpty() || !seen.add(id)) continue;
-                            rows.add(new String[] {id + "@" + l.id, clubName(t.optString("strTeam"), false)});
-                        }
-                    }
-                    if (rows.isEmpty()) { toast("تعذّر تحميل هذا الدوري، جرّب البحث عن الفريق"); return; }
-                    showClubs(l.ar, rows, () -> searchTeam(slot));
-                }));
-        });
-    }
-
-    /** the clubs in Arabic order; more: a last row «بحث عن نادٍ آخر…» */
-    private void showClubs(String title, final List<String[]> rows, final Runnable more) {
-        final java.text.Collator col = java.text.Collator.getInstance(new java.util.Locale("ar"));
-        Collections.sort(rows, (a, b) -> col.compare(a[1], b[1]));
-        final int n = rows.size();
-        String[] labels = new String[n + (more == null ? 0 : 1)];
-        for (int i = 0; i < n; i++) labels[i] = "‏" + rows.get(i)[1];   // RLM: an English name keeps the right edge too
-        if (more != null) labels[n] = "بحث عن نادٍ آخر…";
-        dialog().setTitle(title)
-            .setItems(labels, (d, i) -> { if (i < n) addTeam(rows.get(i)[0], rows.get(i)[1]); else more.run(); })
-            .show();
-    }
-
-    private void searchTeam(final int slot) {
-        ask("اسم الفريق بالإنجليزية (مثل Al-Nassr أو Real Madrid)",
-            q -> fetch(SPORTS + "searchteams.php?t=" + Uri.encode(q), json -> showTeams(slot, json, "اختر الفريق", null)));
-    }
-
-    private static final String SPORTS = "https://www.thesportsdb.com/api/v1/json/123/";
-
-    /** league != null: keep only clubs that really play in it, so a wrong API answer never shows. */
-    private void showTeams(final int slot, String json, String title, String league) throws Exception {
-                JSONArray all = new JSONObject(json).optJSONArray("teams");
-                JSONArray a = new JSONArray();
-                for (int i = 0; all != null && i < all.length(); i++) {
-                    JSONObject t = all.getJSONObject(i);
-                    boolean inLeague = league == null;
-                    for (int k = 1; !inLeague && k <= 7; k++)
-                        inLeague = league.equalsIgnoreCase(t.optString(k == 1 ? "strLeague" : "strLeague" + k));
-                    if (inLeague) a.put(t);
-                }
-                for (String[] x : Prefs.LEAGUE_EXTRA) {   // clubs the listing misses
-                    if (league == null || !league.equalsIgnoreCase(x[0])) continue;
-                    boolean listed = false;
-                    for (int i = 0; i < a.length(); i++) listed |= x[1].equals(a.getJSONObject(i).optString("idTeam"));
-                    if (!listed) a.put(new JSONObject().put("idTeam", x[1]).put("strTeam", x[2]).put("strLeague", x[0]));
-                }
-                if (a.length() == 0) {
-                    toast(league == null ? "لا توجد نتائج" : "تعذّر تحميل هذا الدوري، جرّب البحث عن الفريق");
-                    return;
-                }
-                final int n = Math.min(a.length(), 60);
-                final String[] ids = new String[n], names = new String[n], rows = new String[n];
-                for (int i = 0; i < n; i++) {
-                    JSONObject t = a.getJSONObject(i);
-                    ids[i] = t.optString("idTeam");
-                    // a club of a league the table can show (Leagues' TheSportsDB ones): its league with it
-                    for (Leagues.Group g : Leagues.GROUPS) for (Leagues.League l : g.leagues)
-                        if (!l.espn() && l.en.equalsIgnoreCase(t.optString("strLeague", "")) && ids[i].matches("\\d+")) ids[i] += "@" + l.id;
-                    names[i] = t.optString("strTeam");
-                    rows[i] = Arabic.team(this, names[i]) + "  ·  " + leagueAr(t.optString("strLeague", ""));
-                }
-                dialog().setTitle(title)
-                    .setItems(rows, (d, i) -> inArabic(names[i], Arabic.TEAM, ar -> addTeam(ids[i], ar)))
-                    .show();
-    }
-
-    private void pickMany(final String key, String title, final String[][] options) {
-        List<String> cur = prefs.list(key);
-        String[] labels = new String[options.length];
-        final boolean[] on = new boolean[options.length];
-        for (int i = 0; i < options.length; i++) { labels[i] = options[i][1]; on[i] = cur.contains(options[i][0]); }
-        dialog().setTitle(title + " (بدون اختيار = الكل)")
-            .setMultiChoiceItems(labels, on, (d, i, checked) -> on[i] = checked)
-            .setPositiveButton("حفظ", (d, w) -> {
-                List<String> v = new ArrayList<>();
-                for (int i = 0; i < options.length; i++) if (on[i]) v.add(options[i][0]);
-                prefs.setList(key, v);
-                render();
-            })
-            .setNegativeButton("إلغاء", null).show();
-    }
-
-    private void manageShows() {
-        final List<String> cur = prefs.shows();
-        String[] labels = new String[cur.size()];
-        final boolean[] keep = new boolean[cur.size()];
-        for (int i = 0; i < cur.size(); i++) { labels[i] = cur.get(i).split("\\|", 2)[1]; keep[i] = true; }
-        AlertDialog.Builder b = dialog()
-            .setTitle(cur.isEmpty() ? "لا توجد مسلسلات مختارة" : "المسلسلات المختارة (ألغِ التحديد للحذف)")
-            .setPositiveButton("حفظ", (d, w) -> {
-                List<String> v = new ArrayList<>();
-                for (int i = 0; i < cur.size(); i++) if (keep[i]) v.add(cur.get(i));
-                prefs.setList("shows", v);
-                render();
-            })
-            .setNeutralButton("إضافة مسلسل", (d, w) -> searchShow())
-            .setNegativeButton("إلغاء", null);
-        if (!cur.isEmpty()) b.setMultiChoiceItems(labels, keep, (d, i, checked) -> keep[i] = checked);
-        b.show();
-    }
-
-    private void searchShow() {
-        ask("اسم المسلسل", q -> fetch("https://api.tvmaze.com/search/shows?q=" + Uri.encode(q), json -> {
-            JSONArray a = new JSONArray(json);
-            if (a.length() == 0) { toast("لا توجد نتائج"); return; }
-            final int n = Math.min(a.length(), 15);
-            final String[] ids = new String[n], names = new String[n], rows = new String[n];
-            for (int i = 0; i < n; i++) {
-                JSONObject s = a.getJSONObject(i).getJSONObject("show");
-                ids[i] = String.valueOf(s.optInt("id"));
-                names[i] = s.optString("name").replace("|", " ").replace(";", " ");
-                String year = s.optString("premiered", "");
-                rows[i] = names[i] + (year.length() >= 4 ? "  ·  " + year.substring(0, 4) : "")
-                    + "  ·  " + labelOf(Prefs.LANGS, s.optString("language", ""));
-            }
-            dialog().setTitle("اختر المسلسل")
-                .setItems(rows, (d, i) -> {
-                    for (String s : prefs.shows()) if (s.startsWith(ids[i] + "|")) { toast("مضاف مسبقاً"); return; }
-                    List<String> v = prefs.shows();
-                    v.add(ids[i] + "|" + names[i]);
-                    prefs.setList("shows", v);
-                    toast("تمت إضافة " + names[i]);
-                    render();
-                }).show();
-        }));
-    }
 
     /** «ترتيب المفضلة» lives in the launcher (it owns the row). */
     private void openDockSettings() {
@@ -1048,8 +560,14 @@ public class SettingsActivity extends Activity {
         return (prefs.tapeAuto() ? "تلقائي · " : "") + Prefs.join(names, "، ");
     }
 
-    /** «شكل التطبيقات» (shape) or «شكل التحديد»: the home screen redraws its tiles at once (CONFIG_CHANGED). */
+    /** «شكل التطبيقات» (shape) or «شكل التحديد»: the home screen redraws its tiles at once (CONFIG_CHANGED). Each
+     *  choice with its picture (TilePreview: the apps' icons are read first, off the main thread). */
     private void pickTileLook(final boolean shape) {
+        final android.content.Context app = getApplicationContext();
+        loadThen(() -> TilePreview.apps(app), apps -> showTileLook(shape, apps));
+    }
+
+    private void showTileLook(final boolean shape, final List<TilePreview.App> apps) {
         final String[][] table = shape ? Prefs.TILE_SHAPES : Prefs.FOCUS_STYLES;
         String cur = shape ? prefs.tileShape() : prefs.focusStyle();
         String[] labels = new String[table.length];
@@ -1058,14 +576,23 @@ public class SettingsActivity extends Activity {
             labels[i] = table[i][1];
             if (table[i][0].equals(cur)) sel = i;
         }
-        dialog().setTitle(shape ? "شكل التطبيقات" : "شكل التحديد")
-            .setSingleChoiceItems(labels, sel, (d, i) -> {
+        AlertDialog d = dialog().setTitle(shape ? "شكل التطبيقات" : "شكل التحديد")
+            .setSingleChoiceItems(labels, sel, (x, i) -> {
                 if (shape) prefs.setTileShape(table[i][0]); else prefs.setFocusStyle(table[i][0]);
-                d.dismiss();
+                x.dismiss();
                 changed();
                 render();
             })
             .show();
+        if (apps == null || apps.isEmpty()) return;   // no apps read: the choices without pictures
+        // each row with its picture: the shape's 3 tiles, or 2 tiles of the current shape, the second focused in that look
+        final boolean circles = "circle".equals(prefs.tileShape());
+        ListView lv = d.getListView();
+        if (lv == null || lv.getAdapter() == null) return;
+        lv.setAdapter(TilePreview.withPictures(d.getContext(), lv.getAdapter(), i -> shape
+            ? TilePreview.shapes(this, "circle".equals(table[i][0]), apps)
+            : TilePreview.focus(this, circles, "apple".equals(table[i][0]), apps)));
+        lv.setItemChecked(sel, true);   // a new adapter clears the choice
     }
 
     /** A card setting holds a comma list now */
@@ -1118,19 +645,15 @@ public class SettingsActivity extends Activity {
         return Prefs.join(names, "، ");
     }
 
+    /** «توفير الطاقة»'s value: on, the lighter ticker; off, what it would do */
+    private String lowPowerLabel() {
+        return prefs.lowPower() ? "يعمل · شريط الأسعار أخف (" + num(30) + " إطارًا في الثانية)"
+            : "متوقف · شريط الأسعار أخف عند التشغيل (" + num(30) + " إطارًا في الثانية بدل " + num(60) + ")";
+    }
+
     /** a home screen in front (behind a dialog) shows the new settings now, as after saver.sh */
     private void changed() {
         sendBroadcast(new Intent(SaverReceiver.CHANGED).setPackage("com.raad.sauditv.home"));
-    }
-
-    private void pickRating() {
-        String[] labels = Prefs.MIN_RATINGS.clone();
-        labels[0] = "بدون حد";
-        int sel = 0;
-        for (int i = 0; i < Prefs.MIN_RATINGS.length; i++) if (Prefs.MIN_RATINGS[i].equals(prefs.minRating())) sel = i;
-        dialog().setTitle("أقل تقييم")
-            .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setMinRating(Prefs.MIN_RATINGS[i]); d.dismiss(); render(); })
-            .show();
     }
 
     private void updateNow() {
@@ -1424,17 +947,18 @@ public class SettingsActivity extends Activity {
             }).show();
     }
 
-    /** «متى تعمل الإذاعة» (RadioWhen): RadioService follows it at once */
-    private void pickRadioWhen() {
-        String[] labels = new String[RadioWhen.CHOICES.length];
+    /** «إذاعة القرآن الكريم»: off, or where it plays (RadioWhen.MODES, saved as the radio on/off and RadioWhen);
+     *  RadioService follows it at once */
+    private void pickRadio() {
+        String[] labels = new String[RadioWhen.MODES.length];
         int sel = 0;
         for (int i = 0; i < labels.length; i++) {
-            labels[i] = RadioWhen.CHOICES[i][1];
-            if (RadioWhen.CHOICES[i][0].equals(prefs.radioWhen())) sel = i;
+            labels[i] = RadioWhen.MODES[i][1];
+            if (RadioWhen.MODES[i][0].equals(prefs.radioMode())) sel = i;
         }
-        dialog().setTitle("متى تعمل الإذاعة")
+        dialog().setTitle("إذاعة القرآن الكريم")
             .setSingleChoiceItems(labels, sel, (d, i) -> {
-                prefs.setRadioWhen(RadioWhen.CHOICES[i][0]);
+                prefs.setRadioMode(RadioWhen.MODES[i][0]);
                 changed();
                 d.dismiss();
                 render();
@@ -1480,25 +1004,6 @@ public class SettingsActivity extends Activity {
 
     // ---------- labels ----------
 
-    /** Wikidata's Arabic name (or a transliteration) fetched off the UI thread. */
-    private void inArabic(final String en, final java.util.regex.Pattern kind, final Text then) {
-        toast("جارٍ جلب الاسم بالعربية…");
-        new Thread(() -> {
-            String k = kind == Arabic.TEAM ? Arabic.known(getApplicationContext(), en) : null;
-            final String ar = k != null ? k : Arabic.lookup(en, kind);
-            runOnUiThread(() -> { if (!isFinishing()) then.got(ar); });
-        }).start();
-    }
-
-    private static String leagueAr(String en) {
-        for (String[] l : Prefs.LEAGUES) if (l[0].equalsIgnoreCase(en)) return l[1];
-        return Arabic.translit(en);
-    }
-
-    private static String labelOf(String[][] options, String key) {
-        for (String[] o : options) if (o[0].equalsIgnoreCase(key)) return o[1];
-        return Arabic.translit(key);
-    }
 
     private String teamsLabel() {
         List<String> names = new ArrayList<>();
@@ -1508,20 +1013,6 @@ public class SettingsActivity extends Activity {
 
     /** a number in the chosen digits («شكل الأرقام») */
     private String num(long n) { return Prefs.digits(this, n); }
-
-    private String showsLabel() {
-        List<String> v = prefs.shows();
-        if (v.isEmpty()) return "لا شيء";
-        List<String> names = new ArrayList<>();
-        for (String s : v) names.add(s.split("\\|", 2)[1]);
-        return Prefs.join(names, "، ");
-    }
-
-    private static String labels(String[][] options, List<String> picked, String none) {
-        List<String> out = new ArrayList<>();
-        for (String[] o : options) if (picked.contains(o[0])) out.add(o[1]);
-        return out.isEmpty() ? none : Prefs.join(out, "، ");
-    }
 
     // ---------- small UI helpers ----------
 
@@ -1538,12 +1029,13 @@ public class SettingsActivity extends Activity {
         return tf;
     }
 
-    /** every dialog here takes the mouse too (Mouse.dialog: hover = the D-pad's focus, the wheel = ▲▼, right-click = Back) */
-    private AlertDialog.Builder dialog() {
-        return new AlertDialog.Builder(this, DIALOG_THEME) {
-            @Override public AlertDialog create() { AlertDialog d = super.create(); Mouse.dialog(d); return d; }
-        };
-    }
+    /** every dialog here takes the mouse too (Pickers.dialog: Mouse.dialog) */
+    private AlertDialog.Builder dialog() { return pickers.dialog(); }
+
+    /** off the main thread, then on it (Pickers.loadThen) */
+    private <T> void loadThen(java.util.concurrent.Callable<T> work, Pickers.Got<T> done) { pickers.loadThen(work, done); }
+
+    private void ask(String hint, Pickers.Text then) { pickers.ask(hint, then); }
 
     private void header(String text) {
         TextView t = new TextView(this);
@@ -1628,59 +1120,6 @@ public class SettingsActivity extends Activity {
         return card;
     }
 
-    interface Text { void got(String s); }
-    interface Json { void got(String json) throws Exception; }
-
-    private void ask(String hint, final Text then) {
-        final EditText in = new EditText(this);
-        in.setHint(hint);
-        in.setSingleLine(true);
-        in.setInputType(InputType.TYPE_CLASS_TEXT);
-        in.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
-        final AlertDialog d = dialog().setTitle("بحث").setView(in)
-            .setPositiveButton("بحث", (x, w) -> {
-                String q = in.getText().toString().trim();
-                if (!q.isEmpty()) then.got(q);
-            })
-            .setNegativeButton("إلغاء", null).show();
-        // the keyboard's search key (the TV's keyboard, or the phone remote's) does what «بحث» does
-        in.setOnEditorActionListener((v, action, ev) -> {
-            if (action != android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH && action != android.view.inputmethod.EditorInfo.IME_ACTION_DONE) return false;
-            d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-            return true;
-        });
-        in.requestFocus();
-    }
-
-    /** GET on a background thread, result handled on the UI thread. */
-    private void fetch(final String url, final Json then) {
-        toast("جارٍ البحث…");
-        new Thread(() -> {
-            String body = null;
-            HttpURLConnection con = null;
-            try {
-                con = (HttpURLConnection) new URL(url).openConnection();
-                con.setConnectTimeout(12000);
-                con.setReadTimeout(15000);
-                InputStream in = con.getInputStream();
-                ByteArrayOutputStream b = new ByteArrayOutputStream();
-                byte[] buf = new byte[8192];
-                int n;
-                while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
-                in.close();
-                body = b.toString("UTF-8");
-            } catch (Exception ignored) {
-            } finally {
-                if (con != null) con.disconnect();
-            }
-            final String result = body;
-            runOnUiThread(() -> {
-                if (isFinishing()) return;
-                if (result == null) { toast("لا يوجد اتصال"); return; }
-                try { then.got(result); } catch (Exception e) { toast("تعذرت قراءة النتائج"); }
-            });
-        }).start();
-    }
 
     private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
 

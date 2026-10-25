@@ -14,7 +14,8 @@ import java.util.Comparator;
 
 /**
  * Answers the page's font and photo requests from the device instead of the network, so the screensaver
- * opens at once. Fonts and bundled photos come from the APK; hosted photos are downloaded once and kept.
+ * opens at once. Fonts and bundled photos come from the APK; hosted photos are downloaded once and kept. Photos are
+ * served at the size this screen draws them (PhotoScale).
  */
 final class PhotoCache {
     static final String REPO = "https://raw.githubusercontent.com/raad113/SaudiTV/main/";
@@ -35,15 +36,20 @@ final class PhotoCache {
                 h.put("Access-Control-Allow-Origin", "*");
                 return new WebResourceResponse("font/woff2", null, 200, "OK", h, c.getAssets().open("fonts/" + name));
             }
+            // both kinds at the size this screen draws them (PhotoScale), else as they are
             if (url.startsWith(BUNDLED)) {
-                String name = safeName(url.substring(BUNDLED.length()));
-                return name == null ? null : jpeg(c.getAssets().open("backgrounds/" + name));
+                final String name = safeName(url.substring(BUNDLED.length()));
+                if (name == null) return null;
+                File small = PhotoScale.of(c, "b-" + name, () -> c.getAssets().open("backgrounds/" + name));
+                return jpeg(small != null ? new FileInputStream(small) : c.getAssets().open("backgrounds/" + name));
             }
             if (url.startsWith(HOSTED)) {
                 String name = safeName(url.substring(HOSTED.length()));
                 if (name == null) return null;   // index.json and anything else go to the network
-                File f = hosted(c, url, name);
-                return f == null ? null : jpeg(new FileInputStream(f));
+                final File f = hosted(c, url, name);
+                if (f == null) return null;
+                File small = PhotoScale.of(c, name, () -> new FileInputStream(f));
+                return jpeg(new FileInputStream(small != null ? small : f));
             }
         } catch (Exception ignored) { }
         return null;

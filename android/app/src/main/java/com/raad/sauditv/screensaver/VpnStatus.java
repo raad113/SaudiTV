@@ -14,10 +14,13 @@ import java.net.URL;
  * VPN state for the badge beside the clock.
  *   0 = no VPN, 1 = VPN up and traffic gets through, 2 = a VPN is reported but nothing gets through
  * (a VPN app that shows "disconnected" can leave its tunnel up and swallow all traffic).
- * The page asks every 3 s; the reachability probe runs at most every 15 s, off the main thread.
+ * The page asks every 3 s; the reachability probe runs at most every PROBE_MS (30 s: a dead tunnel shows within about
+ * 30 s), the exit's country at most every COUNTRY_MS (5 min; a new connection asks again at once), off the main thread.
+ * Each is a fresh HTTPS connection: they were every 15 s and every minute, most of the screensaver's idle traffic.
  */
 public final class VpnStatus {
     static final String PROBE = "https://www.google.com/generate_204";
+    static final long PROBE_MS = 30_000, COUNTRY_MS = 5 * 60_000;
 
     private static volatile boolean lastOk = true, probing, fetchingCountry, hadVpn;
     private static volatile long probedAt = -60_000, countryAt = -600_000;
@@ -38,7 +41,7 @@ public final class VpnStatus {
         if (!hasVpn(c)) { hadVpn = false; country = ""; return 0; }
         if (!hadVpn) { hadVpn = true; countryAt = -600_000; probedAt = -60_000; }   // fresh connection: ask again now
         long now = SystemClock.elapsedRealtime();
-        if (!probing && now - probedAt > 15_000) {
+        if (!probing && now - probedAt > PROBE_MS) {
             probing = true;
             new Thread(() -> {
                 boolean ok = reachable();
@@ -47,7 +50,7 @@ public final class VpnStatus {
                 probing = false;
             }, "vpn-probe").start();
         }
-        if (lastOk && !fetchingCountry && now - countryAt > 60_000) {
+        if (lastOk && !fetchingCountry && now - countryAt > COUNTRY_MS) {
             fetchingCountry = true;
             new Thread(() -> {
                 String cc = lookupCountry();

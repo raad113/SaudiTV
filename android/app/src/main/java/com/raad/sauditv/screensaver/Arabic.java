@@ -14,7 +14,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/** Arabic names for teams and shows: Wikidata's Arabic label, else a transliteration. Same rules as the page. */
+/** Arabic names for teams: Wikidata's Arabic label, else a transliteration. Same rules as the page. */
 final class Arabic {
     private Arabic() {}
 
@@ -49,7 +49,6 @@ final class Arabic {
     }
 
     static final Pattern TEAM = Pattern.compile("football|soccer|club|team", Pattern.CASE_INSENSITIVE);
-    static final Pattern SHOW = Pattern.compile("television|series|sitcom|anime|miniseries|show", Pattern.CASE_INSENSITIVE);
 
     private static final Map<String, String> DIGRAPHS = new HashMap<>();
     private static final Map<Character, String> LETTERS = new HashMap<>();

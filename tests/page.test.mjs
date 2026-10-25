@@ -103,7 +103,7 @@ const SAMPLE = {
   world: () => { NEWS.world = [0, 1, 2, 3].map(i => ({ headline: 'خبر من العالم ' + i, source: i % 2 ? 'العربية' : 'سكاي نيوز عربية', t: Date.now() - i * 36e5, link: '' })); },
 };
 const EXPECT = { prayers: [6, 'مواقيت اليوم'], forecast: [5, 'الأيام القادمة · الرياض'], matches: [2, 'مباريات فرقك'],
-                 verse: [2, 'آية اليوم'], hadith: [2, 'حديث اليوم'], shows: [1, 'هذا الأسبوع'], local: [3, 'أخبار الرياض'],
+                 verse: [2, 'آية اليوم'], hadith: [2, 'حديث اليوم'], local: [3, 'أخبار الرياض'],
                  world: [3, 'أخبار العالم'] };
 for (const [panel, [rows, title]] of Object.entries(EXPECT)) {
   const { p, ctx, errors } = await open('tv.html', 'teams=136013&panel=' + panel);
@@ -340,9 +340,12 @@ for (const [label, native, want] of [
   await ctx.close();
 }
 
-// ---- old settings links and «لا شيء»
-for (const [hash, panel, shown] of [['', 'shows', true], ['week=0', 'none', false], ['week=1', 'shows', true],
-                                     ['panel=none', 'none', false], ['panel=bogus', 'shows', true]]) {
+// ---- old settings links and «لا شيء». The TV shows card is gone: panel=shows (an older settings app) is the prayers
+// card, and the old #week and the shows' filters (#genres, #langs, #shows, #minrating) are ignored
+for (const [hash, panel, shown] of [['', 'prayers', true], ['week=0', 'prayers', true], ['week=1', 'prayers', true],
+                                     ['panel=none', 'none', false], ['panel=bogus', 'prayers', true],
+                                     ['panel=shows', 'prayers', true],
+                                     ['panel=news&genres=Drama&langs=English&shows=82,169&minrating=8&week=1', 'news', true]]) {
   const { p, ctx, errors } = await open('tv.html', hash);
   const r = await p.evaluate(() => [CONFIG.panel, getComputedStyle(document.querySelector('.week')).display !== 'none']);
   check(`link #${hash || '(empty)'} → ${panel}, card ${shown ? 'shown' : 'hidden'}`,
@@ -351,7 +354,7 @@ for (const [hash, panel, shown] of [['', 'shows', true], ['week=0', 'none', fals
 }
 
 // ---- card-only mode for the launcher: transparent, only the card, no photo
-for (const panel of ['prayers', 'verse', 'hadith', 'shows']) {
+for (const panel of ['prayers', 'verse', 'hadith']) {
   const { p, ctx, errors } = await open('tv.html', `widget=1&panel=${panel}`, { width: 461, height: 250 });
   const r = await p.evaluate(() => ({
     bg: getComputedStyle(document.body).backgroundColor,
@@ -373,17 +376,42 @@ for (const [panel, title] of [['world', 'أخبار العالم'], ['hadith', '
   await ctx.close();
 }
 
+// ---- the TV shows card is gone: neither page names its API (GONE_API) any more, and no link (an older settings app's
+// panel=shows, a rotation or detail page that lists it, its filters) makes a request to it. The name is spelled in two
+// parts so that a search of the repo for it finds nothing at all.
+const GONE_API = new RegExp(['tv', 'maze'].join(''), 'i');
+for (const file of ['saudi-tv.html', 'tv.html'])
+  check(`${file}: the TV shows API is not in the page`, !GONE_API.test(readFileSync(path.join(ROOT, 'dist', file), 'utf8')));
+for (const [file, hash] of [['tv.html', 'panel=shows&genres=Drama&langs=English&shows=82&minrating=7'],
+                            ['tv.html', 'panel=shows&panels=shows,prayers,news&rotate=5'],
+                            ['tv.html', 'widget=1&panel=shows'], ['tv.html', 'home=1&panel=shows'],
+                            ['tv.html', 'detail=shows&panels=shows,prayers'], ['saudi-tv.html', 'panel=shows&week=1']]) {
+  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await ctx.clock.setFixedTime(FIXED);
+  const asked = [];
+  await ctx.route(/^https?:/, r => { asked.push(r.request().url()); return r.abort(); });
+  const p = await ctx.newPage();
+  const errors = [];
+  p.on('pageerror', e => errors.push(e.message));
+  await p.goto(page(file) + '#' + hash);
+  await p.waitForTimeout(1500);
+  const shows = asked.filter(u => GONE_API.test(u));
+  check(`${file} #${hash}: no request to the TV shows API, no errors`, !shows.length && !errors.length, shows.concat(errors).join('; '));
+  await ctx.close();
+}
+
 // ---- last panels come back at once on the next start
 {
   const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
   await ctx.clock.setFixedTime(FIXED);
   await ctx.route(/^https?:/, r => r.abort());
   const p = await ctx.newPage();
-  await p.goto(page('tv.html') + '#panel=shows');
+  await p.goto(page('tv.html') + '#panel=prayers');
   await p.waitForTimeout(800);
-  await p.evaluate(() => { document.getElementById('week-list').innerHTML = '<li>SAVED</li>'; saveSnap(); });
+  // the match row: offline, nothing redraws it (every card beside the clock draws itself at once)
+  await p.evaluate(() => { document.getElementById('match-row').innerHTML = '<div>SAVED</div>'; saveSnap(); });
   await p.reload();
-  const t = await p.evaluate(() => document.getElementById('week-list').textContent);
+  const t = await p.evaluate(() => document.getElementById('match-row').textContent);
   check('saved panels restored on the next start', t === 'SAVED', t);
   await ctx.close();
 }
@@ -690,6 +718,89 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
   r = await p.evaluate(() => [document.documentElement.classList.contains('mouse'), getComputedStyle(document.body).cursor]);
   check('mouse, home: the pointer shows while it moves', r[0] && r[1] === 'default', JSON.stringify(r));
   await ctx.close();
+}
+
+// ---- «توفير الطاقة» (#lowpower=1): the ticker tape's animation in 30 steps a second (steps() easing), at the same
+// speed; without it a smooth (linear) one, as before. Both the compositor's: the page sets nothing while it runs
+{
+  const tapeRun = async (hash, ms = 1000) => {
+    const { p, ctx, errors } = await open('tv.html', hash);
+    await p.evaluate(() => { TAPE.forEach((t, i) => { TAPE_Q[i] = mkTapeHtml(t.fmt === 'fx' ? 3.75 : 1234, 0.5, t.fmt); }); tapeRender(); });
+    await p.waitForFunction(() => !!TAPE_ANIM, null, { timeout: 3000 }).catch(() => errors.push('no tape animation'));
+    await p.waitForTimeout(200);
+    // the run's place on every frame for t ms: how many different places a second, how far it went
+    const sample = t => p.evaluate(t => new Promise(done => {
+      const run = document.getElementById('tape-run'), x = () => new DOMMatrix(getComputedStyle(run).transform).m41;
+      const seen = new Set(), x0 = x(), t0 = performance.now();
+      let n = 0;
+      const mo = new MutationObserver(() => n++);
+      mo.observe(run, { attributes: true, attributeFilter: ['style'] });
+      const f = () => {
+        seen.add(x().toFixed(2));
+        if(performance.now() - t0 < t) return requestAnimationFrame(f);
+        mo.disconnect();
+        const a = run.getAnimations();
+        done({ places: seen.size, s: (performance.now() - t0) / 1000, moved: x() - x0, styleSets: n, anims: a.length,
+               easing: a[0] ? a[0].effect.getTiming().easing : '' });
+      };
+      requestAnimationFrame(f);
+    }), t);
+    return { p, ctx, errors, sample: () => sample(ms) };
+  };
+  let { p, ctx, errors, sample } = await tapeRun('city=جدة&lat=21.5433&lon=39.1728&lowpower=1');
+  let r = await sample();
+  check('low power: the tape\'s animation in steps, about 30 places a second, nothing set by the page',
+    !errors.length && r.anims === 1 && /^steps\(\d+/.test(r.easing) && r.styleSets === 0 && r.places / r.s >= 22 && r.places / r.s <= 34,
+    JSON.stringify(r) + errors.join('; '));
+  check('low power: the same speed as before (55 px a second, to the right)', Math.abs(r.moved / r.s - 55) < 8, JSON.stringify(r));
+  await ctx.close();
+  ({ p, ctx, errors, sample } = await tapeRun('city=جدة&lat=21.5433&lon=39.1728'));
+  r = await sample();
+  check('ticker without «توفير الطاقة»: the smooth animation as before, 55 px a second',
+    !errors.length && r.anims === 1 && r.easing === 'linear' && r.places / r.s > 40 && Math.abs(r.moved / r.s - 55) < 8,
+    JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+  // held while the launcher's apps grid is open, then on from the same place
+  ({ p, ctx, errors, sample } = await tapeRun('city=جدة&lat=21.5433&lon=39.1728&home=1&lowpower=1', 500));
+  await p.evaluate(() => window.sauditvAppsOpen(true));
+  await p.waitForTimeout(100);   // a pause takes effect on the next frame
+  r = await sample();
+  check('low power, home: the tape holds still while the apps grid is open', r.places === 1 && Math.abs(r.moved) < 0.5, JSON.stringify(r));
+  const held = await p.evaluate(() => new DOMMatrix(getComputedStyle(document.getElementById('tape-run')).transform).m41);
+  await p.evaluate(() => window.sauditvAppsOpen(false));
+  r = await sample();
+  const after = await p.evaluate(() => new DOMMatrix(getComputedStyle(document.getElementById('tape-run')).transform).m41);
+  check('low power, home: closed, it goes on from where it held', r.places > 8 && after - held > 15 && after - held < 45,
+    JSON.stringify({ r, held, after }));
+  check('low power: no script errors', !errors.length, errors.join('; '));
+  await ctx.close();
+}
+
+// ---- «يُتلى الآن» told, not asked (#radiopush=1): the home screen's page asks SaudiTVRadio.state() once at load and
+// whenever the launcher says the radio changed (window.sauditvRadioChanged); without it (the screensaver, an older
+// launcher) every 3 s as before
+{
+  const counting = () => {
+    window.__asks = 0; window.__radio = '';
+    window.SaudiTVRadio = { state: () => { window.__asks++; return window.__radio; } };
+  };
+  let { p, ctx, errors } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728&home=1&radiopush=1', { init: counting });
+  await p.waitForTimeout(3700);
+  let r = await p.evaluate(() => window.__asks);
+  check('radio push, home: asked once when the page loads, not every 3 s', !errors.length && r === 1, r + ' ' + errors.join('; '));
+  await p.evaluate(() => { window.__radio = 'playing|ماهر المعيقلي'; window.sauditvRadioChanged(); });
+  r = await p.evaluate(() => ({ asks: window.__asks, hidden: document.getElementById('qr').hidden, text: document.getElementById('qr').textContent }));
+  check('radio push, home: told the radio changed, «يُتلى الآن» follows at once', r.asks === 2 && !r.hidden
+    && r.text === 'يُتلى الآن: ماهر المعيقلي', JSON.stringify(r));
+  await ctx.close();
+  for (const [tag, hash] of [['a launcher that does not tell (no #radiopush)', 'city=جدة&lat=21.5433&lon=39.1728&home=1'],
+                             ['the screensaver', 'city=جدة&lat=21.5433&lon=39.1728']]) {
+    ({ p, ctx } = await open('tv.html', hash, { init: counting }));
+    await p.waitForTimeout(3700);
+    r = await p.evaluate(() => window.__asks);
+    check(`radio chip, ${tag}: asked every 3 s as before`, r >= 2, r);
+    await ctx.close();
+  }
 }
 
 await browser.close();

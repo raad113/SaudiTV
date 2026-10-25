@@ -66,6 +66,8 @@ public class DetailActivity extends Activity {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
                 WebResourceResponse f = HomePage.font(DetailActivity.this, r.getUrl().toString());
+                // the blurred photo behind the panel: from the device at the screen's size, as the home screen's
+                if (f == null) f = HomePage.photo(getApplicationContext(), r.getUrl().toString());
                 return f != null ? f : super.shouldInterceptRequest(v, r);
             }
         });

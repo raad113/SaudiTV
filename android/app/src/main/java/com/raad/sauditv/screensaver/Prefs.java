@@ -43,45 +43,38 @@ final class Prefs {
         {"Saudi First Division League", "150643", "Al-Zulfi"},
     };
 
-    // TVMaze genre (sent to the page), Arabic label
-    static final String[][] GENRES = {
-        {"Drama", "دراما"}, {"Comedy", "كوميديا"}, {"Action", "أكشن"}, {"Crime", "جريمة"},
-        {"Thriller", "إثارة"}, {"Mystery", "غموض"}, {"Science-Fiction", "خيال علمي"},
-        {"Fantasy", "فانتازيا"}, {"Adventure", "مغامرة"}, {"Romance", "رومانسي"},
-        {"Family", "عائلي"}, {"History", "تاريخي"}, {"Horror", "رعب"},
-        {"Anime", "أنمي"}, {"Documentary", "وثائقي"}, {"Sports", "رياضة"},
-    };
-
-    // TVMaze language, Arabic label
-    static final String[][] LANGS = {
-        {"English", "الإنجليزية"}, {"Arabic", "العربية"}, {"Korean", "الكورية"},
-        {"Japanese", "اليابانية"}, {"Turkish", "التركية"}, {"Spanish", "الإسبانية"},
-        {"French", "الفرنسية"}, {"Hindi", "الهندية"}, {"German", "الألمانية"},
-    };
-
-    static final String[] MIN_RATINGS = {"0", "6", "6.5", "7", "7.5", "8"};
-
     private final SharedPreferences sp;
     private final Context app;
 
     Prefs(Context c) {
         sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE);
         app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
+        RadioNotify.watch(app, sp);   // the home screen hears of every change to the radio's settings
         migrate();
+        if (sp.getBoolean(PlaceDetect.PENDING, false)) PlaceDetect.start(app);   // a new install's place, once
     }
 
     /**
      * Once, the first time this build reads the settings. An older build's settings (any at all) keep what that build
      * showed: the Saudi news («أخبار السعودية») and the Roshn table, whatever country or teams are picked later. A new
-     * install has none: its news follow the city's country, its table the first followed club's league.
+     * install has none: its news follow the city's country, its table the first followed club's league; its card beside
+     * the clock is «آية اليوم» and «حديث اليوم» (PanelMigrate.FRESH); and its place is guessed once (PlaceDetect).
+     * The first-run setup (SetupActivity) shows on a new install only: setupDone false there, true for any settings
+     * saved before, including those whose first read was already done (SetupState.initial).
      */
     private void migrate() {
-        if (sp.contains("geo")) return;
+        if (sp.contains("geo")) {
+            if (!sp.contains(SetupState.DONE)) sp.edit().putBoolean(SetupState.DONE, SetupState.initial(true, true)).apply();
+            return;
+        }
         boolean older = !sp.getAll().isEmpty();
-        SharedPreferences.Editor e = sp.edit().putInt("geo", 1);
+        SharedPreferences.Editor e = sp.edit().putInt("geo", 1).putBoolean(SetupState.DONE, SetupState.initial(false, older));
         if (older) {
             if (!sp.contains("newsCountry")) e.putString("newsCountry", "SA");
             if (!sp.contains("league")) e.putString("league", Leagues.ROSHN);
+        } else {
+            e.putString("panel", PanelMigrate.FRESH);
+            e.putBoolean(PlaceDetect.PENDING, true);
         }
         e.apply();
     }
@@ -90,15 +83,24 @@ final class Prefs {
     String[] city() {
         return new String[] {sp.getString("cityName", "الرياض"), sp.getString("cityLat", "24.6877"), sp.getString("cityLon", "46.7219")};
     }
-    /** a city without its country or time zone (older callers): both stay as they are */
+    /** a city without its country or time zone (older callers): both stay as they are. A city set (the settings,
+     *  ADB) is no longer the guessed one, and no guess replaces it any more (PlaceDetect) */
     void setCity(String name, String lat, String lon) {
-        sp.edit().putString("cityName", name).putString("cityLat", lat).putString("cityLon", lon).apply();
+        sp.edit().putString("cityName", name).putString("cityLat", lat).putString("cityLon", lon)
+            .remove(PlaceDetect.PENDING).remove(PlaceDetect.AUTO).apply();
     }
-    /** a city with its country (ISO code) and its IANA time zone ("" = the TV's) */
+    /** a city with its country (ISO code) and its IANA time zone ("" = the TV's); as above, no guess any more */
     void setCity(String name, String lat, String lon, String cc, String tz) {
         sp.edit().putString("cityName", name).putString("cityLat", lat).putString("cityLon", lon)
-            .putString("country", cc == null ? "" : cc.toUpperCase(java.util.Locale.ROOT)).putString("cityTz", tz == null ? "" : tz).apply();
+            .putString("country", cc == null ? "" : cc.toUpperCase(java.util.Locale.ROOT)).putString("cityTz", tz == null ? "" : tz)
+            .remove(PlaceDetect.PENDING).remove(PlaceDetect.AUTO).apply();
     }
+    /** the first-run setup was finished or skipped (or the TV had settings before it existed): SetupState */
+    boolean setupDone() { return sp.getBoolean(SetupState.DONE, true); }
+    void setSetupDone(boolean v) { sp.edit().putBoolean(SetupState.DONE, v).apply(); }
+
+    /** the city is the one a new install guessed (PlaceDetect), not yet one the user picked: «(تلقائي)» */
+    boolean cityAuto() { return sp.getBoolean(PlaceDetect.AUTO, false); }
 
     // ---------- the city's country: its prayer method, temperature unit and (on a new install) news follow it.
     // "" = not set (settings of an older build, and a new install until a city is picked): the method follows the TV's
@@ -214,7 +216,7 @@ final class Prefs {
     // The card beside the clock: value sent to the page (#panel=), Arabic label. The page (PANEL_IDS), the launcher
     // (HomePage.PANELS) and optimize/saver.sh list the same ids.
     static final String[][] PANELS = {
-        {"shows", "جديد المسلسلات"}, {"prayers", "مواقيت الصلاة اليوم"}, {"forecast", "طقس الأيام القادمة"},
+        {"prayers", "مواقيت الصلاة اليوم"}, {"forecast", "طقس الأيام القادمة"},
         {"matches", "مباريات فرقك القادمة"},
         {"verse", "آية اليوم"},     // a verse of the Quran
         {"hadith", "حديث اليوم"},   // a hadith of Sahih al-Bukhari (the page's loadHadith)
@@ -378,8 +380,9 @@ final class Prefs {
         else setList("src_" + page, keep);
     }
 
-    /** Older builds had an on/off switch for the shows card; off becomes "none". */
-    String panel() { return sp.getString("panel", sp.getBoolean("showWeek", true) ? "shows" : "none"); }
+    /** the screensaver's card; prayers until one is picked (a new install: PanelMigrate.FRESH, set by migrate). A
+     *  saved choice of an older build drops its gone «جديد المسلسلات» card (PanelMigrate). */
+    String panel() { return PanelMigrate.dropShows(sp.getString("panel", "prayers")); }
     void setPanel(String v) { sp.edit().putString("panel", v).apply(); }
 
     static String panelLabel(String v) {
@@ -411,12 +414,6 @@ final class Prefs {
     }
     void setList(String key, List<String> v) { sp.edit().putString(key, join(v, ";")).apply(); }
 
-    /** shows picked one by one, stored as "id|name" */
-    List<String> shows() { return list("shows"); }
-
-    String minRating() { return sp.getString("minRating", "7"); }
-    void setMinRating(String v) { sp.edit().putString("minRating", v).apply(); }
-
     // ---------- «إذاعة القرآن الكريم» (RadioService plays it while our home screen or screensaver is in front; off by
     // default): the station (RadioStations ids: saudi, cairo, an mp3quran.net id, custom), its name and address as
     // picked (so it plays without the list), and its volume in percent (10 … 100, apart from the TV's own volume)
@@ -433,6 +430,12 @@ final class Prefs {
     /** «متى تعمل الإذاعة» (RadioWhen): both (the default), saver or home */
     String radioWhen() { return RadioWhen.of(sp.getString("radioWhen", RadioWhen.BOTH)); }
     void setRadioWhen(String v) { sp.edit().putString("radioWhen", RadioWhen.of(v)).apply(); }
+    /** «إذاعة القرآن الكريم» as one choice (RadioWhen.MODES): off, or on with where it plays; stored as radioOn and
+     *  radioWhen (off keeps radioWhen, so the home screen's «تشغيل القرآن» and saver.sh radio on find it again) */
+    String radioMode() { return RadioWhen.mode(radioOn(), radioWhen()); }
+    void setRadioMode(String m) {
+        sp.edit().putString("radioWhen", RadioWhen.modeWhen(m, radioWhen())).putBoolean("radioOn", RadioWhen.modeOn(m)).apply();
+    }
 
     // ---------- «عناصر شريط الأسعار» (Tape): the ticker's items in order; none = each country's own list («تلقائي»).
     // Its country is the news country (the page's TAPE_CC): cur and idx follow it, the choice itself stays.
@@ -474,6 +477,11 @@ final class Prefs {
     }
     void setAutoUpdate(boolean v) { sp.edit().putBoolean("autoUpdate", v).apply(); }
 
+    /** «توفير الطاقة» (off by default): the ticker tape on the home screen and the screensaver drawn 30 times a second
+     *  instead of 60 (the page's #lowpower=1, tapeStepped); the settings screen or `optimize/saver.sh lowpower on|off` */
+    boolean lowPower() { return sp.getBoolean("lowPower", false); }
+    void setLowPower(boolean v) { sp.edit().putBoolean("lowPower", v).apply(); }
+
     SharedPreferences raw() { return sp; }
 
     /** The page reads its settings from the fragment; a ?query fails on file:// in WebView. */
@@ -495,8 +503,6 @@ final class Prefs {
     /** Everything the page needs, as "city=..&lat=..&..."; also read by the launcher (ConfigProvider). */
     String fragment() {
         String[] city = city();
-        List<String> ids = new ArrayList<>();
-        for (String s : shows()) ids.add(s.split("\\|", 2)[0]);
         Leagues.League lg = Leagues.find(league());
         Geo.Country news = Geo.country(app, newsCountry());
         return "city=" + Uri.encode(city[0]) + "&lat=" + city[1] + "&lon=" + city[2]
@@ -517,13 +523,9 @@ final class Prefs {
             // the followed teams' Arabic names, same order (the page maps Saudi clubs to ESPN by name)
             + "&teamnames=" + join(teamNames(), ",")
             + panelParams(panel())
-            + "&week=" + ("none".equals(panel()) ? "0" : "1")   // for a page older than #panel
-            + "&genres=" + Uri.encode(join(list("genres"), ","))
-            + "&langs=" + Uri.encode(join(list("langs"), ","))
-            + "&shows=" + join(ids, ",")
-            + "&minrating=" + minRating()
             + "&numerals=" + numerals()
             + (tapeAuto() ? "" : "&tape=" + Uri.encode(join(tape(), ",")))   // the ticker's chosen items
+            + (lowPower() ? "&lowpower=1" : "")   // «توفير الطاقة»: the ticker at 30 frames a second
             + sourceParams();
     }
 
@@ -544,8 +546,9 @@ final class Prefs {
         return "&panel=" + parts.get(0) + "&panels=" + join(parts, ",") + "&rotate=30";
     }
 
-    /** The card on the launcher's home screen: one of PANELS, off ("none") until the user picks one. */
-    String homePanel() { return sp.getString("homePanel", "none"); }
+    /** The card on the launcher's home screen: one of PANELS, off ("none") until the user picks one; a saved choice
+     *  of an older build drops «جديد المسلسلات» (PanelMigrate). */
+    String homePanel() { return PanelMigrate.dropShows(sp.getString("homePanel", "none")); }
     void setHomePanel(String v) { sp.edit().putString("homePanel", v).apply(); }
 
     List<String> teamIds() {

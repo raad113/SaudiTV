@@ -60,6 +60,12 @@
             </intent-filter>
         </activity>
 
+        <!-- the first-run setup (a new install: the home screen opens it once per start, the settings on opening, until it
+             is finished or skipped); «معالج الإعداد» in the settings and optimize/saver.sh setup open it again -->
+        <activity
+            android:name=".SetupActivity"
+            android:exported="true" />
+
         <!-- full-screen preview; any remote key closes it -->
         <activity
             android:name=".MainActivity"

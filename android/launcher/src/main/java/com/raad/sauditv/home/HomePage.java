@@ -53,7 +53,7 @@ final class HomePage {
     private static final int KEEP_PHOTOS = 12;   // the page's 12-photo set (photoSet), downloaded once each
     /** the page's panel ids (window.sauditvCurrentPanel() returns one of these) */
     static final List<String> PANELS = Arrays.asList("prayers", "forecast", "matches", "standings", "news", "local", "world",
-            "tech", "shows", "verse", "hadith");   // as the page's PANEL_IDS: each has a detail page
+            "tech", "verse", "hadith");   // as the page's PANEL_IDS: each has a detail page
     /** The room the launcher's views take, in dp (= the page's CSS px): the pills' height (top left, TOP_DP from the
      *  top), the apps row's height and its distance from the bottom edge (above the page's 42px ticker tape and,
      *  its 30px info strip: DOCK_B_DP - 42). */
@@ -151,6 +151,13 @@ final class HomePage {
         web.resumeTimers();
         // release a rotation held by open(): continue from the same panel (or the detail page's last) with a fresh rotateMs
         web.evaluateJavascript("window.sauditvHold && window.sauditvHold(false)", null);
+        radioChanged();   // «يُتلى الآن» as the radio is now: it may have changed while another app was in front
+    }
+
+    /** the radio changed (RadioLink): the page asks SaudiTVRadio.state() once (window.sauditvRadioChanged, on its bridge
+     *  thread). It no longer asks every 3 s (#radiopush=1); a page older than this ignores the call and still asks. */
+    void radioChanged() {
+        if (web != null) web.evaluateJavascript("window.sauditvRadioChanged && window.sauditvRadioChanged()", null);
     }
 
     /** the settings changed while the home screen is in front (the screensaver app's CONFIG_CHANGED):
@@ -210,7 +217,8 @@ final class HomePage {
         panelList = "none".equals(panel) ? "" : String.join(",", panels);
         String rotate = panels.length > 1 ? "&panels=" + String.join(",", panels) + "&rotate=30" : "";
         return "file:///android_asset/web/tv.html#" + frag + "&panel=" + panel + rotate
-                + "&home=1&pillsh=" + PILLS_H_DP + "&dockh=" + DOCK_H_DP + "&dockb=" + DOCK_B_DP;
+                + "&home=1&pillsh=" + PILLS_H_DP + "&dockh=" + DOCK_H_DP + "&dockb=" + DOCK_B_DP
+                + "&radiopush=1";   // «يُتلى الآن» is told when the radio changes (radioChanged): no asking every 3 s
     }
 
     /** OK on the card: hold the rotation, ask the page which panel it shows now, then open that one full screen. */
@@ -294,8 +302,9 @@ final class HomePage {
         }
     }
 
-    /** The page's window.SaudiTVRadio: the «يُتلى الآن» chip's state from the screensaver app (RadioLink.chip), asked
-     *  every 3 s on the WebView's bridge thread (a content query, never the main thread). */
+    /** The page's window.SaudiTVRadio: the «يُتلى الآن» chip's state from the screensaver app (RadioLink.chip), asked on
+     *  the WebView's bridge thread (a content query, never the main thread) when the page loads and whenever the radio
+     *  changes (radioChanged). */
     private final class RadioState {
         @JavascriptInterface public String state() { return RadioLink.chip(activity); }
     }
@@ -315,18 +324,24 @@ final class HomePage {
     }
 
     /** The page's photos from the device, as the screensaver app does (PhotoCache): the bundled ones from the APK
-     *  (assets/wallpapers), hosted ones downloaded once into files/photos and kept (the newest KEEP_PHOTOS). */
-    private static WebResourceResponse photo(Context c, String url) {
+     *  (assets/wallpapers), hosted ones downloaded once into files/photos and kept (the newest KEEP_PHOTOS); both at the
+     *  size this screen draws them (PhotoScale), else as they are. Also the detail page's (DetailActivity). */
+    static WebResourceResponse photo(Context c, String url) {
         try {
             if (url.startsWith(BUNDLED)) {
-                String name = safeName(url.substring(BUNDLED.length()));
-                return name == null ? null : new WebResourceResponse("image/jpeg", null, c.getAssets().open("wallpapers/" + name));
+                final String name = safeName(url.substring(BUNDLED.length()));
+                if (name == null) return null;
+                File small = PhotoScale.of(c, "b-" + name, () -> c.getAssets().open("wallpapers/" + name));
+                return new WebResourceResponse("image/jpeg", null,
+                    small != null ? new FileInputStream(small) : c.getAssets().open("wallpapers/" + name));
             }
             if (url.startsWith(HOSTED)) {
                 String name = safeName(url.substring(HOSTED.length()));
                 if (name == null) return null;   // index.json and anything else go to the network
-                File f = hosted(c, url, name);
-                return f == null ? null : new WebResourceResponse("image/jpeg", null, new FileInputStream(f));
+                final File f = hosted(c, url, name);
+                if (f == null) return null;
+                File small = PhotoScale.of(c, name, () -> new FileInputStream(f));
+                return new WebResourceResponse("image/jpeg", null, new FileInputStream(small != null ? small : f));
             }
         } catch (Exception ignored) { }
         return null;

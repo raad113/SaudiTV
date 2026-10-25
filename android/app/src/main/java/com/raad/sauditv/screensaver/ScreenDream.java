@@ -36,7 +36,7 @@ public class ScreenDream extends DreamService {
     @Override
     public void onDetachedFromWindow() {
         if (radio != null) radio.back();
-        if (web != null) { web.destroy(); web = null; }
+        if (web != null) { ScreenView.destroy(web); web = null; }   // and its renderer: nothing of ours stays up after it
         super.onDetachedFromWindow();
     }
 }

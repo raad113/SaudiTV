@@ -20,15 +20,9 @@
 #                                                  E<id>@<league>:Name for teams
 #   optimize/saver.sh teams 136013:Al-Hilal E359@eng.1:Arsenal    followed teams in order (up to 10)
 #   optimize/saver.sh card prayers,forecast,news   beside the clock: one, or several that rotate every 30 s, of
-#                                                  prayers verse hadith forecast matches standings news local world tech
-#                                                  shows; or none (verse: the Quran; hadith: Sahih al-Bukhari)
+#                                                  prayers verse hadith forecast matches standings news local world tech;
+#                                                  or none (verse: the Quran; hadith: Sahih al-Bukhari)
 #   optimize/saver.sh home-card prayers,news       the home screen's card: the same choices
-#   optimize/saver.sh genres Drama,Comedy          episodes card: Drama Comedy Action Crime Thriller Mystery
-#                                                  Science-Fiction Fantasy Adventure Romance Family History Horror
-#                                                  Anime Documentary Sports  ("" = all)
-#   optimize/saver.sh langs Arabic,English         episodes card: English Arabic Korean Japanese Turkish Spanish
-#                                                  French Hindi German  ("" = all)
-#   optimize/saver.sh minrating 7.5                episodes card: lowest rating, one of 0 6 6.5 7 7.5 8
 #   optimize/saver.sh numerals 0-9|arabic          «شكل الأرقام»: 0 1 2 3 (the default) or ٠ ١ ٢ ٣, everywhere
 #   optimize/saver.sh tiles rounded|circle         «شكل التطبيقات», the home screen's apps: banners with rounded
 #                                                  corners (the default) or round icons with their names
@@ -37,6 +31,7 @@
 #   optimize/saver.sh sources world skynews,bbc    a news page's sources (news tech local world), read together; ""
 #                                                  = its defaults. The ids: optimize/saver.sh show (sources_…)
 #   optimize/saver.sh autoupdate on|off            the page's auto-update from github.com/raad113/SaudiTV (on by default)
+#   optimize/saver.sh lowpower on|off              «توفير الطاقة»: the ticker tape at 30 frames a second, not 60 (off by default)
 #   optimize/saver.sh update                       download the latest screen now; says where from and which page shows
 #   optimize/saver.sh app-check                    is there a newer release of both apps? (checks only; installing is
 #                                                  the TV settings' «تحديث التطبيق»)
@@ -48,12 +43,15 @@
 #   optimize/saver.sh radio-test [id]              each address of the two Quran radios (or of one station), read for
 #                                                  3 s from the TV (through its VPN)
 #   optimize/saver.sh radio-hold on|off            the athan's hook: the radio stops (up to 15 min), then plays again
-#   optimize/saver.sh radio-when both|saver|home   «متى تعمل الإذاعة»: the home screen and the screensaver (the
-#                                                  default), only the screensaver, or only the home screen
+#   optimize/saver.sh radio-when both|saver|home   where it plays: the home screen and the screensaver (the
+#                                                  default), only the screensaver, or only the home screen (with
+#                                                  radio on|off: the settings' one «إذاعة القرآن الكريم» choice)
 #   optimize/saver.sh tape auto|gold,btc,cur       «عناصر شريط الأسعار», in order: cur idx (the news country's currency
 #                                                  and index) gold silver brent btc eth spx ndx dji i:SA i:AE i:AD i:QA
 #                                                  i:KW i:EG eurusd c:SAR c:AED c:EGP c:KWD c:QAR c:BHD c:OMR; auto: each
 #                                                  country's own list
+#   optimize/saver.sh setup                        open the first-run setup on the TV (a new install shows it once;
+#                                                  the settings' «معالج الإعداد» too); the GET answer has setup_done
 # Only ADB can change these (com.raad.sauditv.screensaver/.SaverReceiver needs the shell's DUMP).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -101,12 +99,12 @@ case "${1:-}" in
     send SET "--es teams $(quote "$(IFS=,; echo "$*")")" ;;
   card)      send SET "--es panel $(quote "${2:?usage: optimize/saver.sh card prayers}")" ;;
   home-card) send SET "--es home_panel $(quote "${2:?usage: optimize/saver.sh home-card none}")" ;;
-  genres)    send SET "--es genres $(quote "${2-}")" ;;
-  langs)     send SET "--es langs $(quote "${2-}")" ;;
-  minrating) send SET "--es minrating $(quote "${2:?usage: optimize/saver.sh minrating 7}")" ;;
   autoupdate)
     case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh autoupdate on|off"; exit 1 ;; esac
     send SET "--es autoupdate $v" ;;
+  lowpower)
+    case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh lowpower on|off"; exit 1 ;; esac
+    send SET "--es lowpower $v" ;;
   numerals)
     case "${2:-}" in 0-9|latin|western|latn) v=latn ;; arabic|arab|٠-٩) v=arab ;; *) echo "usage: optimize/saver.sh numerals 0-9|arabic"; exit 1 ;; esac
     send SET "--es numerals $v" ;;
@@ -145,5 +143,6 @@ case "${1:-}" in
     send SET "--es tape $(quote "$2")" ;;
   radio-hold)
     case "${2:-}" in on) send PAUSE_FOR_ATHAN ;; off) send RESUME_AFTER_ATHAN ;; *) echo "usage: optimize/saver.sh radio-hold on|off"; exit 1 ;; esac ;;
-  *) sed -n '2,56p' "$0"; exit 1 ;;
+  setup) "$PY" -I optimize/tv.py "am start -n com.raad.sauditv.screensaver/.SetupActivity" ;;
+  *) sed -n '2,54p' "$0"; exit 1 ;;
 esac

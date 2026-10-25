@@ -141,6 +141,67 @@ prefs_panels = [x for x in re.findall(r'\{"(\w+)", "', re.search(r"static final 
 home_panels = re.findall(r'"(\w+)"', re.search(r"PANELS = Arrays\.asList\((.*?)\);", home, re.S).group(1))
 check("cards: the page, the settings app (Prefs.PANELS) and the launcher (HomePage.PANELS) list the same ones",
       sorted(page_panels) == sorted(prefs_panels) == sorted(home_panels), (page_panels, prefs_panels, home_panels))
+# the TV shows card («جديد المسلسلات») is gone: no card, no API (spelled in two parts: a repo search for it finds nothing),
+# and the settings an older build saved drop it when they are read (PanelMigrate, tests/java_test.py)
+gone_api = re.compile("tv" + "maze", re.I)
+check("TV shows card gone: in no card list, its API in neither built page nor the template",
+      "shows" not in page_panels + prefs_panels + home_panels and not gone_api.search(tmpl)
+      and not any(gone_api.search((ROOT / "dist" / n).read_text(encoding="utf-8")) for n in ("saudi-tv.html", "tv.html")))
+check("TV shows card gone: Prefs reads the saved cards through PanelMigrate.dropShows, sends none of its settings",
+      'String panel() { return PanelMigrate.dropShows(sp.getString("panel", "prayers")); }' in prefs
+      and 'String homePanel() { return PanelMigrate.dropShows(sp.getString("homePanel", "none")); }' in prefs
+      and not re.search(r'&(genres|langs|shows|minrating|week)=', prefs))
+# a new install's card beside the clock: «آية اليوم» and «حديث اليوم» (PanelMigrate.FRESH, written by Prefs.migrate for
+# a new install only: an older build's settings keep their card, or the prayers); both ids are the page's
+migrate = re.search(r"private void migrate\(\) \{(.*?)\n    \}", prefs, re.S).group(1)
+fresh = re.search(r'static final String FRESH = "([\w,]+)";', (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/PanelMigrate.java").read_text(encoding="utf-8"))
+check("cards: a new install's default is verse,hadith (both the page's ids), set only when no settings were saved",
+      fresh and fresh.group(1) == "verse,hadith" and all(x in page_panels for x in fresh.group(1).split(","))
+      and re.search(r'if \(older\) \{.*?\} else \{\s*e\.putString\("panel", PanelMigrate\.FRESH\);', migrate, re.S),
+      fresh and fresh.group(1))
+# a new install's place (PlaceDetect): guessed once, never over a city that was set, with keyless lookups only
+detect = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/PlaceDetect.java").read_text(encoding="utf-8")
+check("place: a new install only (Prefs.migrate sets PlaceDetect.PENDING), started from the Prefs constructor, "
+      "and a city set removes it",
+      re.search(r'\} else \{[^}]*e\.putBoolean\(PlaceDetect\.PENDING, true\);', migrate)
+      and "if (sp.getBoolean(PlaceDetect.PENDING, false)) PlaceDetect.start(app);" in prefs
+      and prefs.count(".remove(PlaceDetect.PENDING).remove(PlaceDetect.AUTO)") == 2)
+check("place: keyless lookups (no API key in any URL), 5 s timeouts, applied as a pick in the settings (PlaceApply.save)",
+      all(u.startswith("https://") and "key" not in u.lower() for u in re.findall(r'"(https://[^"]+)"', detect))
+      and "TIMEOUT_MS = 5000" in detect and "PlaceApply.save(" in detect
+      and "PlaceApply.save(" in (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Pickers.java").read_text(encoding="utf-8"))
+# ---- the settings' one radio row and the first-run setup (SetupActivity)
+SAVER_SRC = ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver"
+settings_src = (SAVER_SRC / "SettingsActivity.java").read_text(encoding="utf-8")
+setup_src = (SAVER_SRC / "SetupActivity.java").read_text(encoding="utf-8")
+check("settings: one «إذاعة القرآن الكريم» row (RadioWhen.MODES, its label as the subtitle), no «متى تعمل الإذاعة» row",
+      'row("إذاعة القرآن الكريم", RadioWhen.modeLabel(prefs.radioMode())' in settings_src
+      and 'row("متى تعمل الإذاعة"' not in settings_src and "prefs.setRadioMode(RadioWhen.MODES[i][0])" in settings_src
+      and settings_src.index('row("إذاعة القرآن الكريم"') < settings_src.index('row("المحطة"') < settings_src.index('row("مستوى صوت الإذاعة"'))
+check("settings: the place and «إضافة فريق» pickers are shared with the setup (Pickers), not copied",
+      "pickers.pickCountry()" in settings_src and "pickers.pickTeam(0)" in settings_src
+      and "pickers::pickCountry" in setup_src and "pickers.pickTeam(0)" in setup_src
+      and "void typeCity()" not in settings_src and "void typeCity()" not in setup_src)
+check("settings: «معالج الإعداد» opens the setup; a new install's settings open it first",
+      'row("معالج الإعداد"' in settings_src and "SetupActivity.class" in settings_src
+      and re.search(r"if \(!prefs\.setupDone\(\)[^\n]*\{\s*startActivity\(new Intent\(this, SetupActivity\.class\)\);", settings_src))
+check("setup: four steps (city, cards, radio, team), the screensaver cards' pref, the radio's one choice, the teams' pref",
+      "STEPS = 4" in setup_src and all(t in setup_src for t in ('"مدينتك"', '"ماذا تعرض شاشة التوقف؟"', '"إذاعة القرآن الكريم"', '"فريقك المفضل"'))
+      and "prefs.setPanel(" in setup_src and "prefs.setRadioMode(" in setup_src and 'prefs.setList("teams"' in setup_src
+      and "يبقى عنصر واحد على الأقل" in setup_src)
+check("setup: finishing or skipping sets setupDone; Mouse attached as in the settings",
+      setup_src.count("prefs.setSetupDone(true)") >= 2 and "Mouse.attach(this, true)" in setup_src
+      and "mouse.generic(e)" in setup_src and "mouse.touch(e)" in setup_src)
+prefs_src = (SAVER_SRC / "Prefs.java").read_text(encoding="utf-8")
+mig = re.search(r"private void migrate\(\) \{(.*?)\n    \}", prefs_src, re.S).group(1)
+check("setup: Prefs.migrate writes setupDone once: an earlier read or saved settings -> done, a new install -> not",
+      "SetupState.initial(true, true)" in mig and "SetupState.initial(false, older)" in mig)
+cp_src = (SAVER_SRC / "ConfigProvider.java").read_text(encoding="utf-8")
+home_main = (ROOT / "android/launcher/src/main/java/com/raad/sauditv/home/MainActivity.java").read_text(encoding="utf-8")
+check("setup: ConfigProvider /setup answers done; the home screen opens SetupActivity once per start while it is 0",
+      '"/setup".equals(uri.getPath())' in cp_src and 'new String[] {"done"}' in cp_src
+      and "config/setup" in home_main and "if (!setupAsked) { setupAsked = true; openSetupIfNew(); }" in home_main
+      and 'SAVER_PKG + ".SetupActivity"' in home_main and "private static boolean setupAsked" in home_main)
 block = re.search(r"const NEWS_SOURCES = \{(.*?)\n\};", tmpl, re.S).group(1)
 page_src = {}
 for m in re.finditer(r"\n  (\w+): \[(.*?)\n  \],", block, re.S):
@@ -246,6 +307,77 @@ check("leagues: ids are ESPN slugs or tsdb.<id>, each once; every TheSportsDB on
       and {i for i in ids if i.startswith("tsdb.")} == tsdb_named, [i for i in ids if ids.count(i) > 1])
 readme = (ROOT / "README.md").read_text(encoding="utf-8")
 check("README credits GeoNames (CC BY 4.0) and CLDR", "GeoNames" in readme and "CC BY 4.0" in readme and "CLDR" in readme)
+
+# ---- the setup's and the settings' layout on a 960 x 540 dp screen (TV 1: 1280 x 720)
+check("setup: choice rows 46dp with a 6dp gap (four whole above the buttons: the radio's four without scrolling), "
+      "a longer list fades out at its bottom only and scrolls with the focus",
+      "ROW_H_DP = 46, ROW_GAP_DP = 6" in setup_src and "new LinearLayout.LayoutParams(-1, dp(ROW_H_DP))" in setup_src
+      and "lp.bottomMargin = dp(ROW_GAP_DP)" in setup_src and "setVerticalFadingEdgeEnabled(true)" in setup_src
+      and "getTopFadingEdgeStrength() { return 0f; }" in setup_src
+      and 4 * 46 + 3 * 6 + 36 + 28 + 28 + 79 + 54 + 60 + 16 <= 540)   # rows, page padding, step line, title, subtitle, buttons
+check("setup: the city's step has «تغيير» only («التالي» takes the city; no «صحيح» repeating it)",
+      '"صحيح"' not in setup_src and 'button(row, "change", "تغيير"' in setup_src)
+tile_src = (SAVER_SRC / "TilePreview.java").read_text(encoding="utf-8")
+check("«شكل التحديد»: Apple TV's picture takes Google TV's room (same row height and spacing), a smaller shadow (SHADOW_FIT)",
+      "static final float SHADOW_FIT = 0.4f;" in tile_src and "DESIGN_DP * density * k * SHADOW_FIT" in tile_src
+      and "shadowPad * s" not in tile_src)
+check("«توفير الطاقة»: its own icon (a leaf, ic_eco), tinted as the other rows",
+      'row("توفير الطاقة", lowPowerLabel(), R.drawable.ic_eco' in settings_src
+      and (SAVER_SRC.parents[4] / "res/drawable/ic_eco.xml").is_file())
+
+# ---- what the apps cost the TV (measured on TV 1: optimize/run/perf): nothing of ours left running or held for nothing
+HOME_SRC = ROOT / "android/launcher/src/main/java/com/raad/sauditv/home"
+def same_but_package(a, b):
+    strip = lambda t: re.sub(r"^package [\w.]+;", "", t, count=1)
+    return strip(a.read_text(encoding="utf-8")) == strip(b.read_text(encoding="utf-8"))
+vpn_s, vpn_h = SAVER_SRC / "VpnStatus.java", HOME_SRC / "VpnStatus.java"
+vpn_src = vpn_s.read_text(encoding="utf-8")
+check("perf: the VPN badge's probe every 30 s and its country every 5 min (were 15 s and 1 min), the same in both apps",
+      "PROBE_MS = 30_000, COUNTRY_MS = 5 * 60_000" in vpn_src and "now - probedAt > PROBE_MS" in vpn_src
+      and "now - countryAt > COUNTRY_MS" in vpn_src and same_but_package(vpn_s, vpn_h))
+sv_src = (SAVER_SRC / "ScreenView.java").read_text(encoding="utf-8")
+dream_src = (SAVER_SRC / "ScreenDream.java").read_text(encoding="utf-8")
+preview_src = (SAVER_SRC / "MainActivity.java").read_text(encoding="utf-8")
+destroy = re.search(r"static void destroy\(WebView w\) \{(.*?)\n    \}", sv_src, re.S)
+check("perf: the screensaver's page ends its renderer with the last page (after destroy, Android 10+), dream and preview",
+      destroy is not None and "getWebViewRenderProcess()" in destroy.group(1) and ".terminate()" in destroy.group(1)
+      and destroy.group(1).index("w.destroy()") < destroy.group(1).index(".terminate()") and "SDK_INT >= 29" in destroy.group(1)
+      and "live++" in sv_src and "ScreenView.destroy(web)" in dream_src and "ScreenView.destroy(web)" in preview_src
+      and "web.destroy()" not in dream_src and "web.destroy()" not in preview_src)
+geo_src = (SAVER_SRC / "Geo.java").read_text(encoding="utf-8")
+check("perf: the place pickers' cities let go when the last of the settings and the setup closes (Geo.pickerOpened/Closed)",
+      all(x in geo_src for x in ("static void pickerOpened()", "static void pickerClosed()", "CITIES.clear()"))
+      and all(src.count("Geo.pickerOpened();") == 1 and src.count("Geo.pickerClosed();") == 1 for src in (settings_src, setup_src))
+      and settings_src.index("Geo.pickerClosed();") > settings_src.index("protected void onDestroy()")
+      and setup_src.index("Geo.pickerClosed();") > setup_src.index("protected void onDestroy()"))
+pc_src = (SAVER_SRC / "PhotoCache.java").read_text(encoding="utf-8")
+hp_src = (HOME_SRC / "HomePage.java").read_text(encoding="utf-8")
+detail_src = (HOME_SRC / "DetailActivity.java").read_text(encoding="utf-8")
+check("perf: photos kept at the size the screen draws them (PhotoSize, PhotoScale: the same in both apps), screensaver, "
+      "home screen and detail page",
+      same_but_package(SAVER_SRC / "PhotoSize.java", HOME_SRC / "PhotoSize.java")
+      and same_but_package(SAVER_SRC / "PhotoScale.java", HOME_SRC / "PhotoScale.java")
+      and pc_src.count("PhotoScale.of(") == 2 and hp_src.count("PhotoScale.of(") == 2
+      and "HomePage.photo(" in detail_src and "static WebResourceResponse photo(" in hp_src)
+link_src = (HOME_SRC / "RadioLink.java").read_text(encoding="utf-8")
+notify_src = (SAVER_SRC / "RadioNotify.java").read_text(encoding="utf-8")
+svc_src = (SAVER_SRC / "RadioService.java").read_text(encoding="utf-8")
+check("perf: the home screen binds the radio only while it is on (RadioLink.sync), and watches /radio instead of asking",
+      re.search(r'static void sync\(\) \{[^}]*"1"\.equals\(r\[0\]\)\) bind\(\);', link_src) is not None
+      and "registerContentObserver(RADIO" in link_src and "unregisterContentObserver(OBSERVER)" in link_src
+      and "RADIO_POLL_MS" not in home_main and "RadioLink.listen(radioListener)" in home_main
+      and "RadioLink.unlisten(radioListener)" in home_main)
+check("perf: the screensaver app tells /radio of every change (RadioNotify: the radio's settings, RadioService's state)",
+      "notifyChange(RADIO, null)" in notify_src and "RadioNotify.watch(app, sp)" in prefs_src
+      and "RadioNotify.changed(this)" in svc_src and "registerOnSharedPreferenceChangeListener(listener)" in notify_src)
+check("perf: the home page's «يُتلى الآن» is told (#radiopush=1, window.sauditvRadioChanged), not asked every 3 s",
+      '"&radiopush=1"' in hp_src and "window.sauditvRadioChanged && window.sauditvRadioChanged()" in hp_src
+      and "if(!CONFIG.radioPush) setInterval(tickRadio, 3000);" in tmpl and "window.sauditvRadioChanged = () => tickRadio();" in tmpl)
+check("perf: «توفير الطاقة» in the settings' «التطبيق» (off by default), the page's ticker in 30 steps a second (steps())",
+      'row("توفير الطاقة", lowPowerLabel()' in settings_src and "prefs.setLowPower(!prefs.lowPower()); changed(); render();" in settings_src
+      and settings_src.index('header("التطبيق")') < settings_src.index('row("توفير الطاقة"')
+      and "const TAPE_LOW_FPS = 30;" in tmpl and "easing: CONFIG.lowPower ? `steps(${Math.max(1, Math.round(w / TAPE_SPEED * TAPE_LOW_FPS))}, end)` : 'linear'" in tmpl
+      and "lowPower: _Q.get('lowpower') === '1'" in tmpl)
 
 # ---- launcher config
 cfg = ET.parse(ROOT / "android/launcher/src/main/res/values/config.xml").getroot()
