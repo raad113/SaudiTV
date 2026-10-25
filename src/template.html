@@ -2518,68 +2518,71 @@ function quoteOfDay(){
                                                     `<li class="src">${esc(v.surah)} · ${ar(v.ayah)}</li>`]};
 }
 // Sahih al-Bukhari from fawazahmed0/hadith-api on jsDelivr (its ara-bukhari edition), as .github/tools/fetch_bukhari.py
-// wrote it into assets/shared/bukhari.json: short = the numbers of its short narrations of the Prophet's words ﷺ that
-// fit the card (isnad and all), maxWords their longest; fallback = about 60 of them, verbatim, with their numbers, for a
-// TV without the internet. One a day (hadithNumber, the same all day), fetched once and kept (loadHadith).
+// wrote it into assets/shared/bukhari.json, in the short form: the companion, then the Prophet's words ﷺ verbatim
+// («عن النعمان بن بشير رضي الله عنهما قال: قال النبي ﷺ: «…»»), the chain of narrators before the companion left out.
+// short = [number, head] of each narration the script could split for certain (the head: the short form before his
+// words); maxWords = the longest of his words; fallback = about 60 of them, {n, head, text: the book's text verbatim},
+// for a TV without the internet. One a day (hadithPick, the same all day), fetched once and kept (loadHadith).
 const BUKHARI = __BUKHARI__;
 const BUKHARI_URL = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/';
-const HADITH_KEY = 'sauditv-hadith';
-let HADITH_DAY = null;   // {day, n, text, offline}: the day's hadith (loadHadith)
-// the day's number in the short list: a prime stride (7919), so the days go through all of it
-const hadithNumber = day => { const L = BUKHARI.short; return L[((day * 7919) % L.length + L.length) % L.length]; };
-const hadithFits = t => String(t || '').trim().split(/\s+/).length <= BUKHARI.maxWords;
+const HADITH_KEY = 'sauditv-hadith2';   // 2: the short form (head and his words)
+let HADITH_DAY = null;   // {day, n, head, matn, offline}: the day's hadith (loadHadith)
+// the day's [number, head] in the short list: a prime stride (7919), so the days go through all of it
+const hadithPick = day => { const L = BUKHARI.short; return L[((day * 7919) % L.length + L.length) % L.length]; };
+// his words in the book's text, as the script takes them (fetch_bukhari.py, matn): between its two straight quotes,
+// without the direction marks and the spaces and full stops around them; '' unless there are exactly two quotes and
+// nothing but punctuation after them, or when they are longer than the card takes (maxWords)
+function hadithMatn(text){
+  const parts = String(text || '').split('"');
+  if(parts.length !== 3 || parts[2].replace(/[\s.،,:\u200e\u200f]/g, '')) return '';
+  const m = parts[1].replace(/[\u200e\u200f]/g, '').split(/\s+/).filter(Boolean).join(' ').replace(/^[ .]+|[ .]+$/g, '');
+  return m && m.split(' ').length <= BUKHARI.maxWords ? m : '';
+}
 // resolves to false while the day's hadith is a bundled one because the API did not answer (see firstLoad)
 async function loadHadith(){
   const day = riyadhDayNumber();
   if(HADITH_DAY && HADITH_DAY.day === day && !HADITH_DAY.offline) return true;
+  const [n, head] = hadithPick(day);
   try{
     const c = JSON.parse(localStorage.getItem(HADITH_KEY) || 'null');
-    if(c && c.day === day && c.n && hadithFits(c.text)){ HADITH_DAY = c; hadithDrawn(); return true; }
+    if(c && c.day === day && c.n === n && c.head === head && c.matn){ HADITH_DAY = c; hadithDrawn(); return true; }
   }catch(e){}
-  const n = hadithNumber(day), local = BUKHARI.fallback.find(h => h.n === n);
-  let text = local ? local.text : '';
-  for(const ext of text ? [] : ['.min.json', '.json']){   // the API's advice: the other form when one fails
+  const local = BUKHARI.fallback.find(h => h.n === n);
+  let matn = local ? hadithMatn(local.text) : '';
+  for(const ext of matn ? [] : ['.min.json', '.json']){   // the API's advice: the other form when one fails
     try{
       const r = await fetchT(BUKHARI_URL + n + ext, 15000);
       if(!r.ok) continue;
       const h = ((await r.json()).hadiths || [])[0];
-      if(h && +h.hadithnumber === n && String(h.text || '').trim()){ text = String(h.text); break; }
+      if(h && +h.hadithnumber === n && (matn = hadithMatn(h.text))) break;
     }catch(e){}
   }
-  if(text && hadithFits(text)){
-    HADITH_DAY = {day, n, text};
+  if(matn){
+    HADITH_DAY = {day, n, head, matn};
     try{ localStorage.setItem(HADITH_KEY, JSON.stringify(HADITH_DAY)); }catch(e){}
   } else if(!HADITH_DAY || HADITH_DAY.day !== day){
-    // no answer (or one that does not fit the card): a bundled one, the day's own, until the API answers
+    // no answer (or one that is not the narration the head was made for): a bundled one, the day's own, until the
+    // API answers
     const f = BUKHARI.fallback[day % BUKHARI.fallback.length];
-    HADITH_DAY = {day, n: f.n, text: f.text, offline: true};
+    HADITH_DAY = {day, n: f.n, head: f.head, matn: hadithMatn(f.text), offline: true};
   }
   hadithDrawn();
   return !HADITH_DAY.offline;
 }
 function hadithDrawn(){ if(CONFIG.panel === 'hadith') renderPanel(false); }
-// the book's text, typography only: no direction marks, «صلى الله عليه وسلم» as ﷺ, {…} as ﴿…﴾, no space before a
-// comma or full stop; his words (between the book's straight quotes) apart from the narration around them
+// typography only: no direction marks, «صلى الله عليه وسلم» as ﷺ, {…} as ﴿…﴾, no space before a comma or full stop
 const HK = '[\u064B-\u0652\u0670]*';
 const SAW_RE = new RegExp('صلى الله عليه وسلم'.split(' ').map(w => [...w].join(HK) + HK).join('\\s+'), 'g');
-function hadithParts(text){
-  const t = String(text || '').replace(/[\u200e\u200f]/g, '').replace(SAW_RE, 'ﷺ').replace(/\{/g, '﴿').replace(/\}/g, '﴾')
-    .replace(/\s+([،,.:؛])/g, '$1');
-  const parts = [];
-  t.split('"').forEach((piece, i) => {
-    piece = piece.replace(/\s+/g, ' ').replace(/^[\s.]+|[\s.]+$/g, '');
-    if(piece && !/^[.،,:]+$/.test(piece)) parts.push([i % 2 ? 'q' : 'n', piece]);
-  });
-  return parts;
-}
+const hadithType = t => String(t || '').replace(SAW_RE, 'ﷺ').replace(/\{/g, '﴿').replace(/\}/g, '﴾').replace(/\s+([،,.:؛])/g, '$1');
 const sawHtml = s => s.replace(/ﷺ/g, '<span class="saw">ﷺ</span>').replace(/[﴿﴾]/g, m => `<span class="orn">${m}</span>`);
-// the narration small and muted, the Prophet's words at full size; under it «صحيح البخاري، رقم N»
+// the short form: the companion and how he quoted the Prophet ﷺ small and muted, his words at full size; under it
+// «صحيح البخاري، رقم N»
 function hadithRows(){
   if(HADITH_DAY && HADITH_DAY.day !== riyadhDayNumber()) loadHadith();   // a new day: its own (redrawn when known)
   const h = HADITH_DAY;
-  if(!h) return [];
-  const body = hadithParts(h.text).map(([k, t]) => k === 'q' ? `«${sawHtml(esc(t))}»` : `<span class="nar">${sawHtml(esc(t))}</span>`).join(' ');
-  return [`<li class="quote hadith">${body}</li>`, `<li class="src">صحيح البخاري، رقم ${ar(h.n)}</li>`];
+  if(!h || !h.matn) return [];
+  return [`<li class="quote hadith"><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</li>`,
+          `<li class="src">صحيح البخاري، رقم ${ar(h.n)}</li>`];
 }
 
 const WX_CODES = {

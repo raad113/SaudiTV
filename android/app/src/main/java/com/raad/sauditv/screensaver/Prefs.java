@@ -115,7 +115,9 @@ final class Prefs {
 
     // ---------- «شكل الأرقام»: 0 1 2 3 (latn, the default) or ٠ ١ ٢ ٣ (arab), on the page (#numerals), the launcher
     // (ConfigProvider's numerals) and this app's own screens
-    static final String[][] NUMERALS = {{"latn", "0 1 2 3"}, {"arab", "٠ ١ ٢ ٣"}};
+    // each label drawn left to right as written here (an isolate, LRI … PDI, holding an override, LRO … PDF): in the
+    // right-to-left settings the spaced digits otherwise come out the other way round («3 2 1 0», «٣ ٢ ١ ٠»)
+    static final String[][] NUMERALS = {{"latn", "⁦‭0 1 2 3‬⁩"}, {"arab", "⁦‭٠ ١ ٢ ٣‬⁩"}};
 
     String numerals() { return "arab".equals(sp.getString("numerals", "latn")) ? "arab" : "latn"; }
     void setNumerals(String v) { sp.edit().putString("numerals", "arab".equals(v) ? "arab" : "latn").apply(); }

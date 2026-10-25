@@ -35,7 +35,8 @@ public class SaverReceiver extends BroadcastReceiver {
         String action = String.valueOf(i.getAction());
         switch (action) {
             case "com.raad.sauditv.screensaver.GET":
-                setResultData(describe(p) + "\npage: " + (p.usesDownloadedPage(c) ? "downloaded" : "bundled in the APK"));
+                setResultData(describe(p) + "\npage: " + (p.usesDownloadedPage(c) ? "downloaded" : "bundled in the APK")
+                    + "\nvpn app: " + (VpnStatus.appInstalled(c) ? "yes (badge shown)" : "none (no VPN badge)"));
                 return;
             case "com.raad.sauditv.screensaver.CITIES": {
                 StringBuilder b = new StringBuilder();

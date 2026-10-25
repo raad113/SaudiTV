@@ -130,10 +130,11 @@ for (const [panel, [rows, title]] of Object.entries(EXPECT)) {
   const { p, ctx, errors } = await open('tv.html', 'panel=hadith');
   await p.waitForFunction(() => !!HADITH_DAY, null, { timeout: 40000 }).catch(() => {});
   const r = await p.evaluate(() => ({ src: document.querySelector('#week-list .src').textContent, n: HADITH_DAY.n,
-    bundled: BUKHARI.fallback.some(h => h.n === HADITH_DAY.n && h.text === HADITH_DAY.text),
+    bundled: BUKHARI.fallback.some(h => h.n === HADITH_DAY.n && h.head === HADITH_DAY.head && hadithMatn(h.text) === HADITH_DAY.matn),
     saw: !!document.querySelector('#week-list .quote .saw'), q: document.querySelector('#week-list .quote').textContent }));
-  check('card hadith offline: a bundled narration of Sahih al-Bukhari, «صحيح البخاري، رقم N», ﷺ drawn',
-    !errors.length && r.bundled && r.src === 'صحيح البخاري، رقم ' + r.n && r.saw && r.q.includes('«'), JSON.stringify(r) + errors.join('; '));
+  check('card hadith offline: a bundled narration of Sahih al-Bukhari in the short form («عن <companion> …: «…»»), «صحيح البخاري، رقم N»',
+    !errors.length && r.bundled && r.src === 'صحيح البخاري، رقم ' + r.n && r.saw && /^عن .+ رضي الله (عنه|عنها|عنهما) .*ﷺ.*: «.+»$/.test(r.q)
+    && !/حدثنا|أخبرنا|حَدَّثَنَا|أَخْبَرَنَا/.test(r.q), JSON.stringify(r) + errors.join('; '));
   const same = await p.evaluate(async () => { const a = HADITH_DAY.n; await loadHadith(); renderPanel(false); return [a, HADITH_DAY.n]; });
   check('card hadith: the same one all day', same[0] === same[1], JSON.stringify(same));
   await ctx.close();
@@ -141,15 +142,23 @@ for (const [panel, [rows, title]] of Object.entries(EXPECT)) {
 {
   // online: the day's number from the short list, fetched from jsDelivr once, kept for the day
   const B = JSON.parse(readFileSync(path.join(ROOT, 'assets/shared/bukhari.json'), 'utf8'));
-  const n = B.short.find(k => !B.fallback.some(h => h.n === k));   // not bundled: it has to be fetched
+  const [n, head] = B.short.find(([k]) => !B.fallback.some(h => h.n === k));   // not bundled: it has to be fetched
   const text = 'حَدَّثَنَا فُلاَنٌ، عَنْ أَبِي هُرَيْرَةَ، قَالَ قَالَ رَسُولُ اللَّهِ صلى الله عليه وسلم ‏ "‏ كَلِمَةٌ طَيِّبَةٌ صَدَقَةٌ ‏"‏‏.‏';
   const api = JSON.stringify({ hadiths: [{ hadithnumber: n, arabicnumber: n, text }] });
   const { p, ctx, errors } = await open('tv.html', 'panel=hadith', { feeds: { 'hadith-api@1/editions/ara-bukhari/\\d+\\.min\\.json': api } });
-  await p.evaluate(nn => { BUKHARI.short = [nn]; HADITH_DAY = null; try { localStorage.removeItem(HADITH_KEY); } catch (e) {} }, n);
+  await p.evaluate(e => { BUKHARI.short = [e]; HADITH_DAY = null; try { localStorage.removeItem(HADITH_KEY); } catch (x) {} }, [n, head]);
   const r = await p.evaluate(async () => { const ok = await loadHadith(); renderPanel(false);
-    return { ok, n: HADITH_DAY.n, kept: JSON.parse(localStorage.getItem(HADITH_KEY)).n, src: document.querySelector('#week-list .src').textContent }; });
-  check('card hadith online: fetched from the ara-bukhari edition and kept for the day', !errors.length && r.ok && r.n === n
-    && r.kept === n && r.src === 'صحيح البخاري، رقم ' + n, JSON.stringify(r) + errors.join('; '));
+    return { ok, n: HADITH_DAY.n, kept: JSON.parse(localStorage.getItem(HADITH_KEY)).n, src: document.querySelector('#week-list .src').textContent,
+             q: document.querySelector('#week-list .quote').textContent }; });
+  check('card hadith online: fetched from the ara-bukhari edition, shown in the short form, kept for the day', !errors.length
+    && r.ok && r.n === n && r.kept === n && r.src === 'صحيح البخاري، رقم ' + n && r.q.startsWith(head.replace(/ﷺ/g, 'ﷺ'))
+    && r.q.endsWith('«كَلِمَةٌ طَيِّبَةٌ صَدَقَةٌ»') && !r.q.includes('فُلاَن'), JSON.stringify(r) + errors.join('; '));
+  // a fetched narration that is not the one the head was made for (no single quote of his words): the bundled one
+  await p.evaluate(() => { HADITH_DAY = null; try { localStorage.removeItem(HADITH_KEY); } catch (x) {} });
+  await ctx.route(/hadith-api/, rr => rr.fulfill({ body: JSON.stringify({ hadiths: [{ hadithnumber: n, text: 'حدثنا فلان قال كذا' }] }), contentType: 'application/json' }));
+  const off = await p.evaluate(async () => [await loadHadith(), HADITH_DAY.offline, BUKHARI.fallback.some(h => h.n === HADITH_DAY.n)]);
+  check('card hadith: a fetched text that cannot be split as expected is not shown (a bundled one instead)',
+    JSON.stringify(off) === '[false,true,true]', JSON.stringify(off));
   await ctx.close();
 }
 
@@ -194,7 +203,7 @@ for (const [width, height] of [[1920, 1080], [1280, 720], [960, 540]]) {
     const r = await p.evaluate(P => {
       const day = riyadhDayNumber(), card = document.querySelector('.week'), bad = [];
       const items = P === 'verse' ? VERSES.map((_, k) => () => { window.riyadhDayNumber = () => day + k; })
-                                  : BUKHARI.fallback.map(h => () => { HADITH_DAY = { day, n: h.n, text: h.text }; });
+                                  : BUKHARI.fallback.map(h => () => { HADITH_DAY = { day, n: h.n, head: h.head, matn: hadithMatn(h.text) }; });
       let tallest = 0;
       for (const set of items) {
         set();

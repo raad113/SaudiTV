@@ -83,18 +83,32 @@ check("hadith: Sahih al-Bukhari only, the ara-bukhari edition of fawazahmed0/had
       "fawazahmed0/hadith-api" in src.get("source", "") and "/ara-bukhari" in src["source"] and src.get("book") == "صحيح البخاري", src.get("source"))
 check("hadith: the page has the file's short list and bundled texts", bukhari == {k: src[k] for k in ("maxWords", "short", "fallback")})
 short, fallback = bukhari["short"], bukhari["fallback"]
-check("hadith: over a year of short narrations, each once", len(short) >= 366 and len(set(short)) == len(short), len(short))
-check("hadith: about 60 bundled for a TV offline, each from the short list, each once",
-      50 <= len(fallback) <= 70 and all(f["n"] in short for f in fallback) and len({f["n"] for f in fallback}) == len(fallback), len(fallback))
-check("hadith: each bundled text the Prophet's words ﷺ between the book's quotes, at most maxWords words",
-      all(f["text"].count('"') == 2 and "صلى الله عليه وسلم" in re.sub("[ً-ْٰ]", "", f["text"])
-          and len(f["text"].split()) <= bukhari["maxWords"] <= 45 for f in fallback))
+numbers = [n for n, _ in short]
+check("hadith: over a year of narrations in the short form, each once", len(short) >= 366 and len(set(numbers)) == len(numbers), len(short))
+check("hadith: each in the short form, the companion with his honorific, no chain of narrators",
+      all(re.fullmatch(r"عن \S+(?: \S+){0,3} رضي الله (?:عنه|عنها|عنهما) (?:قالت?: )?\S+(?: \S+){1,4}:", h)
+          and "ﷺ" in h and not re.search("حدثنا|أخبرنا|حدثني|أخبرني", h) for _, h in short), [h for _, h in short][:3])
+heads = dict((n, h) for n, h in short)
+
+
+def his_words(t):   # as the page's hadithMatn
+    parts = t.split('"')
+    if len(parts) != 3 or re.sub("[\\s.،,:‎‏]", "", parts[2]):
+        return ""
+    return " ".join(re.sub("[‎‏]", "", parts[1]).split()).strip(" .")
+
+
+check("hadith: about 60 bundled for a TV offline, each from the pool with the same head, each once",
+      50 <= len(fallback) <= 70 and all(heads.get(f["n"]) == f["head"] for f in fallback) and len({f["n"] for f in fallback}) == len(fallback), len(fallback))
+check("hadith: each bundled text has his words between the book's quotes, at most maxWords words",
+      all(his_words(f["text"]) and len(his_words(f["text"]).split()) <= bukhari["maxWords"] <= 30 for f in fallback))
 check("no other hadith collection anywhere on the screen (the six books' hadith are gone)",
       "const HADITH = " not in page and not re.search("صحيح مسلم|سنن الترمذي|سنن أبي داود|سنن النسائي|سنن ابن ماجه|جامع الترمذي", page))
 font = set(TTFont(ROOT / "assets/fonts/Thmanyah-Regular.woff2").getBestCmap())
 marks = set(TTFont(ROOT / "assets/fonts/NotoNaskhArabic-Marks.woff2").getBestCmap())
 saw = re.compile(r"\s+".join("[ً-ْٰ]*".join(w) + "[ً-ْٰ]*" for w in "صلى الله عليه وسلم".split()))
-text = "".join(v["text"] + v["surah"] for v in verses) + "".join(saw.sub("ﷺ", re.sub("[‎‏\"]", "", f["text"])) for f in fallback)
+text = "".join(v["text"] + v["surah"] for v in verses) + "".join(f["head"] + saw.sub("ﷺ", his_words(f["text"])) for f in fallback) \
+    + "".join(h for _, h in short)
 missing = sorted({c for c in text if not c.isspace() and ord(c) not in font and c not in "ﷺ﴿﴾"})   # those: NotoMarks
 check("verse/hadith text: every character in Thmanyah", not missing, missing)
 check("NotoMarks has ﷺ ﴿ ﴾", {0xFDFA, 0xFD3E, 0xFD3F} <= marks)

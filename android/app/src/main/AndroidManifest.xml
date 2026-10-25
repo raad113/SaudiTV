@@ -22,6 +22,16 @@
         <intent>
             <action android:name="android.net.VpnService" />
         </intent>
+        <!-- a VPN app's VpnService is often not exported (Surfshark's), and Android then grants no visibility through
+             the intent above: the apps with a TV or phone launcher icon make it visible (as the launcher sees them) -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
