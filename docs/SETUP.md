@@ -20,11 +20,14 @@
 - عنوان التلفزيون: الإعدادات ← الشبكة ← الواي فاي.
 
 ### ٣. إعدادات بيتك: `household.env`
-انسخ `household.env.example` إلى `household.env` وعدّله: المدينة وإحداثياتها، المنطقة الزمنية، الفرق، بطاقة شاشة التوقف
+انسخ `household.env.example` إلى `household.env` وعدّله: المدينة وإحداثياتها ودولتها (`COUNTRY`) ومنطقتها الزمنية، طريقة الحساب
+(`METHOD`)، وحدة الحرارة (`UNITS`)، دوري الترتيب (`LEAGUE`)، دولة الأخبار (`NEWS_COUNTRY`)، المنطقة الزمنية للتلفزيون، الفرق، بطاقة شاشة التوقف
 وبطاقة الواجهة، صف المفضلة، شكل الأرقام (`NUMERALS`)، شكل التطبيقات وشكل التحديد في الواجهة (`TILE_SHAPE` و `FOCUS_STYLE`)، أقل تقييم للمسلسلات، التحديث التلقائي، تطبيقات زيادة تنطفي أو تنحذف، ومدة إطفاء الشاشة.
 - الملف **ما يُرفع لـ git أبداً** (فيه مكان سكنك). بدونه: الرياض، أم القرى، الأندية السعودية الكبيرة، وست بطاقات.
 - تلفزيون ثاني بإعدادات مختلفة: `household-tv2.env` و `HOUSEHOLD_ENV=household-tv2.env optimize/setup-new-tv.sh <IP>`.
-- أرقام الفرق: `optimize/saver.sh find-team الهلال`. المدن السعودية الجاهزة: `optimize/saver.sh cities`.
+- أرقام الفرق: `optimize/saver.sh find-team الهلال`، وأندية أي دوري في ESPN: `optimize/saver.sh clubs eng.1` (المنتخبات:
+  `fifa.friendly`). المدن السعودية الجاهزة: `optimize/saver.sh cities`، ومدن أي دولة: `optimize/saver.sh cities EG`.
+  الدول: `optimize/saver.sh countries`، والدوريات: `optimize/saver.sh leagues`.
 
 ### ٤. الأمر
 ```
@@ -129,13 +132,17 @@ LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
 - The TV's address: Settings > Network > the Wi-Fi.
 
 ### 3. Your household's settings: `household.env`
-Copy `household.env.example` to `household.env` and edit it: the city and its coordinates, the time zone, the teams, the
+Copy `household.env.example` to `household.env` and edit it: the city, its coordinates, its country (`COUNTRY`) and time
+zone, the prayer method (`METHOD`), the temperature unit (`UNITS`), the table's league (`LEAGUE`), the news country
+(`NEWS_COUNTRY`), the TV's time zone, the teams, the
 screensaver's and the home screen's cards, the favourites row, the number style (`NUMERALS`), the home screen's app
 tiles and focused-app look (`TILE_SHAPE`, `FOCUS_STYLE`), the episodes' lowest rating, the page auto-update, extra
 apps to turn off or remove, and when the screen turns off.
 - git **never tracks** it (it says where you live). Without it: Riyadh, Umm al-Qura, the big Saudi clubs, six cards.
 - A second TV with other settings: `household-tv2.env`, and `HOUSEHOLD_ENV=household-tv2.env optimize/setup-new-tv.sh <IP>`.
-- Team ids: `optimize/saver.sh find-team Al-Hilal`. Built-in Saudi cities: `optimize/saver.sh cities`.
+- Team ids: `optimize/saver.sh find-team Al-Hilal`, and any ESPN league's clubs: `optimize/saver.sh clubs eng.1` (national
+  teams: `fifa.friendly`). Built-in Saudi cities: `optimize/saver.sh cities`; another country's: `optimize/saver.sh cities EG`.
+  The countries: `optimize/saver.sh countries`; the leagues: `optimize/saver.sh leagues`.
 
 ### 4. The command
 ```
@@ -232,7 +239,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 ### 10. The tools
 | | |
 |---|---|
-| `optimize/saver.sh` | the screensaver's settings: `show`, `city`, `teams`, `find-team`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `minrating`, `autoupdate`, `update`, `app-check` |
+| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `minrating`, `autoupdate`, `update`, `app-check` |
 | `optimize/dock.sh` | the favourites row: `show`, `apps`, `set`, `reset` |
 | `optimize/check-home.sh` | opens an app, presses Home, says whether our home screen came back |
 | `optimize/start-saver.sh` · `shot.sh` | start the screensaver now · screenshots without navigating |

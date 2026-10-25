@@ -42,7 +42,24 @@ def search(name):
         return []
 
 
+def espn(league):
+    """an ESPN league's clubs (fifa.friendly: the national teams), as `E<id>@<league>:Name` for optimize/saver.sh teams"""
+    if not re.fullmatch(r"[a-z0-9]+(\.[a-z0-9_]+)+", league):
+        sys.exit("usage: optimize/saver.sh clubs LEAGUE   (an ESPN league: optimize/saver.sh leagues)")
+    url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{league}/teams"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "SaudiTV"}), timeout=20) as r:
+            teams = json.load(r)["sports"][0]["leagues"][0]["teams"]
+    except Exception as e:  # noqa: BLE001
+        sys.exit(f"ESPN didn't answer for {league}: {e}")
+    for t in sorted((t["team"] for t in teams), key=lambda t: t.get("displayName", "")):
+        print(f"E{t['id']}@{league}:{t.get('displayName', '')}")
+
+
 def main():
+    if sys.argv[1:2] == ["--espn"]:
+        espn(sys.argv[2] if len(sys.argv) > 2 else "")
+        return
     q = " ".join(sys.argv[1:]).strip()
     if not q:
         sys.exit("usage: optimize/saver.sh find-team NAME   (Arabic or English)")

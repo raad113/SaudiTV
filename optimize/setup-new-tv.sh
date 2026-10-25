@@ -29,10 +29,16 @@ fi
 CITY_NAME="${CITY_NAME:-الرياض}"           # shown on screen; Arabic is fine. Saudi cities: optimize/saver.sh cities
 LAT="${LAT:-24.6877}"
 LON="${LON:-46.7219}"
-TZ_ID="${TZ_ID:-Asia/Riyadh}"               # the TV's own time zone: the apps use the TV's, this script checks it
-[[ "$TZ_ID" == America/* ]] && _m=2 || _m=4
-METHOD="${METHOD:-$_m}"                     # prayer times: 4 = Umm al-Qura. Not sent to the TV: our APK picks 2 (ISNA)
-                                            #   when the time zone is America/*, else 4 (Umm al-Qura); this is only checked
+TZ_ID="${TZ_ID:-Asia/Riyadh}"               # the TV's own time zone (its clock): this script checks it
+COUNTRY="${COUNTRY:-}"                      # the city's country (SA EG US…; optimize/saver.sh countries): its prayer
+                                            #   method, units and news by default; none = not set; empty: left as it is
+CITY_TZ="${CITY_TZ:-}"                      # the city's own time zone (its prayer times); empty: the nearest bundled
+                                            #   city's in COUNTRY, else the TV's
+METHOD="${METHOD:-}"                        # «طريقة الحساب»: auto (the country's), umm-al-qura isna egypt kuwait qatar
+                                            #   dubai mwl karachi diyanet, or Aladhan's number; empty: left as it is
+UNITS="${UNITS:-}"                          # the temperature: auto (the country's), c or f; empty: left as it is
+LEAGUE="${LEAGUE:-}"                        # «الدوري في الترتيب»: auto or optimize/saver.sh leagues' id; empty: as it is
+NEWS_COUNTRY="${NEWS_COUNTRY:-}"            # «أخبار <الدولة>»: auto (the city's country) or a code; empty: as it is
 ROTATE="${ROTATE:-30}"                      # seconds per card. Fixed in our APK (Prefs.java, HomePage.java); checked
 if ! declare -p TEAMS > /dev/null 2>&1; then
   TEAMS=(                                   # followed teams, in order: TheSportsDB id:English name (the app shows the
@@ -345,9 +351,6 @@ else
     fi
   fi
 fi
-want_method=4; [[ "$TZ_ID" == America/* ]] && want_method=2
-if [ "$METHOD" = "$want_method" ]; then ok "prayer method $METHOD (the app picks it from the time zone)"
-else warn "METHOD=$METHOD, but our APK uses $want_method for $TZ_ID (Prefs.prayerMethod in android/app; rebuild to change)"; fi
 if [ "$ROTATE" = 30 ]; then ok "cards change every 30 s (built into our APK)"
 else warn "ROTATE=$ROTATE, but our APK is built with 30 s (Prefs.panelParams, HomePage.java; rebuild to change)"; fi
 
@@ -364,10 +367,41 @@ saver_set() {   # $1 label, $2.. the saver.sh command
   fi
   did "$label set"; changed=yes
 }
+line() { sed -n "s/^$1: //p" <<< "$show"; }   # a value of optimize/saver.sh show
+# the country first: the city's time zone is looked up in it
+country_set=no
+if [ -n "$COUNTRY" ]; then
+  want_cc=$(tr '[:lower:]' '[:upper:]' <<< "$COUNTRY"); [ "$want_cc" = NONE ] && want_cc="(not"
+  if [ "$(line country | cut -d' ' -f1)" = "$want_cc" ]; then ok "country: $(line country)"
+  else saver_set "country ($COUNTRY)" country "$COUNTRY"; country_set=yes; fi
+fi
 want_city="city: $CITY_NAME ($LAT, $LON)"
-if grep -qxF "$want_city" <<< "$show"; then ok "$want_city"; else saver_set "city ($CITY_NAME $LAT $LON)" city "$CITY_NAME" "$LAT" "$LON"; fi
+tz_ok=yes; [ -n "$CITY_TZ" ] && [ "$(line city_tz)" != "$CITY_TZ" ] && tz_ok=no
+if grep -qxF "$want_city" <<< "$show" && [ $tz_ok = yes ] && [ $country_set = no ]; then ok "$want_city"
+else saver_set "city ($CITY_NAME $LAT $LON${CITY_TZ:+ $CITY_TZ})" city "$CITY_NAME" "$LAT" "$LON" ${CITY_TZ:+"$CITY_TZ"}; fi
+# «طريقة الحساب», the units, the table's league and the news country: auto, or one value (as optimize/saver.sh show)
+want_auto() {   # $1 show's key, $2 the household's value, $3 the value show prints for it (its first word)
+  local have; have=$(line "$1")
+  if [ "$2" = auto ]; then [[ "$have" == *"(auto)" ]]; else [ "$(cut -d' ' -f1 <<< "$have")" = "$3" ] && [[ "$have" != *"(auto)" ]]; fi
+}
+if [ -n "$METHOD" ]; then
+  case "$METHOD" in umm-al-qura) m=4 ;; isna) m=2 ;; egypt) m=5 ;; kuwait) m=9 ;; qatar) m=10 ;; dubai) m=16 ;; mwl) m=3 ;;
+    karachi) m=1 ;; diyanet) m=13 ;; *) m=$METHOD ;; esac
+  if want_auto method "$METHOD" "$m"; then ok "prayer method: $(line method)"; else saver_set "prayer method ($METHOD)" method "$METHOD"; fi
+fi
+if [ -n "$UNITS" ]; then
+  if want_auto units "$UNITS" "$UNITS"; then ok "units: $(line units)"; else saver_set "units ($UNITS)" units "$UNITS"; fi
+fi
+if [ -n "$LEAGUE" ]; then
+  if want_auto league "$LEAGUE" "$LEAGUE"; then ok "table: $(line league)"; else saver_set "table league ($LEAGUE)" league "$LEAGUE"; fi
+fi
+if [ -n "$NEWS_COUNTRY" ]; then
+  nc=$(tr '[:lower:]' '[:upper:]' <<< "$NEWS_COUNTRY"); [ "$nc" = AUTO ] && nc=auto
+  if want_auto news_country "$nc" "$nc"; then ok "news: $(line news_country)"; else saver_set "news country ($NEWS_COUNTRY)" news-country "$NEWS_COUNTRY"; fi
+fi
 want_ids=$(printf '%s\n' "${TEAMS[@]}" | cut -d: -f1 | paste -sd, -)
-have_ids=$(sed -n 's/^teams: //p' <<< "$show" | grep -oE '[0-9]+\|' | tr -d '|' | paste -sd, -)
+# the ids before each «|»: TheSportsDB's (136013, 138995@tsdb.4829) or ESPN's (E359@eng.1)
+have_ids=$(sed -n 's/^teams: //p' <<< "$show" | grep -oE '(^|, )(E[0-9]+@[a-z0-9._]+|[0-9]+(@tsdb\.[0-9]+)?)\|' | sed 's/^, //; s/|$//' | paste -sd, -)
 if [ "$want_ids" = "$have_ids" ]; then ok "teams: $(sed -n 's/^teams: //p' <<< "$show")"; else saver_set "teams ($want_ids)" teams "${TEAMS[@]}"; fi
 if grep -qxF "panel: $SAVER_PANELS" <<< "$show"; then ok "screensaver card: $SAVER_PANELS"; else saver_set "screensaver card ($SAVER_PANELS)" card "$SAVER_PANELS"; fi
 if grep -qxF "home_panel: $HOME_PANELS" <<< "$show"; then ok "home card: $HOME_PANELS"; else saver_set "home card ($HOME_PANELS)" home-card "$HOME_PANELS"; fi
@@ -507,7 +541,7 @@ for list in optimize/lists/tcl-safe.txt "$EXTRA/disable.txt"; do
 done
 left=(); for p in $(list_pkgs "$EXTRA/remove.txt") $EXTRA_REMOVE; do has "$p" && left+=("$p"); done
 [ ${#left[@]} -eq 0 ] && ok "$EXTRA/remove.txt and EXTRA_REMOVE: none installed" || skip "still installed (not removed): ${left[*]}"
-optimize/saver.sh show 2>/dev/null | tr -d '\r' | grep -E '^(city|teams|panel|home_panel):' | sed 's/^/   /'
+optimize/saver.sh show 2>/dev/null | tr -d '\r' | grep -E '^(city|country|method|league|news_country|teams|panel|home_panel):' | sed 's/^/   /'
 ok "$(tvq "grep MemAvailable /proc/meminfo" | tr -s ' ')"
 [ "$MODE" = dry ] || tv "input keyevent KEYCODE_HOME" > /dev/null   # leave the TV on the home screen
 summary

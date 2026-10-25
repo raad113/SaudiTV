@@ -152,6 +152,55 @@ check("news sources: the page (NEWS_SOURCES) and the settings app (Prefs.NEWS_SO
       page_src == java_src and set(pages) == {"news", "tech", "local", "world"}, (page_src, java_src))
 check("news sources: 3 or 4 on by default on every page", all(3 <= sum(d for _, d in v) <= 4 for v in java_src.values()),
       {k: sum(d for _, d in v) for k, v in java_src.items()})
+# the other Arab countries' news («أخبار <الدولة>»): the page's COUNTRY_NEWS and Prefs.COUNTRY_NEWS
+cblock = re.search(r"const COUNTRY_NEWS = \{(.*?)\n\};", tmpl, re.S).group(1)
+page_cn = {m.group(1): [(i.group(1), "on: true" in i.group(0)) for i in re.finditer(r"\{id: '(\w+)'.*?\}", m.group(2))]
+           for m in re.finditer(r"\n  ([A-Z]{2}): \[(.*?)\n  \],", cblock, re.S)}
+jblock = re.search(r"COUNTRY_NEWS = \{(.*?)\n    \};", prefs, re.S).group(1)
+java_cn = {}
+for chunk in jblock.split('{{"')[1:]:
+    java_cn[chunk[:2]] = [(i, d == "1") for i, _, d in re.findall(r'\{"(\w+)", "([^"]+)", "([01])"\}', chunk)]
+check("country news: the page (COUNTRY_NEWS) and the settings app (Prefs.COUNTRY_NEWS) have the same countries, ids, order and defaults",
+      page_cn == java_cn and len(page_cn) >= 17, (sorted(set(page_cn) ^ set(java_cn)), [k for k in page_cn if page_cn.get(k) != java_cn.get(k)]))
+check("country news: each country 2 to 4 outlets on by default, no id twice, no google/bing of their own (added for every country)",
+      all(2 <= sum(d for _, d in v) <= 4 and len({i for i, _ in v}) == len(v) and not {"google", "bing"} & {i for i, _ in v}
+          for v in java_cn.values()), {k: [i for i, d in v if d] for k, v in java_cn.items()})
+
+# ---- worldwide: the bundled countries and cities (.github/tools/gen_geo.py), the prayer methods, the leagues
+import gzip
+geo = ROOT / "assets/geo"
+rows = [l.split("\t") for l in (geo / "countries.tsv").read_text(encoding="utf-8").splitlines() if l and not l.startswith("#")]
+codes = [r[0] for r in rows]
+check("geo: every country has its code, Arabic and English names, and its cities file", len(rows) >= 230 and all(
+      len(r) == 7 and re.fullmatch(r"[A-Z]{2}", r[0]) and re.search("[؀-ۿ]", r[1]) and r[3] and (geo / "cities" / f"{r[0]}.tsv.gz").is_file()
+      for r in rows) and {"SA", "EG", "US", "AE", "GB"} <= set(codes), len(rows))
+bad = []
+for cc in ("SA", "EG", "US", "MA"):
+    lines = gzip.decompress((geo / "cities" / f"{cc}.tsv.gz").read_bytes()).decode("utf-8").splitlines()
+    zones, regions = lines[0].split("\t")[1:], lines[1].split("\t")[1:]
+    for l in lines[2:]:
+        f = l.split("\t")
+        if len(f) != 7 or not (-90 <= float(f[2]) <= 90 and -180 <= float(f[3]) <= 180) or int(f[5]) >= len(zones) or int(f[6]) >= len(regions):
+            bad.append(f"{cc}: {l}")
+    pops = [int(l.split("\t")[4]) for l in lines[2:]]
+    if pops != sorted(pops, reverse=True):
+        bad.append(f"{cc}: not biggest first")
+check("geo: city files well formed (name, English, lat, lon, population, zone, region), biggest first", not bad, bad[:3])
+size = sum(f.stat().st_size for f in (geo / "cities").glob("*.tsv.gz"))
+check("geo: the city files stay under 3 MB (they are in the screensaver APK)", size < 3_000_000, size)
+geo_java = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Geo.java").read_text(encoding="utf-8")
+java_methods = sorted(int(x) for x in re.findall(r'\{"(\d+)", "[^"]+", "[a-z-]+"\}', re.search(r"METHODS = \{(.*?)\};", geo_java, re.S).group(1)))
+page_methods = sorted(int(x) for x in re.findall(r"\n  (\d+): \{", re.search(r"const PRAYER_METHODS = \{(.*?)\n\};", tmpl, re.S).group(1)))
+check("prayer methods: the settings app (Geo.METHODS) and the page's offline times (PRAYER_METHODS) have the same ones",
+      java_methods == page_methods and {1, 2, 3, 4, 5, 9, 10, 13, 16} <= set(page_methods), (java_methods, page_methods))
+lg = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Leagues.java").read_text(encoding="utf-8")
+ids = re.findall(r'l\("([^"]+)", "', lg) + (["ksa.1"] if "l(ROSHN, " in lg and 'ROSHN = "ksa.1"' in lg else [])
+tsdb_named = set(re.findall(r'\{"(tsdb\.\d+)", "[^"]+"\}', lg))
+check("leagues: ids are ESPN slugs or tsdb.<id>, each once; every TheSportsDB one has its TheSportsDB name",
+      len(ids) == len(set(ids)) and all(re.fullmatch(r"tsdb\.\d+|[a-z]+(\.[a-z0-9_]+)+", i) for i in ids) and "ksa.1" in ids
+      and {i for i in ids if i.startswith("tsdb.")} == tsdb_named, [i for i in ids if ids.count(i) > 1])
+readme = (ROOT / "README.md").read_text(encoding="utf-8")
+check("README credits GeoNames (CC BY 4.0) and CLDR", "GeoNames" in readme and "CC BY 4.0" in readme and "CLDR" in readme)
 
 # ---- launcher config
 cfg = ET.parse(ROOT / "android/launcher/src/main/res/values/config.xml").getroot()

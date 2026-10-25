@@ -121,17 +121,23 @@ public class SettingsActivity extends Activity {
             startActivity(new Intent(SettingsActivity.this, MainActivity.class)); } }).requestFocus();
 
         header("الموقع");
-        row("المدينة", prefs.city()[0], R.drawable.ic_place, new Runnable() { public void run() { pickCity(); } });
+        row("المدينة", cityLabel(), R.drawable.ic_place, new Runnable() { public void run() { pickCountry(); } });
+        row("طريقة الحساب", Geo.methodLabel(prefs.prayerMethod()) + (prefs.methodAuto() ? " (تلقائي)" : ""),
+            R.drawable.ic_place, new Runnable() { public void run() { pickMethod(); } });
+        row("وحدة الحرارة", unitsLabel(prefs.units()) + (prefs.unitsAuto() ? " (تلقائي)" : ""),
+            R.drawable.ic_place, new Runnable() { public void run() { pickUnits(); } });
 
         header("المباريات");
         row("الفرق المتابعة (" + num(prefs.teams().size()) + "/" + num(Prefs.MAX_TEAMS) + ")", teamsLabel(),
             R.drawable.ic_trophy, new Runnable() { public void run() { manageTeams(); } });
+        row("الدوري في الترتيب", leagueLabel(prefs.league()) + (prefs.leagueAuto() ? " (تلقائي)" : ""),
+            R.drawable.ic_trophy, new Runnable() { public void run() { pickTableLeague(); } });
 
         header("بجانب الساعة");
-        row("المحتوى", Prefs.panelLabel(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
+        row("المحتوى", prefs.panelTitle(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
 
         header("الشاشة الرئيسية (سعودي TV)");
-        row("بطاقة على الشاشة الرئيسية", Prefs.panelLabel(prefs.homePanel()), R.drawable.ic_eye,
+        row("بطاقة على الشاشة الرئيسية", prefs.panelTitle(prefs.homePanel()), R.drawable.ic_eye,
             new Runnable() { public void run() { pickPanel(true); } });
         row("ترتيب التطبيقات المفضلة", "قائمة ترتّب فيها المفضلة بالأسهم", R.drawable.ic_star,
             new Runnable() { public void run() { openDockSettings(); } });
@@ -146,9 +152,12 @@ public class SettingsActivity extends Activity {
         for (String page : Prefs.NEWS_PAGES) anyNews |= hasPanel(prefs.panel(), page) || hasPanel(prefs.homePanel(), page);
         if (anyNews) {
             header("مصادر الأخبار");
+            if (hasPanel(prefs.panel(), "news") || hasPanel(prefs.homePanel(), "news"))
+                row("دولة الأخبار", newsCountryLabel() + (prefs.newsCountryAuto() ? " (تلقائي)" : ""), R.drawable.ic_language,
+                    new Runnable() { public void run() { pickNewsCountry(); } });
             for (final String page : Prefs.NEWS_PAGES) {
                 if (!hasPanel(prefs.panel(), page) && !hasPanel(prefs.homePanel(), page)) continue;
-                row(Prefs.panelLabel(page), sourcesLabel(page), R.drawable.ic_category, new Runnable() { public void run() { pickSources(page); } });
+                row(prefs.panelTitle(page), sourcesLabel(page), R.drawable.ic_category, new Runnable() { public void run() { pickSources(page); } });
             }
         }
 
@@ -174,6 +183,203 @@ public class SettingsActivity extends Activity {
 
     // ---------- pickers ----------
 
+    // ---------- the place: the country (every one, CLDR's Arabic names), then its cities (GeoNames, biggest first; the
+    // Saudi ones from the regions list, as before). The city keeps its country and its time zone.
+
+    private void pickCountry() {
+        final List<Geo.Country> all = Geo.countries(this);
+        if (all.isEmpty()) { pickCity(); return; }   // no bundled list (an incomplete build): the Saudi regions
+        String[] labels = new String[all.size()];
+        int sel = -1;
+        String cur = prefs.country().isEmpty() ? "SA" : prefs.country();
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = all.get(i).ar;
+            if (all.get(i).cc.equals(cur)) sel = i;
+        }
+        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("الدولة")
+            .setItems(labels, (x, i) -> pickCityOf(all.get(i))).create();
+        d.show();
+        if (sel >= 0) d.getListView().setSelection(sel);   // the current country in front
+    }
+
+    private void pickCityOf(final Geo.Country c) {
+        if ("SA".equals(c.cc)) { pickCity(); return; }
+        showCities(c, Geo.cities(this, c.cc), null);
+    }
+
+    /** a country's cities, biggest first, or those a search kept (query); first a search, then «ابحث عن مدينة أخرى» */
+    private void showCities(final Geo.Country c, final List<Geo.City> list, final String query) {
+        final int head = 2;
+        String[] labels = new String[list.size() + head];
+        labels[0] = query == null ? "بحث في مدن " + c.shortAr + "…" : "بحث آخر…";
+        labels[1] = "ابحث عن مدينة أخرى";
+        int sel = -1;
+        String[] cur = prefs.city();
+        for (int i = 0; i < list.size(); i++) {
+            Geo.City x = list.get(i);
+            // the region beside the name, unless it is the same place (القاهرة, الإسكندرية · الاسكندرية); an RLM first, so a
+            // Latin name keeps the right edge like the Arabic ones
+            String rg = x.region.isEmpty() || Geo.fold(x.region).equals(Geo.fold(x.name)) ? "" : "  ·  " + x.region;
+            labels[i + head] = "‏" + x.name + rg;
+            if (x.name.equals(cur[0]) && x.lat.equals(cur[1]) && x.lon.equals(cur[2])) sel = i + head;
+        }
+        if (list.isEmpty() && query != null) toast("لا توجد نتائج، جرّب «ابحث عن مدينة أخرى»");
+        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME)
+            .setTitle(query == null ? c.ar : c.shortAr + ": «⁨" + query + "⁩»")   // the query isolated (FSI … PDI)
+            .setItems(labels, (x, i) -> {
+                if (i == 0) ask("اسم المدينة بالعربية أو الإنجليزية", q -> showCities(c, filterCities(c, q), q));
+                else if (i == 1) searchCity(c);
+                else {
+                    Geo.City city = list.get(i - head);
+                    setPlace(city.name, city.lat, city.lon, c.cc, city.tz);
+                }
+            }).create();
+        d.show();
+        if (sel >= 0) d.getListView().setSelection(sel);
+    }
+
+    /** the country's cities whose Arabic or English name holds q (biggest first) */
+    private List<Geo.City> filterCities(Geo.Country c, String q) {
+        String want = Geo.fold(q);
+        List<Geo.City> out = new ArrayList<>();
+        for (Geo.City x : Geo.cities(this, c.cc))
+            if (Geo.fold(x.name).contains(want) || Geo.fold(x.alt).contains(want)) out.add(x);
+        return out;
+    }
+
+    /** any place of the country, from Open-Meteo's GeoNames search (no key), in Arabic where it has the name */
+    private void searchCity(final Geo.Country c) {
+        ask("اسم المدينة أو القرية", q -> fetch("https://geocoding-api.open-meteo.com/v1/search?count=20&language=ar&countryCode="
+            + c.cc + "&name=" + Uri.encode(q), json -> {
+                JSONArray a = new JSONObject(json).optJSONArray("results");
+                if (a == null || a.length() == 0) { toast("لا توجد نتائج"); return; }
+                final int n = a.length();
+                final String[] names = new String[n], lats = new String[n], lons = new String[n], zones = new String[n], rows = new String[n];
+                for (int i = 0; i < n; i++) {
+                    JSONObject x = a.getJSONObject(i);
+                    names[i] = x.optString("name");
+                    lats[i] = String.valueOf(x.optDouble("latitude"));
+                    lons[i] = String.valueOf(x.optDouble("longitude"));
+                    zones[i] = x.optString("timezone", "");
+                    String region = x.optString("admin1", "");
+                    rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
+                }
+                new AlertDialog.Builder(this, DIALOG_THEME).setTitle("اختر المكان")
+                    .setItems(rows, (d, i) -> setPlace(names[i], lats[i], lons[i], c.cc, zones[i])).show();
+            }));
+    }
+
+    /** the city, its country and time zone (none known: the nearest bundled city's) */
+    private void setPlace(String name, String lat, String lon, String cc, String tz) {
+        if (tz == null || tz.isEmpty()) {
+            try {
+                Geo.City near = Geo.nearest(this, cc, Double.parseDouble(lat), Double.parseDouble(lon));
+                tz = near == null ? "" : near.tz;
+            } catch (RuntimeException e) { tz = ""; }
+        }
+        prefs.setCity(name, lat, lon, cc, tz);
+        changed();
+        render();
+    }
+
+    private String cityLabel() {
+        Geo.Country c = Geo.country(this, prefs.country());
+        String name = prefs.city()[0];
+        return c == null || name.equals(c.shortAr) ? name : name + "، " + c.shortAr;
+    }
+
+    /** «طريقة الحساب»: the country's (تلقائي) or one of Geo.METHODS */
+    private void pickMethod() {
+        String[] labels = new String[Geo.METHODS.length + 1];
+        labels[0] = "تلقائي: " + Geo.methodLabel(prefs.autoMethod());
+        int sel = prefs.methodAuto() ? 0 : -1;
+        for (int i = 0; i < Geo.METHODS.length; i++) {
+            labels[i + 1] = Geo.METHODS[i][1];
+            if (!prefs.methodAuto() && Geo.METHODS[i][0].equals(String.valueOf(prefs.prayerMethod()))) sel = i + 1;
+        }
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("طريقة الحساب")
+            .setSingleChoiceItems(labels, sel, (d, i) -> {
+                prefs.setMethod(i == 0 ? -1 : Integer.parseInt(Geo.METHODS[i - 1][0]));
+                d.dismiss();
+                changed();
+                render();
+            }).show();
+    }
+
+    private static String unitsLabel(String u) { return "f".equals(u) ? "فهرنهايت (°F)" : "مئوية (°C)"; }
+
+    /** «وحدة الحرارة»: the country's (°F in the US), °C or °F */
+    private void pickUnits() {
+        String auto = Geo.fahrenheit(prefs.country()) ? "f" : "c";
+        String[] labels = {"تلقائي: " + unitsLabel(auto), unitsLabel("c"), unitsLabel("f")};
+        int sel = prefs.unitsAuto() ? 0 : "f".equals(prefs.units()) ? 2 : 1;
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("وحدة الحرارة")
+            .setSingleChoiceItems(labels, sel, (d, i) -> {
+                prefs.setUnits(i == 0 ? null : i == 1 ? "c" : "f");
+                d.dismiss();
+                changed();
+                render();
+            }).show();
+    }
+
+    private static String leagueLabel(String id) {
+        Leagues.League l = Leagues.find(id);
+        return l == null ? id : l.ar;
+    }
+
+    /** «الدوري في الترتيب»: the first followed club's league (تلقائي), or a country's league */
+    private void pickTableLeague() {
+        final List<Leagues.Group> groups = groupsFirst(prefs.country(), false);
+        String[] labels = new String[groups.size() + 1];
+        labels[0] = "تلقائي: " + leagueLabel(prefs.autoLeague());
+        for (int i = 0; i < groups.size(); i++) labels[i + 1] = groups.get(i).ar;
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("الدوري في الترتيب")
+            .setItems(labels, (d, i) -> {
+                if (i == 0) { prefs.setLeague(null); changed(); render(); return; }
+                final Leagues.Group g = groups.get(i - 1);
+                if (g.leagues.length == 1) { prefs.setLeague(g.leagues[0].id); changed(); render(); return; }
+                String[] names = new String[g.leagues.length];
+                int sel = -1;
+                for (int k = 0; k < names.length; k++) { names[k] = g.leagues[k].ar; if (g.leagues[k].id.equals(prefs.league())) sel = k; }
+                new AlertDialog.Builder(this, DIALOG_THEME).setTitle(g.ar)
+                    .setSingleChoiceItems(names, sel, (d2, k) -> { prefs.setLeague(g.leagues[k].id); d2.dismiss(); changed(); render(); })
+                    .show();
+            }).show();
+    }
+
+    /** the leagues' countries, the TV's own first (then the list's order) */
+    private static List<Leagues.Group> groupsFirst(String cc, boolean national) {
+        List<Leagues.Group> out = new ArrayList<>();
+        for (Leagues.Group g : Leagues.GROUPS) if (!cc.isEmpty() && (g.cc.equals(cc) || g.cc.startsWith(cc + "-"))) out.add(g);
+        for (Leagues.Group g : Leagues.GROUPS) if (!out.contains(g)) out.add(g);
+        return out;
+    }
+
+    private String newsCountryLabel() {
+        Geo.Country c = Geo.country(this, prefs.newsCountry());
+        return c == null ? "السعودية" : c.ar;
+    }
+
+    /** «دولة الأخبار»: the city's country (تلقائي) or any other */
+    private void pickNewsCountry() {
+        final List<Geo.Country> all = Geo.countries(this);
+        String[] labels = new String[all.size() + 1];
+        Geo.Country own = Geo.country(this, prefs.country());
+        labels[0] = "تلقائي: دولة المدينة (" + (own == null ? "السعودية" : own.ar) + ")";
+        int sel = prefs.newsCountryAuto() ? 0 : -1;
+        for (int i = 0; i < all.size(); i++) {
+            labels[i + 1] = all.get(i).ar;
+            if (!prefs.newsCountryAuto() && all.get(i).cc.equals(prefs.newsCountry())) sel = i + 1;
+        }
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("دولة الأخبار")
+            .setSingleChoiceItems(labels, sel, (d, i) -> {
+                prefs.setNewsCountry(i == 0 ? null : all.get(i - 1).cc);
+                d.dismiss();
+                changed();
+                render();
+            }).show();
+    }
+
     private void pickCity() {
         final Cities.Region[] regions = Cities.REGIONS;
         String[] labels = new String[regions.length + 1];
@@ -193,8 +399,9 @@ public class SettingsActivity extends Activity {
         }
         new AlertDialog.Builder(this, DIALOG_THEME).setTitle(r.name)
             .setSingleChoiceItems(names, sel, (d, i) -> {
-                prefs.setCity(r.cities[i][0], r.cities[i][1], r.cities[i][2]);
+                prefs.setCity(r.cities[i][0], r.cities[i][1], r.cities[i][2], "SA", Prefs.TZ);   // a Saudi city: Riyadh time
                 d.dismiss();
+                changed();
                 render();
             }).show();
     }
@@ -216,7 +423,7 @@ public class SettingsActivity extends Activity {
                     rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
                 }
                 new AlertDialog.Builder(this, DIALOG_THEME).setTitle("اختر المكان")
-                    .setItems(rows, (d, i) -> { prefs.setCity(names[i], lats[i], lons[i]); render(); }).show();
+                    .setItems(rows, (d, i) -> { prefs.setCity(names[i], lats[i], lons[i], "SA", Prefs.TZ); changed(); render(); }).show();
             }));
     }
 
@@ -246,29 +453,98 @@ public class SettingsActivity extends Activity {
         render();
     }
 
+    /** «إضافة فريق»: the country (or «منتخبات»), its league, then the club (ESPN's lists; TheSportsDB's for the leagues
+     *  ESPN does not carry); the search by name (TheSportsDB) last, as before */
     private void pickTeam(final int slot) {
-        final List<String[]> opts = new ArrayList<>();
-        for (String[] t : Prefs.TEAM_PRESETS) opts.add(t);
-        String[] labels = new String[opts.size() + 2];
-        for (int i = 0; i < opts.size(); i++) labels[i] = opts.get(i)[1];
-        labels[opts.size()] = "تصفح الدوريات…";
-        labels[opts.size() + 1] = "بحث عن أي فريق أو منتخب…";
+        final List<Leagues.Group> groups = groupsFirst(prefs.country(), true);
+        String[] labels = new String[groups.size() + 2];
+        labels[0] = "منتخبات";
+        for (int i = 0; i < groups.size(); i++) labels[i + 1] = groups.get(i).ar;
+        labels[labels.length - 1] = "بحث عن أي فريق أو منتخب…";
         new AlertDialog.Builder(this, DIALOG_THEME).setTitle("إضافة فريق")
             .setItems(labels, (d, i) -> {
-                if (i < opts.size()) addTeam(opts.get(i)[0], opts.get(i)[1]);
-                else if (i == opts.size()) pickLeague(slot);
-                else searchTeam(slot);
+                if (i == 0) espnTeams(Leagues.NATIONAL, "منتخبات", true);
+                else if (i == labels.length - 1) searchTeam(slot);
+                else pickLeagueOf(slot, groups.get(i - 1));
             }).show();
     }
 
-    private void pickLeague(final int slot) {
-        String[] labels = new String[Prefs.LEAGUES.length];
-        for (int i = 0; i < labels.length; i++) labels[i] = Prefs.LEAGUES[i][1];
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("الدوري")
-            .setItems(labels, (d, i) -> {
-                final String[] lg = Prefs.LEAGUES[i];
-                fetch(SPORTS + "search_all_teams.php?l=" + Uri.encode(lg[0]), json -> showTeams(slot, json, lg[1], lg[0]));
-            }).show();
+    private void pickLeagueOf(final int slot, final Leagues.Group g) {
+        if (g.leagues.length == 1) { clubsOf(slot, g.leagues[0]); return; }
+        String[] names = new String[g.leagues.length];
+        for (int i = 0; i < names.length; i++) names[i] = g.leagues[i].ar;
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(g.ar)
+            .setItems(names, (d, i) -> clubsOf(slot, g.leagues[i])).show();
+    }
+
+    private void clubsOf(int slot, Leagues.League l) {
+        if (l.espn()) espnTeams(l.id, l.ar, false); else tsdbTeams(slot, l);
+    }
+
+    /** a club's (or a national team's) name: the bundled Arabic one (teams-ar.json; a country's for a national team),
+     *  else ESPN's English one */
+    private String clubName(String en, boolean national) {
+        String k = Arabic.known(this, en);
+        if (k != null) return k;
+        if (national) { String c = Geo.arabicOf(this, en); if (c != null) return c; }
+        return en;
+    }
+
+    /** the teams of an ESPN league (site.api.espn.com, no key), by name; followed as E<id>@<league> */
+    private void espnTeams(final String slug, final String title, final boolean national) {
+        fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/" + slug + "/teams", json -> {
+            JSONArray sports = new JSONObject(json).optJSONArray("sports");
+            JSONArray leagues = sports == null || sports.length() == 0 ? null : sports.getJSONObject(0).optJSONArray("leagues");
+            JSONArray teams = leagues == null || leagues.length() == 0 ? null : leagues.getJSONObject(0).optJSONArray("teams");
+            if (teams == null || teams.length() == 0) { toast("تعذّر تحميل هذا الدوري"); return; }
+            final List<String[]> rows = new ArrayList<>();   // id, name
+            for (int i = 0; i < teams.length(); i++) {
+                JSONObject t = teams.getJSONObject(i).optJSONObject("team");
+                if (t == null || t.optString("id").isEmpty()) continue;
+                String en = t.optString("displayName", t.optString("name"));
+                rows.add(new String[] {"E" + t.optString("id") + "@" + slug, clubName(en, national)});
+            }
+            showClubs(title, rows, null);
+        });
+    }
+
+    /** a TheSportsDB league's clubs (no ESPN list): its table (the top 5 with the free key) and its list (10 of them),
+     *  then «بحث عن نادٍ آخر…»; followed as <id>@tsdb.<league> */
+    private void tsdbTeams(final int slot, final Leagues.League l) {
+        fetch(SPORTS + "lookupleague.php?id=" + l.tsdb(), json -> {
+            JSONArray ls = new JSONObject(json).optJSONArray("leagues");
+            final String season = ls == null || ls.length() == 0 ? "" : ls.getJSONObject(0).optString("strCurrentSeason", "");
+            fetch(SPORTS + "lookuptable.php?l=" + l.tsdb() + "&s=" + Uri.encode(season), table -> fetch(SPORTS + "search_all_teams.php?l="
+                + Uri.encode(l.en), list -> {
+                    final List<String[]> rows = new ArrayList<>();
+                    java.util.Set<String> seen = new java.util.HashSet<>();
+                    for (String[] src : new String[][] {{table, "table"}, {list, "teams"}}) {
+                        JSONArray a = null;
+                        try { a = new JSONObject(src[0]).optJSONArray(src[1]); } catch (Exception ignored) { }
+                        for (int i = 0; a != null && i < a.length(); i++) {
+                            JSONObject t = a.getJSONObject(i);
+                            String id = t.optString("idTeam");
+                            if (id.isEmpty() || !seen.add(id)) continue;
+                            rows.add(new String[] {id + "@" + l.id, clubName(t.optString("strTeam"), false)});
+                        }
+                    }
+                    if (rows.isEmpty()) { toast("تعذّر تحميل هذا الدوري، جرّب البحث عن الفريق"); return; }
+                    showClubs(l.ar, rows, () -> searchTeam(slot));
+                }));
+        });
+    }
+
+    /** the clubs in Arabic order; more: a last row «بحث عن نادٍ آخر…» */
+    private void showClubs(String title, final List<String[]> rows, final Runnable more) {
+        final java.text.Collator col = java.text.Collator.getInstance(new java.util.Locale("ar"));
+        Collections.sort(rows, (a, b) -> col.compare(a[1], b[1]));
+        final int n = rows.size();
+        String[] labels = new String[n + (more == null ? 0 : 1)];
+        for (int i = 0; i < n; i++) labels[i] = "‏" + rows.get(i)[1];   // RLM: an English name keeps the right edge too
+        if (more != null) labels[n] = "بحث عن نادٍ آخر…";
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(title)
+            .setItems(labels, (d, i) -> { if (i < n) addTeam(rows.get(i)[0], rows.get(i)[1]); else more.run(); })
+            .show();
     }
 
     private void searchTeam(final int slot) {
@@ -304,6 +580,9 @@ public class SettingsActivity extends Activity {
                 for (int i = 0; i < n; i++) {
                     JSONObject t = a.getJSONObject(i);
                     ids[i] = t.optString("idTeam");
+                    // a club of a league the table can show (Leagues' TheSportsDB ones): its league with it
+                    for (Leagues.Group g : Leagues.GROUPS) for (Leagues.League l : g.leagues)
+                        if (!l.espn() && l.en.equalsIgnoreCase(t.optString("strLeague", "")) && ids[i].matches("\\d+")) ids[i] += "@" + l.id;
                     names[i] = t.optString("strTeam");
                     rows[i] = Arabic.team(this, names[i]) + "  ·  " + leagueAr(t.optString("strLeague", ""));
                 }
@@ -480,7 +759,7 @@ public class SettingsActivity extends Activity {
     /** Each card's name, with its turn (1، 2، … in the chosen digits) in gold when ticked. */
     private void panelLabels(List<String> ids, List<String> order, CharSequence[] out) {
         for (int i = 0; i < out.length; i++) {
-            String name = Prefs.panelLabel(ids.get(i));
+            String name = prefs.panelTitle(ids.get(i));
             int turn = order.indexOf(ids.get(i));
             if (turn < 0) { out[i] = name; continue; }
             android.text.SpannableString s = new android.text.SpannableString(name + "   " + num(turn + 1));
@@ -536,13 +815,13 @@ public class SettingsActivity extends Activity {
 
     /** A news page's sources: tick the ones to read (they are shown together, newest first); none = the defaults. */
     private void pickSources(final String page) {
-        final String[][] all = Prefs.newsSources(page);
+        final String[][] all = prefs.sourcesOf(page);
         final List<String> cur = prefs.sources(page);
         String[] labels = new String[all.length];
         final boolean[] on = new boolean[all.length];
         for (int i = 0; i < all.length; i++) { labels[i] = all[i][1]; on[i] = cur.contains(all[i][0]); }
         new AlertDialog.Builder(this, DIALOG_THEME)
-            .setTitle("مصادر " + Prefs.panelLabel(page) + " (بدون اختيار = الافتراضية)")
+            .setTitle("مصادر " + prefs.panelTitle(page) + " (بدون اختيار = الافتراضية)")
             .setMultiChoiceItems(labels, on, (d, i, checked) -> on[i] = checked)
             .setPositiveButton("تم", (d, w) -> {
                 List<String> v = new ArrayList<>();
@@ -556,7 +835,7 @@ public class SettingsActivity extends Activity {
 
     private String sourcesLabel(String page) {
         List<String> names = new ArrayList<>(), ids = prefs.sources(page);
-        for (String[] x : Prefs.newsSources(page)) if (ids.contains(x[0])) names.add(x[1]);
+        for (String[] x : prefs.sourcesOf(page)) if (ids.contains(x[0])) names.add(x[1]);
         return Prefs.join(names, "، ");
     }
 

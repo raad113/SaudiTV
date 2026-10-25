@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 # سعودي TV's settings, for agents: no remote, no menus.
 #   optimize/saver.sh show                         current settings
-#   optimize/saver.sh cities                       built-in Saudi cities by region
-#   optimize/saver.sh city الرس                    a built-in city (Arabic name as listed)
-#   optimize/saver.sh city 'اسم' 25.86 43.49       any place: name, latitude, longitude
-#   optimize/saver.sh find-team الهلال             a club's id (Arabic or English name): id:Name | league
-#   optimize/saver.sh teams 136013:Al-Hilal 150643:Al-Zulfi    followed teams in order (up to 10)
+#   optimize/saver.sh countries                    every country: code, Arabic and English names
+#   optimize/saver.sh cities [EG [filter]]         built-in Saudi cities by region; or a country's biggest bundled cities
+#   optimize/saver.sh country EG|none              the city's country (its prayer method, units and news by default);
+#                                                  none: not set, as older builds (the method from the TV's time zone)
+#   optimize/saver.sh city الرس                    a built-in Saudi city, or a bundled city of the country set
+#   optimize/saver.sh city القاهرة EG              a bundled city of that country (sets the country too)
+#   optimize/saver.sh city 'اسم' 25.86 43.49 [ZONE] any place: name, latitude, longitude [and its IANA time zone;
+#                                                  without one: the nearest bundled city's in the country set]
+#   optimize/saver.sh method auto|umm-al-qura|isna|egypt|kuwait|qatar|dubai|mwl|karachi|diyanet
+#                                                  «طريقة الحساب»; auto: the country's
+#   optimize/saver.sh units auto|c|f               the temperature, °C or °F; auto: the country's (°F in the US)
+#   optimize/saver.sh leagues                      the leagues of the table and the team picker, by country
+#   optimize/saver.sh league auto|ksa.1|eng.1|tsdb.4829…   «الدوري في الترتيب»; auto: the first followed club's
+#   optimize/saver.sh news-country auto|SA|EG…     «أخبار <الدولة>»; auto: the city's country
+#   optimize/saver.sh find-team الهلال             a club's TheSportsDB id (Arabic or English name): id:Name | league
+#   optimize/saver.sh clubs eng.1                  an ESPN league's clubs (or fifa.friendly: the national teams), as
+#                                                  E<id>@<league>:Name for teams
+#   optimize/saver.sh teams 136013:Al-Hilal E359@eng.1:Arsenal    followed teams in order (up to 10)
 #   optimize/saver.sh card prayers,forecast,news   beside the clock: one, or several that rotate every 30 s, of
 #                                                  prayers verse hadith forecast matches standings news local world tech
 #                                                  shows; or none (verse: the Quran; hadith: Sahih al-Bukhari)
@@ -41,14 +54,33 @@ quote() {  # one shell-safe argument for the TV's shell
 }
 case "${1:-}" in
   show)   send GET ;;
-  cities) send CITIES ;;
+  countries) send COUNTRIES ;;
+  leagues) send LEAGUES ;;
+  cities)
+    if [ $# -ge 2 ]; then
+      extra="--es country $(quote "$2")"
+      [ $# -ge 3 ] && extra="$extra --es filter $(quote "$3")"
+      send CITIES "$extra"
+    else send CITIES; fi ;;
   update) send UPDATE ;;
   app-check) send APP_CHECK ;;
+  country)   send SET "--es country $(quote "${2:?usage: optimize/saver.sh country EG|none}")" ;;
   city)
-    [ $# -eq 2 ] || [ $# -eq 4 ] || { echo "usage: optimize/saver.sh city NAME [LAT LON]"; exit 1; }
-    extra="--es city $(quote "$2")"
-    [ $# -eq 4 ] && extra="$extra --es lat $(quote "$3") --es lon $(quote "$4")"
+    case $# in
+      2) extra="--es city $(quote "$2")" ;;
+      3) extra="--es city $(quote "$2") --es country $(quote "$3")" ;;   # a bundled city of that country
+      4|5) extra="--es city $(quote "$2") --es lat $(quote "$3") --es lon $(quote "$4")"
+           [ $# -eq 5 ] && extra="$extra --es tz $(quote "$5")" ;;
+      *) echo "usage: optimize/saver.sh city NAME [COUNTRY] | city NAME LAT LON [ZONE]"; exit 1 ;;
+    esac
     send SET "$extra" ;;
+  method)    send SET "--es method $(quote "${2:?usage: optimize/saver.sh method auto|umm-al-qura|isna|egypt|kuwait|qatar|dubai|mwl|karachi|diyanet}")" ;;
+  units)
+    case "${2:-}" in auto|c|f) v=$2 ;; C|celsius) v=c ;; F|fahrenheit) v=f ;; *) echo "usage: optimize/saver.sh units auto|c|f"; exit 1 ;; esac
+    send SET "--es units $v" ;;
+  league)    send SET "--es league $(quote "${2:?usage: optimize/saver.sh league auto|ksa.1|eng.1|tsdb.4829 (optimize/saver.sh leagues)}")" ;;
+  news-country) send SET "--es news_country $(quote "${2:?usage: optimize/saver.sh news-country auto|SA|EG}")" ;;
+  clubs) "$PY" -I optimize/find-team.py --espn "${2:?usage: optimize/saver.sh clubs eng.1 (optimize/saver.sh leagues)}" ;;
   teams)
     shift
     [ $# -gt 0 ] || { echo "usage: optimize/saver.sh teams ID:EnglishName ..."; exit 1; }
@@ -75,5 +107,5 @@ case "${1:-}" in
     [ $# -ge 3 ] || { echo "usage: optimize/saver.sh sources $2 id,id (\"\" = the defaults)"; exit 1; }
     send SET "--es src_$2 $(quote "$3")" ;;
   find-team) shift; "$PY" -I optimize/find-team.py "$@" ;;   # Arabic or English name
-  *) sed -n '2,29p' "$0"; exit 1 ;;
+  *) sed -n '2,42p' "$0"; exit 1 ;;
 esac

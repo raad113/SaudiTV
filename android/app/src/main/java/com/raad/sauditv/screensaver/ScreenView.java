@@ -38,6 +38,19 @@ final class ScreenView {
                 return res != null ? res : super.shouldInterceptRequest(v, r);
             }
         });
+        // the page's script warnings and errors go to logcat (tag SaudiTV-Screen), as the home screen's do; the rest is
+        // dropped (the page's #feedtest=1 reports there)
+        w.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(android.webkit.ConsoleMessage m) {
+                android.webkit.ConsoleMessage.MessageLevel l = m.messageLevel();
+                if (l == android.webkit.ConsoleMessage.MessageLevel.ERROR || l == android.webkit.ConsoleMessage.MessageLevel.WARNING) {
+                    String src = m.sourceId() == null ? "" : m.sourceId().replaceAll("#.*", "");   // not the long fragment
+                    android.util.Log.w("SaudiTV-Screen", m.message() + " (" + src + ":" + m.lineNumber() + ")");
+                }
+                return true;
+            }
+        });
         WebSettings s = w.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);

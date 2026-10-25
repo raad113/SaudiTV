@@ -695,12 +695,32 @@ const CONFIG = {
   city: _Q.get('city') || 'الرياض',
   latitude: _num('lat', 24.7136),
   longitude: _num('lon', 46.6753),
-  timezone: _Q.get('tz') || 'Asia/Riyadh',
-  prayerMethod: _num('method', 4),   // 2 = ISNA (North America), 4 = Umm al-Qura
-  // followed teams in priority order: #teams=id,id,... (up to 10); older builds send team1/team2
+  timezone: _Q.get('tz') || 'Asia/Riyadh',   // the TV's: the clock and the dates
+  // the city's time zone (#ptz): its prayer times and its weather; «بتوقيت <city>» beside them when it is not the
+  // TV's (placeNote). Older builds send none: the TV's
+  cityTz: _Q.get('ptz') || _Q.get('tz') || 'Asia/Riyadh',
+  country: (c => /^[A-Z]{2}$/.test(c) ? c : '')((_Q.get('cc') || '').toUpperCase()),   // the city's ('' = not set)
+  // Aladhan's numbers (PRAYER_METHODS): 4 Umm al-Qura, 2 ISNA, 5 Egyptian, 9 Kuwait, 10 Qatar, 16 Dubai, 3 MWL,
+  // 1 Karachi, 13 Diyanet
+  prayerMethod: _num('method', 4),
+  units: _Q.get('units') === 'f' ? 'f' : 'c',   // the weather in °C or °F (#units)
+  // the table card's league (#league, the settings app's Leagues ids): ESPN's slug, or tsdb.<id> (TheSportsDB), and its
+  // name in the card's title («ترتيب دوري روشن»)
+  league: (l => /^(tsdb\.\d+|[a-z0-9]+(\.[a-z0-9_]+)+)$/.test(l) ? l : 'ksa.1')(_Q.get('league') || 'ksa.1'),
+  leagueName: _Q.get('leaguename') || 'دوري روشن',
+  // the country news (#newscc): «أخبار <newsname>», its sources (newsSources), Google and Bing in its language
+  newsCC: (c => /^[A-Z]{2}$/.test(c) ? c : 'SA')((_Q.get('newscc') || 'SA').toUpperCase()),
+  newsName: _Q.get('newsname') || 'السعودية',
+  newsLang: (l => /^[a-z]{2,3}$/.test(l) ? l : 'ar')(_Q.get('newslang') || 'ar'),
+  newsEn: _Q.get('newsen') || 'Saudi Arabia',
+  // followed teams in priority order: #teams=id,id,... (up to 10); older builds send team1/team2. An id is
+  // TheSportsDB's (136013; 138995@tsdb.4829 for a club of a league the settings list from it) or ESPN's
+  // (E929@ksa.1: E, the team id, @ the league it was picked from)
   teamIds: (_Q.has('teams') ? _Q.get('teams').split(',')
             : [_Q.has('team1') ? _Q.get('team1') : '136013', _Q.has('team2') ? _Q.get('team2') : '136137'])
-    .map(x=>(x||'').trim()).filter(x=>/^\d+$/.test(x)).slice(0, 10),
+    .map(x=>(x||'').trim()).filter(x=>/^(\d+(@tsdb\.\d+)?|E\d+@[a-z0-9._]+)$/.test(x)).slice(0, 10),
+  // #feedtest=1 (the preview from ADB, tests only): every country news source is read once and logged (feedTest)
+  feedTest: _num('feedtest', 0) === 1,
   sportsKey: '123',
   // the card beside the clock: shows | prayers | forecast | matches | verse | hadith | standings | news | local | world
   // | tech | none (#week=0 from older builds = none); local = news of the city (loadLocalNews); verse = a verse of the
@@ -758,19 +778,28 @@ const ar = s => NUM_AR ? String(s).replace(/[0-9]/g, d => AR[+d]) : String(s).re
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad = n => String(n).padStart(2,'0');
 
-// one formatter, built once (it was rebuilt on every call, i.e. every second by the clock)
-let RP_FMT = null, RP_TZ = '';
-function riyadhParts(d = new Date()){
-  if(!RP_FMT || RP_TZ !== CONFIG.timezone){
-    RP_FMT = new Intl.DateTimeFormat('en-GB',{
-      timeZone: CONFIG.timezone, hour12:false,
-      year:'numeric', month:'2-digit', day:'2-digit',
-      hour:'2-digit', minute:'2-digit', second:'2-digit'
-    });
-    RP_TZ = CONFIG.timezone;
+// one formatter per time zone, built once (it was rebuilt on every call, i.e. every second by the clock)
+const RP_FMT = {};
+function riyadhParts(d = new Date(), tz = CONFIG.timezone){
+  if(!RP_FMT[tz]){
+    try{
+      RP_FMT[tz] = new Intl.DateTimeFormat('en-GB',{
+        timeZone: tz, hour12:false,
+        year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
+      });
+    }catch(e){ if(tz !== CONFIG.timezone) return riyadhParts(d); throw e; }   // an unknown zone: the TV's
   }
-  const f = RP_FMT.formatToParts(d).reduce((a,p)=>(a[p.type]=p.value,a),{});
+  const f = RP_FMT[tz].formatToParts(d).reduce((a,p)=>(a[p.type]=p.value,a),{});
   return { y:+f.year, mo:+f.month, d:+f.day, h:(+f.hour)%24, mi:+f.minute, s:+f.second };
+}
+// the city's date and time: its prayer times are in its own time zone (CONFIG.cityTz)
+const placeParts = (d = new Date()) => riyadhParts(d, CONFIG.cityTz);
+// «بتوقيت <city>» beside the prayer times when the city's clock is not the TV's (another UTC offset now); '' when it is
+function placeNote(){
+  const now = new Date();
+  const off = tz => { const p = riyadhParts(now, tz); return Math.round((Date.UTC(p.y, p.mo-1, p.d, p.h, p.mi, p.s) - now.getTime()) / 60000); };
+  try{ return off(CONFIG.cityTz) !== off(CONFIG.timezone) ? 'بتوقيت ' + CONFIG.city : ''; }catch(e){ return ''; }
 }
 function fmt12(h, mi){
   const h12 = h % 12 === 0 ? 12 : h % 12;
@@ -868,12 +897,27 @@ function buildPrayers(t){
   });
 }
 
-// Umm al-Qura: Fajr at 18.5°, Maghrib at sunset, Isha 90 min after Maghrib (120 in Ramadan),
-// Asr at shadow factor 1. Same method as Aladhan's method 4, so the offline times match to a minute or two.
-// `at` (a Date, default now) = the day to compute, for the detail page's next days
+// the offline times of each method (#method, Aladhan's numbers): the sun's angle below the horizon at Fajr and at
+// Isha, or Isha a number of minutes after Maghrib (Umm al-Qura: 120 in Ramadan). Aladhan's own angles, so the offline
+// times match its answer to a minute or two. Unknown numbers: MWL.
+const PRAYER_METHODS = {
+  1: {fajr: 18, isha: 18},          // University of Islamic Sciences, Karachi (PK, IN, BD)
+  2: {fajr: 15, isha: 15},          // ISNA (US, CA)
+  3: {fajr: 18, isha: 17},          // Muslim World League (Europe and the others)
+  4: {fajr: 18.5, ishaMin: 90, ramadanMin: 120},   // Umm al-Qura (SA)
+  5: {fajr: 19.5, isha: 17.5},      // Egyptian General Authority of Survey (EG)
+  9: {fajr: 18, isha: 17.5},        // Kuwait
+  10: {fajr: 18, ishaMin: 90},      // Qatar
+  13: {fajr: 18, isha: 17},         // Diyanet (TR)
+  16: {fajr: 18.2, isha: 18.2},     // Dubai (AE)
+};
+// Maghrib at sunset, Asr at shadow factor 1. Far north or south, where the sun stays too high at night for the angle
+// (summer in Europe), Fajr and Isha are the angle's part of the night (angle / 60), as Aladhan does by default.
+// `at` (a Date, default now) = the day to compute, for the detail page's next days; in the city's time zone
 function computePrayers(at){
   at = at || new Date();
-  const p = riyadhParts(at), lat = CONFIG.latitude, lng = CONFIG.longitude;
+  const M = PRAYER_METHODS[CONFIG.prayerMethod] || PRAYER_METHODS[3];
+  const p = placeParts(at), lat = CONFIG.latitude, lng = CONFIG.longitude;
   const tz = Math.round((Date.UTC(p.y,p.mo-1,p.d,p.h,p.mi,p.s) - at.getTime()) / 60000) / 60;
   const rad = d => d*Math.PI/180, deg = r => r*180/Math.PI;
   const fix = (a,b) => { a = a - b*Math.floor(a/b); return a < 0 ? a + b : a; };
@@ -899,20 +943,27 @@ function computePrayers(at){
     return angleTime(a, t, false);
   };
   const adj = h => h + tz - lng/15;
-  const isna = CONFIG.prayerMethod === 2;   // ISNA = Fajr and Isha at 15 degrees
-  const fajr = adj(angleTime(isna ? 15 : 18.5, 5, true)), dhuhr = adj(noon(12)), asr = adj(asrTime(13));
+  const dhuhr = adj(noon(12)), asr = adj(asrTime(13));
   const sunrise = adj(angleTime(.833, 6, true));
   const maghrib = adj(angleTime(.833, 18, false));
-  const isha = isna ? adj(angleTime(15, 18, false)) : maghrib + (hijriMonthNow(at) === 9 ? 120 : 90)/60;
+  const night = fix(sunrise - maghrib, 24);   // sunset to sunrise, hours
+  let fajr = adj(angleTime(M.fajr, 5, true));
+  if(!Number.isFinite(fajr) || fix(sunrise - fajr, 24) > M.fajr / 60 * night) fajr = sunrise - M.fajr / 60 * night;
+  let isha;
+  if(M.ishaMin) isha = maghrib + (M.ramadanMin && hijriMonthNow(at) === 9 ? M.ramadanMin : M.ishaMin) / 60;
+  else {
+    isha = adj(angleTime(M.isha, 18, false));
+    if(!Number.isFinite(isha) || fix(isha - maghrib, 24) > M.isha / 60 * night) isha = maghrib + M.isha / 60 * night;
+  }
   const hm = h => { const m = Math.round(fix(h, 24)*60) % 1440; return pad(Math.floor(m/60)) + ':' + pad(m%60); };
   return {Fajr:hm(fajr), Sunrise:hm(sunrise), Dhuhr:hm(dhuhr), Asr:hm(asr), Maghrib:hm(maghrib), Isha:hm(isha)};
 }
 
 async function loadPrayers(){
-  const p = riyadhParts();
+  const p = placeParts();   // the city's day, in the city's time zone
   const url = `https://api.aladhan.com/v1/timings/${pad(p.d)}-${pad(p.mo)}-${p.y}`
             + `?latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}`
-            + `&method=${CONFIG.prayerMethod}&timezonestring=${encodeURIComponent(CONFIG.timezone)}`;
+            + `&method=${CONFIG.prayerMethod}&timezonestring=${encodeURIComponent(CONFIG.cityTz)}`;
   let ok = true;   // false = the offline times are shown (see firstLoad)
   try{
     const r = await fetchT(url, 12000);
@@ -954,8 +1005,9 @@ function shortRemaining(ms){
   return out.join(' و ');
 }
 
-function isFriday(){
-  return new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'short'}).format(new Date()) === 'Fri';
+function isFriday(){   // in the city: Jumu'ah in place of Dhuhr
+  try{ return new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.cityTz,weekday:'short'}).format(new Date()) === 'Fri'; }
+  catch(e){ return new Intl.DateTimeFormat('en-US',{timeZone:CONFIG.timezone,weekday:'short'}).format(new Date()) === 'Fri'; }
 }
 function prayerName(x){ return x.key === 'Dhuhr' && isFriday() ? 'الجمعة' : x.name; }
 
@@ -966,8 +1018,10 @@ function tickPrayer(){
         elC=document.getElementById('prayer-count'),
         panel=document.querySelector('.p-prayer');
   if(!PRAYERS.length) return;
-  const p = riyadhParts();
+  const p = placeParts();   // the prayer times are the city's
   const mins = p.h*60 + p.mi + p.s/60;
+  // «بتوقيت <city>» after the label and in the home screen's strip when the city's clock is not the TV's
+  const note = placeNote(), lab = s => note ? s + ' · ' + note : s, tail = note ? ' · ' + note : '';
 
   // between adhan and iqama: show the iqama countdown
   const cur = PRAYERS.find(x=>{
@@ -978,17 +1032,17 @@ function tickPrayer(){
   if(cur){
     const left = (cur.h*60 + cur.mi + CONFIG.iqama[cur.key]) - mins;
     panel.classList.add('now');
-    elL.textContent = 'حان الآن';
+    elL.textContent = lab('حان الآن');
     elN.textContent = prayerName(cur);
     elT.textContent = fmt12(cur.h, cur.mi);
     elC.innerHTML = 'الإقامة بعد <b>' + humanRemaining(Math.max(60, Math.ceil(left)*60)) + '</b>';
     homeLine('hi-pray', HI_ICON.pray + `<b>${prayerName(cur)} ${fmt12(cur.h, cur.mi)}</b>`
-      + `<span class="m">· الإقامة بعد ${shortHM(Math.max(60, Math.ceil(left)*60))}</span>`, 'hi now');
+      + `<span class="m">· الإقامة بعد ${shortHM(Math.max(60, Math.ceil(left)*60))}${tail}</span>`, 'hi now');
     return;
   }
 
   panel.classList.remove('now');
-  elL.textContent = 'الصلاة القادمة';
+  elL.textContent = lab('الصلاة القادمة');
   let next = PRAYERS.find(x => (x.h*60+x.mi) > mins);
   const leftM = next ? (next.h*60 + next.mi) - mins
                      : (PRAYERS[0].h*60 + PRAYERS[0].mi) + 1440 - mins;
@@ -998,7 +1052,7 @@ function tickPrayer(){
   elC.innerHTML = 'بعد <b>' + humanRemaining(Math.max(0, Math.round(leftM*60))) + '</b>';
   // the home screen's info strip, e.g. «الفجر ٥:٥٢ ص · بعد ٩ س ٢٣ د»
   homeLine('hi-pray', HI_ICON.pray + `<b>${prayerName(next)} ${fmt12(next.h, next.mi)}</b>`
-    + `<span class="m">· بعد ${shortHM(Math.max(0, Math.round(leftM*60)))}</span>`, 'hi');
+    + `<span class="m">· بعد ${shortHM(Math.max(0, Math.round(leftM*60)))}${tail}</span>`, 'hi');
 }
 // an item of the home screen (#home=1), rewritten only when it changes (one repaint, not one per tick);
 // '' empties it, which hides it
@@ -1059,7 +1113,7 @@ function tickRamadan(){
 
   // ---- Ramadan mode: iftar / suhoor instead of the countdown ----
   if(hijriMonthNow() === 9 && PRAYERS.length){
-    const rp = riyadhParts();
+    const rp = placeParts();
     const mins = rp.h*60 + rp.mi + rp.s/60;
     const fajr = PRAYERS.find(p=>p.key==='Fajr');
     const maghrib = PRAYERS.find(p=>p.key==='Maghrib');
@@ -1183,8 +1237,10 @@ function arName(en, kind){
 }
 const teamAr = s => arName(s, 'team');
 
+// a followed team's TheSportsDB id: "138995@tsdb.4829" -> "138995" (the league after @ is the settings app's)
+const tsdbOf = id => String(id).split('@')[0];
 async function fetchNext(id){
-  const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${CONFIG.sportsKey}/eventsnext.php?id=${id}`,{cache:'no-store'});
+  const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${CONFIG.sportsKey}/eventsnext.php?id=${tsdbOf(id)}`,{cache:'no-store'});
   if(!r.ok) throw 0;
   const j = await r.json();
   if(j?.events) NEXT_LIST[id] = j.events;
@@ -1319,37 +1375,55 @@ function renderMatches(){
 }
 
 async function fetchLast(id){
-  const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${CONFIG.sportsKey}/eventslast.php?id=${id}`,{cache:'no-store'});
+  const r = await fetch(`https://www.thesportsdb.com/api/v1/json/${CONFIG.sportsKey}/eventslast.php?id=${tsdbOf(id)}`,{cache:'no-store'});
   if(!r.ok) throw 0;
   const j = await r.json();
   return j.results || [];
 }
 
-// ---- Saudi Pro League clubs from ESPN team schedules (TheSportsDB's free key blocks the
-// TV's shared VPN address). #teamnames= carries the followed teams' Arabic names in #teams order; a name that is
-// a club of the ESPN table (STAND_AR) is read from ESPN, every other team (e.g. the national team) from TheSportsDB.
-// ESPN events are turned into TheSportsDB-shaped events, so matchRows / matchSlot / loadLive read them unchanged.
-const TEAM_NAME_OF = (() => {      // TheSportsDB id -> Arabic name
+// ---- clubs and national teams from ESPN team schedules (no key; TheSportsDB's free key blocks the TV's shared VPN
+// address). Two kinds of followed team are read from ESPN:
+// - an ESPN id picked in the settings (E<id>@<league>): its schedule in every competition (ESPN's "all" league;
+//   the league it was picked from when that fails);
+// - a Saudi club of older builds, a TheSportsDB id: #teamnames= carries the followed teams' Arabic names in #teams
+//   order, and a name that is a club of ESPN's Saudi Pro League table (STAND_AR) is read from that league's schedules.
+// Every other team (e.g. the national team of older builds, a club picked from a TheSportsDB league) is read from
+// TheSportsDB. ESPN events are turned into TheSportsDB-shaped events, so matchRows / matchSlot / loadLive read them
+// unchanged.
+const TEAM_NAME_OF = (() => {      // TheSportsDB id (older builds) -> Arabic name
   const ids = (_Q.get('teams') || '').split(','), names = (_Q.get('teamnames') || '').split(','), o = {};
   ids.forEach((id, i) => { id = (id || '').trim(); const n = (names[i] || '').trim(); if(/^\d+$/.test(id) && n) o[id] = n; });
   return o;
 })();
+const TEAM_NAME_ANY = (() => {     // any followed id -> its name in the settings (Arabic where the app has one)
+  const ids = (_Q.get('teams') || '').split(','), names = (_Q.get('teamnames') || '').split(','), o = {};
+  ids.forEach((id, i) => { id = (id || '').trim(); const n = (names[i] || '').trim(); if(id && n) o[id] = n; });
+  return o;
+})();
 const arNorm = s => String(s || '').replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا')
   .replace(/ى/g, 'ي').replace(/ة/g, 'ه').trim().replace(/^(نادي|فريق)\s+/, '').replace(/\s+/g, '');
-const ESPN_SCHED = 'https://site.api.espn.com/apis/site/v2/sports/soccer/ksa.1/teams/';
-let ESPN_TEAMS = {};       // followed TheSportsDB id -> {espn: ESPN team id, name: ESPN English name}
+const ESPN_SITE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/';
+const ESPN_SCHED = ESPN_SITE + 'ksa.1/teams/';   // the Saudi clubs of older builds
+// "E929@ksa.1" -> {espn: '929', league: 'ksa.1'}; null for a TheSportsDB id
+const espnOf = id => { const m = /^E(\d+)@([a-z0-9._]+)$/.exec(String(id)); return m ? {espn: m[1], league: m[2]} : null; };
+let ESPN_TEAMS = {};       // followed id -> {espn: ESPN team id, name: ESPN English name, league, all: every competition}
 const ESPN_EVENTS = {};    // 'espn:<event id>' -> converted event, one object shared by both followed sides
 
-// followed teams whose Arabic name is a club of the loaded ESPN table (kept as is while the table is missing)
+// the ESPN ids of the settings, and the older builds' teams whose Arabic name is a club of the loaded Saudi table
+// (KSA_TABLE; kept as they are while the table is missing)
 function mapEspnTeams(){
-  if(!STANDINGS.length) return;
   const m = {}, used = new Set();
   CONFIG.teamIds.forEach(id => {
+    const e = espnOf(id);
+    if(e){ used.add(e.espn); m[id] = Object.assign({name: (ESPN_TEAMS[id] || {}).name || '', all: true}, e); }
+  });
+  if(KSA_TABLE.length) CONFIG.teamIds.forEach(id => {
     const want = arNorm(TEAM_NAME_OF[id]);
     if(!want) return;
-    const hit = STANDINGS.find(x => x.espnId && !used.has(x.espnId) && arNorm(STAND_AR[standKey(x.name)]) === want);
-    if(hit){ used.add(hit.espnId); m[id] = {espn: hit.espnId, name: hit.name}; }
+    const hit = KSA_TABLE.find(x => x.espnId && !used.has(x.espnId) && arNorm(STAND_AR[standKey(x.name)]) === want);
+    if(hit){ used.add(hit.espnId); m[id] = {espn: hit.espnId, name: hit.name, league: 'ksa.1', all: false}; }
   });
+  else Object.entries(ESPN_TEAMS).forEach(([id, t]) => { if(!t.all && !m[id]) m[id] = t; });   // the last good mapping
   ESPN_TEAMS = m;
 }
 
@@ -1369,8 +1443,10 @@ function espnEvent(e, byEspn){
   const home = c.competitors.find(x => x.homeAway === 'home'), away = c.competitors.find(x => x.homeAway === 'away');
   if(!home || !away || !home.team || !away.team) return null;
   const side = x => {
-    const id = String(x.team.id != null ? x.team.id : x.id);
-    return {id: byEspn[id] || 'espn:' + id, name: espnTeamAr(x.team.displayName || x.team.name || '')};
+    const id = String(x.team.id != null ? x.team.id : x.id), fid = byEspn[id], en = x.team.displayName || x.team.name || '';
+    // a followed team picked in the settings is shown by the name it has there (e.g. «مصر»)
+    const own = fid && espnOf(fid) && TEAM_NAME_ANY[fid];
+    return {id: fid || 'espn:' + id, name: own && hasArabic(own) ? own : espnTeamAr(en)};
   };
   const H = side(home), A = side(away), iso = t.toISOString();
   let status = 'NS', prog = NaN;
@@ -1378,6 +1454,7 @@ function espnEvent(e, byEspn){
   else if(state === 'in'){ status = /HALF/.test(name) ? 'HT' : (+st.period >= 2 ? '2H' : '1H'); prog = parseInt(st.displayClock, 10); }
   const scored = state !== 'pre';
   return {idEvent: 'espn:' + e.id, strHomeTeam: H.name, strAwayTeam: A.name, idHomeTeam: H.id, idAwayTeam: A.id,
+    espnHome: String(home.team.id), espnAway: String(away.team.id),
     dateEvent: iso.slice(0, 10), strTime: iso.slice(11, 19), strTimestamp: iso.slice(0, 19),
     intHomeScore: scored ? espnScore(home) : null, intAwayScore: scored ? espnScore(away) : null,
     strStatus: status, strProgress: Number.isFinite(prog) ? String(prog) : null,
@@ -1389,7 +1466,13 @@ async function espnEvents(url){
   if(!r.ok) throw 0;
   const j = await r.json();
   if(!j || !Array.isArray(j.events)) throw 0;
+  if(j.team && j.team.id != null && j.team.displayName) ESPN_NAMES[String(j.team.id)] = j.team.displayName;
   return j.events;
+}
+const ESPN_NAMES = {};   // ESPN team id -> its English name, from its schedule (followedKeys)
+// a team's schedule: recent results and upcoming fixtures, [past, next]; null where ESPN did not answer
+async function espnSchedule(base){
+  return Promise.all([espnEvents(base).catch(() => null), espnEvents(base + '?fixture=true').catch(() => null)]);
 }
 // a team's recent results and upcoming fixtures; 1 = ESPN answered, 0 = failed (what is shown stays)
 async function loadEspnTeam(id){
@@ -1397,9 +1480,12 @@ async function loadEspnTeam(id){
   if(!t) return 0;
   const byEspn = {};
   Object.entries(ESPN_TEAMS).forEach(([fid, x]) => { byEspn[x.espn] = fid; });
-  const base = ESPN_SCHED + encodeURIComponent(t.espn) + '/schedule';
-  const [past, next] = await Promise.all([espnEvents(base).catch(() => null), espnEvents(base + '?fixture=true').catch(() => null)]);
+  // an ESPN pick: every competition (league "all"), else the league it was picked from; older builds' clubs: ksa.1
+  let [past, next] = await espnSchedule((t.all ? ESPN_SITE + 'all/teams/' : ESPN_SITE + t.league + '/teams/')
+    + encodeURIComponent(t.espn) + '/schedule');
+  if(!past && !next && t.all) [past, next] = await espnSchedule(ESPN_SITE + t.league + '/teams/' + encodeURIComponent(t.espn) + '/schedule');
   if(!past && !next) return 0;
+  if(ESPN_NAMES[t.espn]) t.name = ESPN_NAMES[t.espn];
   const evs = [];
   [].concat(past || [], next || []).forEach(e => {
     const x = espnEvent(e, byEspn);
@@ -1424,12 +1510,15 @@ function pruneEspn(){
 // ---- end
 
 async function loadMatches(){
-  // Saudi clubs from ESPN (their ESPN ids come from the table), the other teams from TheSportsDB
-  if(Object.keys(TEAM_NAME_OF).length){ if(!STANDINGS.length) await loadStandings(); mapEspnTeams(); }
+  // the older builds' Saudi clubs need ESPN's Saudi table (their ESPN ids come from it); ESPN picks carry their id
+  const legacy = Object.keys(TEAM_NAME_OF).length > 0;
+  if(legacy && !KSA_TABLE.length) await loadKsaTable();
+  mapEspnTeams();
   // never throw away a good fixture or result on a failed refresh
   let answered = 0;
   await Promise.all(CONFIG.teamIds.map(async id=>{
     if(ESPN_TEAMS[id]){ const n = await loadEspnTeam(id); answered += n; return; }
+    if(espnOf(id)) return;   // an ESPN pick is never read from TheSportsDB
     try{
       const ev = await fetchNext(id); answered++;
       if(ev){ if(MATCHES[id] && MATCHES[id].idEvent !== ev.idEvent) keepResult(id, MATCHES[id]); MATCHES[id] = ev; }
@@ -1440,8 +1529,8 @@ async function loadMatches(){
   if(!answered && CONFIG.teamIds.length) return false;   // offline: keep what is shown (the saved panels)
   renderMatches();
   if(CONFIG.panel === 'matches' || CONFIG.panel === 'standings') renderPanel(false);   // standings marks followed teams
-  // answered (see firstLoad); without the ESPN table the Saudi clubs are not read from ESPN yet
-  return !Object.keys(TEAM_NAME_OF).length || STANDINGS.length > 0;
+  // answered (see firstLoad); without the Saudi table the older builds' clubs are not read from ESPN yet
+  return !legacy || KSA_TABLE.length > 0;
 }
 
 // the ticker tape's markets, in this order: Yahoo symbol or CoinGecko id, and how its value is written
@@ -1793,7 +1882,7 @@ let FORECAST = [];
 let WX_NOW = null, WX_HOURS = [];   // current conditions and the next 12 hours (detail page only)
 let LIST_PAGE = 0;
 const PANEL_TITLE = {shows:'هذا الأسبوع', prayers:'مواقيت اليوم', forecast:'الأيام القادمة', matches:'مباريات فرقك',
-  standings:'ترتيب دوري روشن', news:'أخبار السعودية', tech:'أخبار التقنية والذكاء الاصطناعي', world:'أخبار العالم',
+  standings:'ترتيب ' + CONFIG.leagueName, news:'أخبار ' + CONFIG.newsName, tech:'أخبار التقنية والذكاء الاصطناعي', world:'أخبار العالم',
   verse:'آية اليوم', hadith:'حديث اليوم'};
 
 // the card's paint, shared by every panel. A rotation (swapPanel) fades the list and the title out,
@@ -1902,10 +1991,11 @@ function renderPanel(animate, own){   // own = the rotation's own paint (paintCa
   else if(P === 'forecast') rows = forecastRows();
   else if(P === 'matches') rows = matchRows();
   else if(P === 'standings') rows = standingRows();
-  else if(isNewsPanel(P)) rows = newsRows(P);
+  else if(isNewsPanel(P)) rows = newsRows(P, LIST_PAGE);   // one page of news (newsCardPages)
   else if(P === 'verse') rows = quoteOfDay().rows;
   else if(P === 'hadith') rows = hadithRows();
   if(PANEL_TITLE[P]) title = PANEL_TITLE[P];
+  if(P === 'prayers' && placeNote()) title += ' · ' + placeNote();   // the city's prayer times, in its own time zone
   if(P === 'local') title = localTitle();   // «أخبار <city>»
   if(P === 'forecast' && CONFIG.city) title += ' · ' + CONFIG.city;   // whose weather it is
   if(!rows.length){
@@ -1916,16 +2006,12 @@ function renderPanel(animate, own){   // own = the rotation's own paint (paintCa
     const start = (LIST_PAGE * WEEK_ROWS) % rows.length;
     rows = Array.from({length: WEEK_ROWS}, (_, i) => rows[(start + i) % rows.length]);
   }
-  if(isNewsPanel(P) && rows.length > NEWS_ROWS){   // one page of news
-    const start = (LIST_PAGE % Math.ceil(rows.length / NEWS_ROWS)) * NEWS_ROWS;
-    rows = rows.slice(start, start + NEWS_ROWS);
-  }
   paintCard(rows.join(''), title, animate, own);
 }
 
 function prayerRows(){
   if(!DAY_TIMES) return [];
-  const p = riyadhParts(), now = p.h * 60 + p.mi;
+  const p = placeParts(), now = p.h * 60 + p.mi;
   const names = {Fajr:'الفجر', Sunrise:'الشروق', Dhuhr:isFriday() ? 'الجمعة' : 'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
   let next = null;
   return Object.keys(names).filter(k => DAY_TIMES[k]).map(k => {
@@ -1975,16 +2061,25 @@ function matchRows(){
 }
 
 // ---- standings, news, local news and tech panels
-// Saudi Pro League table from ESPN (no key). Names: "Al Hilal", "Al Qadsiah", "Neom SC"; TheSportsDB says "Al-Hilal".
-const STANDINGS_URL = 'https://site.api.espn.com/apis/v2/sports/soccer/ksa.1/standings';
+// The table of the league picked in the settings (#league, «الدوري في الترتيب»): ESPN's (no key) for its slugs, e.g.
+// ksa.1 (names "Al Hilal", "Al Qadsiah", "Neom SC"; TheSportsDB says "Al-Hilal"), or TheSportsDB's for a tsdb.<id>
+// league ESPN does not carry (its free key gives the top 5). Saudi clubs in Arabic (STAND_AR, assets/shared/teams-ar.json),
+// the others by the same table's names where it has them, else in English.
+const espnStandingsUrl = league => 'https://site.api.espn.com/apis/v2/sports/soccer/' + league + '/standings';
+const TSDB_API = 'https://www.thesportsdb.com/api/v1/json/123/';
 const standKey = s => String(s || '').toLowerCase().normalize('NFD')   /* accents fall to the next step */
   .replace(/[^a-z0-9]+/g, '').replace(/^al/, '').replace(/(sc|fc|club)$/, '');
 const STAND_AR = {};
 for(const [en, a] of Object.entries(TEAM_AR)){ const k = standKey(en); if(k && !(k in STAND_AR)) STAND_AR[k] = a; }   // first entry wins
-let STANDINGS = [];   // [{rank, name, gp, pts}] in table order
+const standAr = name => STAND_AR[standKey(name)] || TEAM_KEYS[teamKey(name)] || name;
+let STANDINGS = [];   // [{rank, name, gp, pts, espnId | tsdbId, …}] in table order: the card's league (CONFIG.league)
+let KSA_TABLE = [];   // ESPN's Saudi Pro League table: the ESPN ids of the older builds' Saudi clubs (mapEspnTeams)
 
+// ESPN's table: a league in groups (MLS's two conferences) shows the group of the first followed club, else the first
 function standingsFrom(j){
-  const es = (j && j.children && j.children[0] && j.children[0].standings && j.children[0].standings.entries) || [];
+  const groups = ((j && j.children) || []).map(c => (c && c.standings && c.standings.entries) || []).filter(g => g.length);
+  if(!groups.length && j && j.standings && Array.isArray(j.standings.entries)) groups.push(j.standings.entries);
+  const ids = followedEspnIds(), es = groups.find(g => g.some(e => e.team && ids.has(String(e.team.id)))) || groups[0] || [];
   return es.map(e => {
     const st = {};
     (e.stats || []).forEach(s => { if(s && s.name) st[s.name] = s; });
@@ -1995,29 +2090,83 @@ function standingsFrom(j){
             w: num('wins'), d: num('ties'), l: num('losses'), gf: num('pointsFor'), ga: num('pointsAgainst'), gd: num('pointDifferential')};
   }).filter(x => x.name && Number.isFinite(x.rank)).sort((a, b) => a.rank - b.rank);
 }
+// TheSportsDB's table (lookuptable.php) in the same shape
+function tsdbStandingsFrom(j){
+  return ((j && j.table) || []).map(t => {
+    const n = k => { const v = parseFloat(t[k]); return Number.isFinite(v) ? v : NaN; };
+    return {rank: n('intRank'), name: String(t.strTeam || ''), gp: n('intPlayed'), pts: n('intPoints'), tsdbId: String(t.idTeam || ''),
+            w: n('intWin'), d: n('intDraw'), l: n('intLoss'), gf: n('intGoalsFor'), ga: n('intGoalsAgainst'), gd: n('intGoalDifference')};
+  }).filter(x => x.name && Number.isFinite(x.rank)).sort((a, b) => a.rank - b.rank);
+}
+// a TheSportsDB league's table: its current season (lookupleague.php, kept a day), else the one before
+async function tsdbTable(id){
+  const key = 'sauditv-season:' + id;
+  let season = '';
+  try{ const c = JSON.parse(localStorage.getItem(key) || 'null'); if(c && Date.now() - c.at < 86400000) season = c.season; }catch(e){}
+  if(!season){
+    const r = await fetchT(TSDB_API + 'lookupleague.php?id=' + id, 15000);
+    if(!r.ok) throw 0;
+    season = String((((await r.json()).leagues || [])[0] || {}).strCurrentSeason || '');
+    if(season) try{ localStorage.setItem(key, JSON.stringify({season, at: Date.now()})); }catch(e){}
+  }
+  const seasons = [season];
+  const m = /^(\d{4})-(\d{4})$/.exec(season);
+  seasons.push(m ? (m[1] - 1) + '-' + (m[2] - 1) : /^\d{4}$/.test(season) ? String(season - 1) : '');
+  for(const s of seasons.filter(Boolean)){
+    const r = await fetchT(TSDB_API + 'lookuptable.php?l=' + id + '&s=' + encodeURIComponent(s), 15000);
+    if(!r.ok) throw 0;
+    const rows = tsdbStandingsFrom(await r.json());
+    if(rows.length) return rows;
+  }
+  return [];
+}
 
-// one request at a time; loadMatches waits for it too (the ESPN ids of the followed clubs)
+// one request at a time; loadMatches waits for the Saudi table too (the ESPN ids of the older builds' clubs)
 let STAND_P = null;
 function loadStandings(){
-  // resolves to true when ESPN answered with a table (see firstLoad)
+  // resolves to true when the table came (see firstLoad)
   if(!STAND_P){ STAND_P = loadStandingsNow().then(ok => { STAND_P = null; return ok; }, () => { STAND_P = null; return false; }); }
   return STAND_P;
 }
 async function loadStandingsNow(){
   let rows;
   try{
-    const r = await fetchT(STANDINGS_URL, 15000);
-    if(!r.ok) throw 0;
-    rows = standingsFrom(await r.json());
+    const t = /^tsdb\.(\d+)$/.exec(CONFIG.league);
+    if(t) rows = await tsdbTable(t[1]);
+    else {
+      const r = await fetchT(espnStandingsUrl(CONFIG.league), 15000);
+      if(!r.ok) throw 0;
+      rows = standingsFrom(await r.json());
+      if(CONFIG.league === 'ksa.1' && rows.length) KSA_TABLE = rows;   // the same table: one request
+    }
     if(rows.length) STANDINGS = rows;               // keep the last good table on a failed refresh
   }catch(e){ return false; }
   if(CONFIG.panel === 'standings') renderPanel(false);
   return rows.length > 0;
 }
+// ESPN's Saudi table for the older builds' Saudi clubs (the card's own when it shows Roshn)
+let KSA_P = null;
+function loadKsaTable(){
+  if(CONFIG.league === 'ksa.1') return loadStandings();
+  if(!KSA_P) KSA_P = fetchT(espnStandingsUrl('ksa.1'), 15000).then(r => r.ok ? r.json() : null).then(j => {
+    const rows = j ? standingsFrom(j) : [];
+    if(rows.length) KSA_TABLE = rows;
+    KSA_P = null;
+    return rows.length > 0;
+  }, () => { KSA_P = null; return false; });
+  return KSA_P;
+}
 
+// the ESPN ids of the followed teams: the settings' picks and the older builds' Saudi clubs (mapEspnTeams)
+function followedEspnIds(){
+  const out = new Set();
+  CONFIG.teamIds.forEach(id => { const e = espnOf(id); if(e) out.add(e.espn); });
+  Object.values(ESPN_TEAMS).forEach(t => { if(t && t.espn) out.add(String(t.espn)); });
+  return out;
+}
 // English names of the followed teams, from whatever match data is loaded
 function followedKeys(){
-  const ids = new Set(CONFIG.teamIds.map(String)), out = new Set();
+  const ids = new Set(CONFIG.teamIds.map(String).concat(CONFIG.teamIds.map(tsdbOf))), out = new Set();
   const add = ev => {
     if(!ev) return;
     if(ids.has(String(ev.idHomeTeam)) && ev.strHomeTeam) out.add(standKey(ev.strHomeTeam));
@@ -2026,7 +2175,13 @@ function followedKeys(){
   [MATCHES, KEPT].forEach(o => Object.values(o).forEach(v => (Array.isArray(v) ? v : [v]).forEach(add)));
   [NEXT_LIST, RESULTS].forEach(o => Object.values(o).forEach(l => (l || []).forEach(add)));
   Object.values(ESPN_TEAMS).forEach(t => out.add(standKey(t.name)));   // ESPN clubs by their table name
+  out.delete('');
   return out;
+}
+// is table row x a followed team: by its ESPN or TheSportsDB id, else by its name
+function standFollowed(){
+  const keys = followedKeys(), espn = followedEspnIds(), tsdb = new Set(CONFIG.teamIds.filter(id => !espnOf(id)).map(tsdbOf));
+  return x => (x.espnId && espn.has(x.espnId)) || (x.tsdbId && tsdb.has(x.tsdbId)) || keys.has(standKey(x.name));
 }
 
 // the top of the table, but every followed team stays visible: they replace the lowest other rows
@@ -2037,10 +2192,10 @@ function pickStandings(list, isFollowed, n){
 }
 
 function standingRows(){
-  const keys = followedKeys(), isF = x => keys.has(standKey(x.name));
+  const isF = standFollowed();
   const n0 = v => ar(Number.isFinite(v) ? Math.round(v) : 0);
   return pickStandings(STANDINGS, isF, WEEK_ROWS).map(x =>
-    `<li class="${isF(x) ? 'next' : ''}"><span>${n0(x.rank)}. ${esc(STAND_AR[standKey(x.name)] || x.name)}</span>`
+    `<li class="${isF(x) ? 'next' : ''}"><span>${n0(x.rank)}. ${esc(standAr(x.name))}</span>`
     + `<span class="ep">${n0(x.gp)} مباراة</span><span class="dt">${n0(x.pts)} نقطة</span></li>`);
 }
 
@@ -2058,6 +2213,26 @@ const SAUDI_RE = /السعودي|السعودية|الرياض|جدة|الممل
 const TECH_RE = /الذكاء الاصطناعي|ذكاء اصطناعي|تقني(?!ن)|تكنولوج|رقمي|آبل|غوغل|جوجل|مايكروسوفت|ميتا|سامسونغ|إنفيديا|أوبن إيه آي|شات جي بي تي|ChatGPT|OpenAI|روبوت|رقائق|أشباه الموصلات|سيبراني|آيفون/;
 const GN_SA = 'hl=ar&gl=SA&ceid=SA:ar';   // Google News, the Saudi Arabic edition
 const gnSearch = (q, days) => `https://news.google.com/rss/search?q=${encodeURIComponent(q + ' when:' + (days || 2) + 'd')}&${GN_SA}`;
+// a Google News search in another Arab country's edition (its outlets' sites, COUNTRY_NEWS)
+const gnCC = (q, cc, days) => `https://news.google.com/rss/search?q=${encodeURIComponent(q + ' when:' + (days || 2) + 'd')}&hl=ar&gl=${cc}&ceid=${cc}:ar`;
+// Bing's news markets (mkt): a country's own top stories where Bing has its market, else a search for its name
+const BING_MARKETS = ['da-DK','de-AT','de-CH','de-DE','en-AU','en-CA','en-GB','en-ID','en-IE','en-IN','en-MY','en-NZ','en-PH',
+  'en-US','en-ZA','es-AR','es-CL','es-ES','es-MX','es-US','fi-FI','fr-BE','fr-CA','fr-CH','fr-FR','it-IT','ja-JP','ko-KR','nl-BE',
+  'nl-NL','no-NO','pl-PL','pt-BR','ru-RU','sv-SE','tr-TR','zh-CN','zh-HK','zh-TW'];
+// a country's Bing news: an Arab country's in Arabic (a search for its name), the others in their language
+function bingNews(cc, name, lang, en){
+  if(lang === 'ar') return `https://www.bing.com/news/search?q=${encodeURIComponent(name)}&format=rss&mkt=ar-${cc}`;
+  const m = lang + '-' + cc;
+  return BING_MARKETS.includes(m) ? `https://www.bing.com/news?format=rss&mkt=${m}`
+    : `https://www.bing.com/news/search?q=${encodeURIComponent(en || name)}&format=rss&mkt=en-US`;
+}
+// a country's Google News: an Arab country's a search for its name in Arabic, the others the top stories of its
+// edition in its language
+function googleNews(cc, name, lang){
+  if(lang === 'ar') return gnCC(`"${name}"`, cc, 1);
+  const hl = lang === 'en' ? 'en-' + cc : lang;
+  return `https://news.google.com/rss?hl=${hl}&gl=${cc}&ceid=${cc}:${lang}`;
+}
 const NEWS_SOURCES = {
   news: [
     {id: 'aawsat', name: 'الشرق الأوسط', url: 'https://aawsat.com/feed', filter: SAUDI_RE, min: 3, on: true},
@@ -2069,6 +2244,7 @@ const NEWS_SOURCES = {
     {id: 'alwatan', name: 'الوطن', url: 'https://www.alwatan.com.sa/rssFeed/1'},   // its local section
     {id: 'bbc', name: 'بي بي سي عربي', url: 'https://feeds.bbci.co.uk/arabic/rss.xml', filter: SAUDI_RE, min: 1},
     {id: 'google', name: null, url: `https://news.google.com/rss?${GN_SA}`},
+    {id: 'bing', name: null, bing: bingNews('SA', 'السعودية', 'ar', '')},
   ],
   tech: [
     {id: 'techwd', name: 'عالم التقنية', url: 'https://www.tech-wd.com/wd/feed/', on: true},
@@ -2099,9 +2275,126 @@ const NEWS_SOURCES = {
     {id: 'alwatan', name: 'الوطن', url: 'https://www.alwatan.com.sa/rssFeed/1'},
   ],
 };
+// «أخبار <الدولة>» of the other Arab countries (#newscc): each country's outlets (Prefs.COUNTRY_NEWS lists the same
+// ids, labels and defaults: tests/check.py compares them), then its Google News and Bing (countryNews). Each one
+// answered through the TVs' VPN (the page's #feedtest=1): the publisher's own RSS where it has a fresh one (bingSite),
+// else a Google News search of its site in the country's edition (site: kept to the site's items). Google News
+// answers that VPN with HTTP 403: then a Bing News search of the site stands in (loadNewsFeed).
+const COUNTRY_NEWS = {
+  EG: [
+    {id: 'ahram', name: 'الأهرام', url: gnCC('site:ahram.org.eg', 'EG'), site: 'ahram.org.eg', on: true},
+    {id: 'youm7', name: 'اليوم السابع', url: gnCC('site:youm7.com', 'EG'), site: 'youm7.com', on: true},
+    {id: 'almasryalyoum', name: 'المصري اليوم', url: 'https://www.almasryalyoum.com/rss/rssfeed', bingSite: 'almasryalyoum.com', on: true},
+    {id: 'masrawy', name: 'مصراوي', url: gnCC('site:masrawy.com', 'EG'), site: 'masrawy.com'},
+    {id: 'shorouk', name: 'الشروق', url: gnCC('site:shorouknews.com', 'EG'), site: 'shorouknews.com'},
+  ],
+  AE: [
+    {id: 'albayan', name: 'البيان', url: gnCC('site:albayan.ae', 'AE'), site: 'albayan.ae', on: true},
+    {id: 'emaratalyoum', name: 'الإمارات اليوم', url: gnCC('site:emaratalyoum.com', 'AE'), site: 'emaratalyoum.com', on: true},
+    {id: 'alkhaleej', name: 'الخليج', url: gnCC('site:alkhaleej.ae', 'AE'), site: 'alkhaleej.ae', on: true},
+    {id: 'wam', name: 'وام', url: gnCC('site:wam.ae', 'AE'), site: 'wam.ae'},
+  ],
+  KW: [
+    {id: 'alrai', name: 'الراي', url: 'https://www.alraimedia.com/rssFeed/0', bingSite: 'alraimedia.com', on: true},
+    {id: 'alanba', name: 'الأنباء', url: gnCC('site:alanba.com.kw', 'KW'), site: 'alanba.com.kw', on: true},
+    {id: 'kuna', name: 'كونا', url: gnCC('site:kuna.net.kw', 'KW'), site: 'kuna.net.kw', on: true},
+    {id: 'aljarida', name: 'الجريدة', url: 'https://www.aljarida.com/rssFeed/1', bingSite: 'aljarida.com'},
+    {id: 'alqabas', name: 'القبس', url: gnCC('site:alqabas.com', 'KW'), site: 'alqabas.com'},
+  ],
+  QA: [
+    {id: 'alsharq', name: 'الشرق', url: 'https://al-sharq.com/rss/latestNews', bingSite: 'al-sharq.com', on: true},
+    {id: 'alraya', name: 'الراية', url: 'https://www.raya.com/rssFeed/0', bingSite: 'raya.com', on: true},
+    {id: 'alwatan', name: 'الوطن', url: 'https://www.al-watan.com/rssFeed/0', bingSite: 'al-watan.com', on: true},
+    {id: 'qna', name: 'قنا', url: gnCC('site:qna.org.qa', 'QA'), site: 'qna.org.qa'},
+  ],
+  BH: [
+    {id: 'alayam', name: 'الأيام', url: gnCC('site:alayam.com', 'BH'), site: 'alayam.com', on: true},
+    {id: 'alwatan', name: 'الوطن', url: gnCC('site:alwatannews.net', 'BH'), site: 'alwatannews.net', on: true},
+    {id: 'akhbaralkhaleej', name: 'أخبار الخليج', url: gnCC('site:akhbar-alkhaleej.com', 'BH'), site: 'akhbar-alkhaleej.com', on: true},
+  ],
+  OM: [
+    {id: 'omandaily', name: 'جريدة عمان', url: 'https://www.omandaily.om/rssFeed/0', bingSite: 'omandaily.om', on: true},
+    {id: 'alroya', name: 'الرؤية', url: 'https://alroya.om/rss', bingSite: 'alroya.om', on: true},
+    {id: 'atheer', name: 'أثير', url: gnCC('site:atheer.om', 'OM', 3), site: 'atheer.om', on: true},
+  ],
+  JO: [
+    {id: 'alrai', name: 'الرأي', url: gnCC('site:alrai.com', 'JO'), site: 'alrai.com', on: true},
+    {id: 'alghad', name: 'الغد', url: gnCC('site:alghad.com', 'JO'), site: 'alghad.com', on: true},
+    {id: 'ammon', name: 'عمون', url: gnCC('site:ammonnews.net', 'JO'), site: 'ammonnews.net', on: true},
+    {id: 'roya', name: 'رؤيا', url: gnCC('site:royanews.tv', 'JO'), site: 'royanews.tv'},
+    {id: 'petra', name: 'بترا', url: gnCC('site:petra.gov.jo', 'JO'), site: 'petra.gov.jo'},
+  ],
+  IQ: [
+    {id: 'alsumaria', name: 'السومرية', url: gnCC('site:alsumaria.tv', 'IQ'), site: 'alsumaria.tv', on: true},
+    {id: 'shafaq', name: 'شفق نيوز', url: 'https://shafaq.com/ar?rss=1', bingSite: 'shafaq.com', on: true},
+    {id: 'baghdadtoday', name: 'بغداد اليوم', url: 'https://baghdadtoday.news/rss', bingSite: 'baghdadtoday.news', on: true},
+    {id: 'alsabaah', name: 'الصباح', url: gnCC('site:alsabaah.iq', 'IQ'), site: 'alsabaah.iq'},
+  ],
+  LB: [
+    {id: 'annahar', name: 'النهار', url: gnCC('site:annahar.com', 'LB'), site: 'annahar.com', on: true},
+    {id: 'almodon', name: 'المدن', url: 'https://www.almodon.com/rss', bingSite: 'almodon.com', on: true},
+    {id: 'lbci', name: 'LBCI', url: 'https://www.lbcgroup.tv/Rss/News/ar', bingSite: 'lbcgroup.tv', on: true},
+    {id: 'alakhbar', name: 'الأخبار', url: gnCC('site:al-akhbar.com', 'LB'), site: 'al-akhbar.com'},
+  ],
+  SY: [
+    {id: 'sana', name: 'سانا', url: 'https://sana.sy/feed/', bingSite: 'sana.sy', on: true},
+    {id: 'enabbaladi', name: 'عنب بلدي', url: gnCC('site:enabbaladi.net', 'SY', 3), site: 'enabbaladi.net', on: true},
+    {id: 'syriatv', name: 'تلفزيون سوريا', url: gnCC('site:syria.tv', 'SY'), site: 'syria.tv', on: true},
+    {id: 'alwatan', name: 'الوطن', url: 'https://alwatan.sy/feed', bingSite: 'alwatan.sy'},
+  ],
+  PS: [
+    {id: 'wafa', name: 'وفا', url: gnCC('site:wafa.ps', 'PS'), site: 'wafa.ps', on: true},
+    {id: 'maan', name: 'معا', url: gnCC('site:maannews.net', 'PS'), site: 'maannews.net', on: true},
+    {id: 'alquds', name: 'القدس', url: 'https://www.alquds.com/feed', bingSite: 'alquds.com', on: true},
+    {id: 'arab48', name: 'عرب 48', url: gnCC('site:arab48.com', 'PS'), site: 'arab48.com'},
+    {id: 'palinfo', name: 'المركز الفلسطيني للإعلام', url: 'https://palinfo.com/feed/', bingSite: 'palinfo.com'},
+  ],
+  YE: [
+    {id: 'almasdar', name: 'المصدر أونلاين', url: gnCC('site:almasdaronline.com', 'YE', 3), site: 'almasdaronline.com', on: true},
+    {id: 'yemenmonitor', name: 'يمن مونيتور', url: 'https://www.yemenmonitor.com/feed', bingSite: 'yemenmonitor.com', on: true},
+  ],
+  SD: [
+    {id: 'altaghyeer', name: 'التغيير', url: 'https://www.altaghyeer.info/ar/feed/', bingSite: 'altaghyeer.info', on: true},
+    {id: 'sudantribune', name: 'سودان تربيون', url: gnCC('site:sudantribune.net', 'SD', 3), site: 'sudantribune.net', on: true},
+  ],
+  LY: [
+    {id: 'alwasat', name: 'بوابة الوسط', url: gnCC('site:alwasat.ly', 'LY'), site: 'alwasat.ly', on: true},
+    {id: 'eanlibya', name: 'عين ليبيا', url: 'https://www.eanlibya.com/feed/', bingSite: 'eanlibya.com', on: true},
+    {id: 'almarsad', name: 'المرصد', url: 'https://almarsad.co/feed/', bingSite: 'almarsad.co', on: true},
+  ],
+  TN: [
+    {id: 'mosaique', name: 'موزاييك', url: 'https://www.mosaiquefm.net/ar/rss', bingSite: 'mosaiquefm.net', on: true},
+    {id: 'assabah', name: 'الصباح نيوز', url: gnCC('site:assabahnews.tn', 'TN'), site: 'assabahnews.tn', on: true},
+    {id: 'alchourouk', name: 'الشروق', url: 'https://www.alchourouk.com/rss', bingSite: 'alchourouk.com', on: true},
+    {id: 'tap', name: 'وات', url: gnCC('site:tap.info.tn', 'TN'), site: 'tap.info.tn'},
+  ],
+  DZ: [
+    {id: 'echorouk', name: 'الشروق', url: 'https://www.echoroukonline.com/feed', bingSite: 'echoroukonline.com', on: true},
+    {id: 'ennahar', name: 'النهار', url: 'https://www.ennaharonline.com/feed/', bingSite: 'ennaharonline.com', on: true},
+    {id: 'elkhabar', name: 'الخبر', url: gnCC('site:elkhabar.com', 'DZ'), site: 'elkhabar.com', on: true},
+    {id: 'aps', name: 'واج', url: gnCC('site:aps.dz', 'DZ'), site: 'aps.dz'},
+  ],
+  MA: [
+    {id: 'hespress', name: 'هسبريس', url: 'https://www.hespress.com/feed', bingSite: 'hespress.com', on: true},
+    {id: 'alyaoum24', name: 'اليوم 24', url: 'https://alyaoum24.com/feed', bingSite: 'alyaoum24.com', on: true},
+    {id: 'hibapress', name: 'هبة بريس', url: gnCC('site:hibapress.com', 'MA'), site: 'hibapress.com', on: true},
+    {id: 'le360', name: 'لو360', url: gnCC('site:ar.le360.ma', 'MA'), site: 'ar.le360.ma'},
+  ],
+};
+// the country news' sources for country cc (name: its Arabic name, lang: its language): Saudi Arabia's list
+// (NEWS_SOURCES.news), an Arab country's outlets then Google News and Bing (off), or only those two (on)
+function countryNews(cc, name, lang, en){
+  if(cc === 'SA') return NEWS_SOURCES.news;
+  const own = (COUNTRY_NEWS[cc] || []).map(x => Object.assign({cc}, x));   // cc: Bing's market (loadNewsFeed)
+  return own.concat([
+    {id: 'google', name: null, url: googleNews(cc, name, lang), on: !own.length},
+    {id: 'bing', name: null, bing: bingNews(cc, name, lang, en), on: !own.length},
+  ]);
+}
 // the sources page P reads: the ones picked in the settings, else its defaults
 function newsSources(P){
-  const all = NEWS_SOURCES[P] || [], want = (CONFIG.sources && CONFIG.sources[P]) || [];
+  const all = P === 'news' ? countryNews(CONFIG.newsCC, CONFIG.newsName, CONFIG.newsLang, CONFIG.newsEn) : NEWS_SOURCES[P] || [];
+  const want = (CONFIG.sources && CONFIG.sources[P]) || [];
   const picked = all.filter(x => want.includes(x.id));
   return picked.length ? picked : all.filter(x => x.on);
 }
@@ -2149,8 +2442,9 @@ function newsFrom(items, feed){
   })
     .filter(x => x.headline)
     .sort((a, b) => (Number.isFinite(b.t) ? b.t : -Infinity) - (Number.isFinite(a.t) ? a.t : -Infinity))
-    // six newest, shown NEWS_ROWS at a time; the detail page keeps NEWS_DETAIL_KEEP, each with its summary
-    .slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_KEEP)
+    // the newest NEWS_POOL (the card shows NEWS_KEEP of them, NEWS_ROWS at a time: newsCardPages); the detail page keeps
+    // NEWS_DETAIL_KEEP, each with its summary
+    .slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_POOL)
     .map(x => { const desc = x.desc; delete x.desc; if(CONFIG.detail) x.summary = newsSummary(x, desc); return x; });
 }
 // the item's <description> as plain text. Google's repeats the headline and the source only: no summary.
@@ -2164,12 +2458,31 @@ function newsSummary(x, desc){
 }
 
 // a news panel shows NEWS_ROWS items per page (three two-line items stay within the height of the six
-// prayer rows on the screensaver and on the home card) and keeps up to NEWS_KEEP. In a rotation it shows page 1,
+// prayer rows on the screensaver and on the home card) and up to NEWS_KEEP in all. In a rotation it shows page 1,
 // then page 2 halfway through its slot (newsFlipArm); a single news card turns its page every NEWS_PAGE_MS.
-const NEWS_ROWS = 3, NEWS_KEEP = 6, NEWS_PAGE_MS = 15000;
+// A card page holds at most NEWS_PER_SOURCE items of one source (newsCardPages), so one busy source can't fill
+// the card: the newest of the others take the other rows (the list keeps NEWS_POOL to find them). The detail page's
+// list is not held to it.
+const NEWS_ROWS = 3, NEWS_KEEP = 6, NEWS_PAGE_MS = 15000, NEWS_PER_SOURCE = 2, NEWS_POOL = 12;
 const NEWS_DETAIL_KEEP = 15;   // the detail page's list
 let NEWS_VISIT = 0;   // counts the rotation's switches: a flip armed for one visit never runs in another
-function newsPaged(P){ return isNewsPanel(P) && (NEWS[P] || []).length > NEWS_ROWS; }
+// the card's pages of a news list (newest first): NEWS_ROWS items each, at most NEWS_PER_SOURCE of a source on a page;
+// an item left out of a page waits for the next one
+function newsCardPages(list){
+  const rest = (list || []).slice(), pages = [];
+  for(let p = 0; p < Math.ceil(NEWS_KEEP / NEWS_ROWS) && rest.length; p++){
+    const page = [], per = {};
+    for(let i = 0; i < rest.length && page.length < NEWS_ROWS; ){
+      const s = String(rest[i].source || '').trim();
+      if((per[s] || 0) < NEWS_PER_SOURCE){ per[s] = (per[s] || 0) + 1; page.push(rest.splice(i, 1)[0]); }
+      else i++;
+    }
+    if(!page.length) break;
+    pages.push(page);
+  }
+  return pages;
+}
+function newsPaged(P){ return isNewsPanel(P) && newsCardPages(NEWS[P]).length > 1; }
 function newsFlipArm(){
   const P = CONFIG.panel, visit = ++NEWS_VISIT;
   if(!isNewsPanel(P)) return;   // paged or not is decided at the flip: the list may arrive meanwhile
@@ -2186,9 +2499,10 @@ function newsRow(x, now, kind){
   return `<li class="news-item"><span class="nw"${bidiAttr(kind, x.headline)}>${esc(x.headline)}</span><span class="dt">${dt}</span></li>`;   // class
 }
 
-function newsRows(kind){
-  const now = Date.now();
-  return (NEWS[kind] || []).map(x => newsRow(x, now, kind));
+// the card's page `page` (wrapping) of a news list (newsCardPages)
+function newsRows(kind, page){
+  const now = Date.now(), pages = newsCardPages(NEWS[kind]);
+  return pages.length ? pages[(page || 0) % pages.length].map(x => newsRow(x, now, kind)) : [];
 }
 
 // one feed -> its items as read ([{title, pubDate, source, link, description}]), null when the answer is not an RSS
@@ -2213,21 +2527,77 @@ async function readFeed(feed, withDesc){
     return items;
   }catch(e){ return null; }
 }
-// one source of a news page -> its newest stories ([] when it did not answer, or too few matched its filter)
-async function loadNewsFeed(feed){
+// Bing's news ([{headline, source, t, link, desc}], localFeed) as a news page's items: newest first, its summaries
+function bingItems(list){
+  return list.filter(x => x.headline)
+    .sort((a, b) => (Number.isFinite(b.t) ? b.t : -Infinity) - (Number.isFinite(a.t) ? a.t : -Infinity))
+    .slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_POOL)
+    .map(x => { const desc = x.desc; delete x.desc; if(CONFIG.detail) x.summary = desc ? newsSummary(x, desc) : ''; return x; });
+}
+// one source of a news page -> its newest stories ([] when it did not answer, or too few matched its filter).
+// fallback (the country news): an outlet whose own feed or Google search gave nothing (Google News answers the TVs'
+// VPN with HTTP 403) is searched on Bing News instead (site:<its domain>, the country's market), kept to its own links
+async function loadNewsFeed(feed, fallback){
+  if(feed.bing){   // Bing's news: its RSS, or its page of cards (what it gives the TV's WebView: localFeed)
+    try{ return bingItems(await localFeed('bing', feed.bing)); }catch(e){ return []; }
+  }
   const all = await readFeed(feed);
-  if(!all) return [];
   // with a filter, only the matching items are read further (a 300-item feed keeps a few dozen)
-  const items = feed.filter ? all.filter(it => feed.filter.test(plainText(it.title))) : all;
-  return items.length < (feed.min || 1) ? [] : newsFrom(items, feed);
+  const items = !all ? [] : feed.filter ? all.filter(it => feed.filter.test(plainText(it.title))) : all;
+  if(items.length >= (feed.min || 1)){ feed.via = 'feed'; return newsFrom(items, feed); }
+  const site = feed.bingSite || feed.site;
+  if(!fallback || !site || /\//.test(site)) return [];
+  const gl = /[?&]gl=([A-Z]{2})\b/.exec(feed.url || ''), mkt = feed.cc || (gl ? gl[1] : 'SA');
+  const host = u => { try{ return new URL(u).hostname; }catch(e){ return ''; } };
+  try{
+    const got = (await localFeed('bing', `https://www.bing.com/news/search?q=${encodeURIComponent('site:' + site)}&format=rss&mkt=ar-${mkt}`))
+      // its own links, its Arabic stories (a site's English edition, e.g. english.ahram.org.eg, is left out)
+      .filter(x => { const h = host(x.link); return (h === site || h.endsWith('.' + site)) && AR_RE.test(x.headline)
+        && (!feed.filter || feed.filter.test(x.headline)); });
+    if(got.length) feed.via = 'bing';   // (#feedtest)
+    return bingItems(got.map(x => Object.assign(x, {source: feed.name || x.source})));
+  }catch(e){ return []; }
+}
+
+// #feedtest=1 (tests only, the preview from ADB): every source of every Arab country's news, once, four at a time,
+// each in the TV's log: «SaudiTV feedtest EG ahram 12 items, newest 2 h» or «… none»; then «SaudiTV feedtest done»
+const FEEDTEST_NAMES = {SA: 'السعودية', EG: 'مصر', AE: 'الإمارات', KW: 'الكويت', QA: 'قطر', BH: 'البحرين', OM: 'عمان',
+  JO: 'الأردن', IQ: 'العراق', LB: 'لبنان', SY: 'سوريا', PS: 'فلسطين', YE: 'اليمن', SD: 'السودان', LY: 'ليبيا', TN: 'تونس',
+  DZ: 'الجزائر', MA: 'المغرب'};
+async function feedTest(){
+  const jobs = [];
+  Object.keys(FEEDTEST_NAMES).forEach(cc => countryNews(cc, FEEDTEST_NAMES[cc], 'ar', '').forEach(f => jobs.push([cc, f])));
+  // what a source that gave nothing answered: its HTTP status, where it ended up, its title (a block or consent page)
+  const why = async f => {
+    try{
+      const r = await fetchT(f.url || f.bing, 15000), text = await r.text();
+      let at = ''; try{ const u = new URL(r.url); at = u.host + u.pathname.slice(0, 30); }catch(e){}
+      const t = /<title[^>]*>([^<]{0,50})/i.exec(text);
+      return ` (HTTP ${r.status} ${at}${t ? ' "' + t[1].trim() + '"' : ''}, ${(text.match(/<item[\s>]/g) || []).length} items)`;
+    }catch(e){ return ' (' + (e && e.message || e) + ')'; }
+  };
+  const run = async ([cc, f]) => {
+    f.via = '';
+    const items = await loadNewsFeed(f, true).catch(() => []);
+    const newest = items.reduce((m, x) => Number.isFinite(x.t) ? Math.max(m, x.t) : m, -Infinity);
+    console.warn(`SaudiTV feedtest ${cc} ${f.id} ` + (items.length ? items.length + ' items' + (f.via ? ' (' + f.via + ')' : '') + ', newest '
+      + (Number.isFinite(newest) ? Math.round((Date.now() - newest) / 36e5) + ' h' : '?') : 'none' + await why(f)));
+  };
+  // Google News one at a time, 3 s apart (a burst of searches is answered «unusual traffic»); the others four at a time
+  const google = jobs.filter(([, f]) => /news\.google\.com/.test(f.url || '')), rest = jobs.filter(j => !google.includes(j));
+  let k = 0;
+  await Promise.all(Array.from({length: 4}, async () => { while(k < rest.length) await run(rest[k++]); }).concat([(async () => {
+    for(const j of google){ await run(j); await new Promise(r => setTimeout(r, 3000)); }
+  })()]));
+  console.warn('SaudiTV feedtest done ' + jobs.length);
 }
 
 // a news page: every picked source at once (newsSources), each story once (the same headline or link), newest first
 let NEWS_LOG = {};
 async function loadNews(kind){
   const feeds = newsSources(kind);
-  const got = await Promise.all(feeds.map(loadNewsFeed));
-  const list = got.reduce((a, b) => newsMerge(a, b), []).slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_KEEP);
+  const got = await Promise.all(feeds.map(f => loadNewsFeed(f, kind === 'news')));   // the country news: Bing stands in
+  const list = got.reduce((a, b) => newsMerge(a, b), []).slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_POOL);
   // which sources answered, in the TV's log when that changes (a VPN exit can block one)
   const how = feeds.map((f, i) => f.id + (got[i].length ? '' : ' (none)')).join(', ');
   if(how !== NEWS_LOG[kind]){ NEWS_LOG[kind] = how; console.warn('SaudiTV: ' + kind + ' news from ' + how); }
@@ -2316,19 +2686,23 @@ async function localPlace(){
 // [{what, q, ed, mkt, terms}]: q the search, ed Google's edition, mkt Bing's market (else the VPN exit's, e.g.
 // en-GB, which matched «جريدة الرياض» rather than Riyadh), terms the names an item must contain one of
 function localSearches(p){
-  const cc = p ? p.cc : '';
+  const cc = (p && p.cc) || CONFIG.country;
   const arabic = AR_RE.test(CONFIG.city) && (!cc || ARAB_CC.includes(cc));
   if(!arabic && !(p && p.name)) return [];
-  const ed = arabic ? 'hl=ar&gl=SA&ceid=SA:ar' : GN_EN.includes(cc) ? `hl=en-${cc}&gl=${cc}&ceid=${cc}:en` : 'hl=en-US&gl=US&ceid=US:en';
-  const mkt = arabic ? 'ar-SA' : GN_EN.includes(cc) ? 'en-' + cc : 'en-US';
+  // an Arabic search in the city's own country's edition and market (Saudi Arabia's when it is unknown)
+  const acc = arabic && ARAB_CC.includes(cc) ? cc : 'SA';
+  const ed = arabic ? `hl=ar&gl=${acc}&ceid=${acc}:ar` : GN_EN.includes(cc) ? `hl=en-${cc}&gl=${cc}&ceid=${cc}:en` : 'hl=en-US&gl=US&ceid=US:en';
+  const mkt = arabic ? 'ar-' + acc : GN_EN.includes(cc) ? 'en-' + cc : 'en-US';
   const name = arabic ? CONFIG.city : p.name;
-  const out = [{what: 'city', q: arabic ? `"${name}"` : `"${name}" ${p.region || ''}`.trim(), ed, mkt, terms: [name], arabic}];
+  // saudi: the local sections of the Saudi papers are read for a Saudi city only
+  const saudi = arabic && acc === 'SA';
+  const out = [{what: 'city', q: arabic ? `"${name}"` : `"${name}" ${p.region || ''}`.trim(), ed, mkt, terms: [name], arabic, saudi}];
   const area = arabic ? (p && p.regionAr) : (p.county || p.region);
   // the area's own name without its kind, as headlines write it ("Orange County" -> "Orange", «أمطار القصيم»)
   const core = String(area || '').replace(/\s+(County|Parish|Borough|District|Governorate|Province|Region)$/i, '')
     .replace(/^(منطقة|محافظة|إمارة|ولاية)\s+/, '').trim();
   if(core && core !== name)
-    out.push({what: 'area', q: `"${area}"` + (cc === 'US' && p.county && p.region ? ' ' + p.region : ''), ed, mkt, terms: [name, core], arabic});
+    out.push({what: 'area', q: `"${area}"` + (cc === 'US' && p.county && p.region ? ' ' + p.region : ''), ed, mkt, terms: [name, core], arabic, saudi});
   return out;
 }
 
@@ -2423,7 +2797,7 @@ async function localSearch(s, papers){
     google: `https://news.google.com/rss/search?q=${encodeURIComponent(s.q + ' when:' + LOCAL_DAYS + 'd')}&${s.ed}`,
     bing: `https://www.bing.com/news/search?q=${encodeURIComponent(s.q)}&format=rss&qft=${encodeURIComponent('interval="8"')}&mkt=${s.mkt}`,   // the past week
   };
-  const feeds = newsSources('local').filter(f => f.search ? URLS[f.search] : s.arabic);
+  const feeds = newsSources('local').filter(f => f.search ? URLS[f.search] : s.saudi);
   let items = [], answered = false;
   const used = [];
   await Promise.all(feeds.map(async f => {
@@ -2464,7 +2838,7 @@ async function loadLocalNews(){
   // which sources served it, in the TV's log when that changes (a VPN exit can block one)
   const how = used.join(', ') || 'none';
   if(how !== LOCAL_LOG){ LOCAL_LOG = how; console.warn('SaudiTV: local news from ' + how + ': ' + items.length + ' items'); }
-  NEWS.local = items.slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_KEEP).map(x => {
+  NEWS.local = items.slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_POOL).map(x => {
     const desc = x.desc; delete x.desc;
     if(CONFIG.detail) x.summary = desc ? newsSummary(x, desc) : '';
     return x;
@@ -2595,10 +2969,13 @@ const WX_CODES = {
   95:'عواصف رعدية',96:'عواصف مصحوبة ببرد',99:'عواصف قوية'
 };
 async function loadWeather(){
-  const q = `latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&timezone=${encodeURIComponent(CONFIG.timezone)}`;
+  // the city's days and hours (its own time zone)
+  const q = `latitude=${CONFIG.latitude}&longitude=${CONFIG.longitude}&timezone=${encodeURIComponent(CONFIG.cityTz)}`;
   const DX = !!CONFIG.detail;   // the detail page also reads feels-like, humidity, wind, the hours, rain, sun
+  // #units=f: °F and the wind in mph (WIND_UNIT)
+  const U = CONFIG.units === 'f' ? '&temperature_unit=fahrenheit&wind_speed_unit=mph' : '';
   try{
-    const r = await fetchT(`https://api.open-meteo.com/v1/forecast?${q}&current=temperature_2m,weather_code`
+    const r = await fetchT(`https://api.open-meteo.com/v1/forecast?${q}${U}&current=temperature_2m,weather_code`
                          + (DX ? ',apparent_temperature,relative_humidity_2m,wind_speed_10m' : '')
                          + `&daily=temperature_2m_max,temperature_2m_min,weather_code`
                          + (DX ? ',precipitation_probability_max,sunrise,sunset&hourly=temperature_2m,precipitation_probability&forecast_days=7'
@@ -2900,7 +3277,7 @@ function dvTitle(){
 
 function dvPrayers(){
   if(!DAY_TIMES) return '';
-  const p = riyadhParts(), mins = p.h*60 + p.mi + p.s/60, fri = isFriday();
+  const p = placeParts(), mins = p.h*60 + p.mi + p.s/60, fri = isFriday();
   const names = {Fajr:'الفجر', Sunrise:'الشروق', Dhuhr: fri ? 'الجمعة' : 'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء'};
   const at = k => { const [h, mi] = String(DAY_TIMES[k]).split(':').map(Number); return h*60 + mi; };
   const gap = k => (k === 'Sunrise' || (k === 'Dhuhr' && fri)) ? 0 : (CONFIG.iqama[k] || 0);   // as tickPrayer
@@ -2915,15 +3292,16 @@ function dvPrayers(){
   }
   const t12 = m => fmt12(Math.floor(m/60) % 24, m % 60);
   let today = '';
-  try{
-    today = new Intl.DateTimeFormat(HIJRI, {timeZone:CONFIG.timezone, day:'numeric', month:'long'}).format(new Date())
-      + ' · ' + new Intl.DateTimeFormat(GREG, {timeZone:CONFIG.timezone, weekday:'long', day:'numeric', month:'long'}).format(new Date());
+  try{   // the city's day (and «بتوقيت <city>» when its clock is not the TV's)
+    today = new Intl.DateTimeFormat(HIJRI, {timeZone:CONFIG.cityTz, day:'numeric', month:'long'}).format(new Date())
+      + ' · ' + new Intl.DateTimeFormat(GREG, {timeZone:CONFIG.cityTz, weekday:'long', day:'numeric', month:'long'}).format(new Date())
+      + (placeNote() ? ' · ' + placeNote() : '');
   }catch(e){}
   const rows = keys.map(k => `<div class="dv-tr${k === hot ? ' hot' : ''}"><span>${names[k]}</span><span>${t12(at(k))}</span>`
     + `<span>${gap(k) ? t12(at(k) + gap(k)) : '—'}</span><span>${k === hot ? note : ''}</span></div>`).join('');
   // the next 7 days, offline (computePrayers, same method); local noon of each day, so a DST change cannot skip one
   const off = Date.UTC(p.y, p.mo-1, p.d, p.h, p.mi, p.s) - Date.now();
-  const fD = (o, d) => { try{ return new Intl.DateTimeFormat(o.cal || GREG, Object.assign({timeZone:CONFIG.timezone}, o.f)).format(d); }catch(e){ return ''; } };
+  const fD = (o, d) => { try{ return new Intl.DateTimeFormat(o.cal || GREG, Object.assign({timeZone:CONFIG.cityTz}, o.f)).format(d); }catch(e){ return ''; } };
   let week = '';
   for(let i = 1; i <= 7; i++){
     const d = new Date(Date.UTC(p.y, p.mo-1, p.d + i, 12) - off);
@@ -2945,7 +3323,7 @@ function dvForecast(){
   let html = '<div class="dv-scroll">';
   if(WX_NOW){
     const meta = [`الإحساس ${dvT(WX_NOW.feels)}`, `الرطوبة ${dvPct(WX_NOW.hum)}`,
-                  `الرياح ${Number.isFinite(WX_NOW.wind) ? ar(Math.round(WX_NOW.wind)) + ' كم/س' : '—'}`].join(' · ');
+                  `الرياح ${Number.isFinite(WX_NOW.wind) ? ar(Math.round(WX_NOW.wind)) + (CONFIG.units === 'f' ? ' ميل/س' : ' كم/س') : '—'}`].join(' · ');
     html += `<div class="dv-now"><span class="dv-temp">${dvT(WX_NOW.temp)}</span><div>`
           + `<div class="dv-desc">${esc(WX_NOW.dust || WX_CODES[WX_NOW.code] || '')}</div><div class="dv-meta">${meta}</div></div></div>`;
   }
@@ -3002,14 +3380,14 @@ function dvMatches(){
 
 function dvStandings(){
   if(!STANDINGS.length) return '';
-  // followed: by the match data (followedKeys) or by the Arabic names the app sent (#teamnames)
-  const keys = followedKeys(), want = new Set(Object.values(TEAM_NAME_OF).map(arNorm));
-  const isF = x => keys.has(standKey(x.name)) || want.has(arNorm(STAND_AR[standKey(x.name)]));
+  // followed: by id or the match data (standFollowed), or by the Arabic names the app sent (#teamnames)
+  const fol = standFollowed(), want = new Set(Object.values(TEAM_NAME_OF).map(arNorm));
+  const isF = x => fol(x) || (CONFIG.league === 'ksa.1' && want.has(arNorm(STAND_AR[standKey(x.name)])));
   const n = v => Number.isFinite(v) ? ar(Math.round(v)) : '—';
   const gd = v => Number.isFinite(v) ? `<span dir="ltr">${v > 0 ? '+' : v < 0 ? '−' : ''}${ar(Math.abs(Math.round(v)))}</span>` : '—';
   return '<div class="dv-scroll"><div class="dv-tbl dv-st"><div class="dv-tr dv-th"><span>#</span><span>النادي</span><span>لعب</span>'
     + '<span>فاز</span><span>تعادل</span><span>خسر</span><span>له</span><span>عليه</span><span>الفارق</span><span>النقاط</span></div>'
-    + STANDINGS.map(x => `<div class="dv-tr${isF(x) ? ' fol' : ''}"><span>${n(x.rank)}</span><span>${esc(STAND_AR[standKey(x.name)] || x.name)}</span>`
+    + STANDINGS.map(x => `<div class="dv-tr${isF(x) ? ' fol' : ''}"><span>${n(x.rank)}</span><span>${esc(standAr(x.name))}</span>`
       + `<span>${n(x.gp)}</span><span>${n(x.w)}</span><span>${n(x.d)}</span><span>${n(x.l)}</span><span>${n(x.gf)}</span><span>${n(x.ga)}</span>`
       + `<span>${gd(x.gd)}</span><span><b>${n(x.pts)}</b></span></div>`).join('')
     + '</div></div>';
@@ -3250,6 +3628,7 @@ function restoreSnap(){
 }
 
 function boot(){
+  if(CONFIG.feedTest) setTimeout(feedTest, 3000);   // tests only (#feedtest=1)
   if(CONFIG.ticker){ bootTicker(); return; }
   if(CONFIG.detail){ bootDetail(); return; }
   if(CONFIG.home){ bootHome(); return; }
@@ -3261,7 +3640,8 @@ function boot(){
   const wxCity = document.getElementById('wx-city');
   if(wxCity) wxCity.textContent = CONFIG.city;
   const cs = document.getElementById('clock-sub');
-  if(cs) cs.textContent = 'بتوقيت ' + CONFIG.city;
+  // the clock is the TV's: «بتوقيت <city>» when the city keeps the same time, else «التوقيت المحلي»
+  if(cs) cs.textContent = placeNote() ? 'التوقيت المحلي' : 'بتوقيت ' + CONFIG.city;
   document.title = 'سعودي TV';
   applyBackground(true);
   loadPhotoIndex().then(() => applyBackground(true));

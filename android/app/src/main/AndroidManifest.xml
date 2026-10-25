@@ -106,6 +106,8 @@
                 <action android:name="com.raad.sauditv.screensaver.GET" />
                 <action android:name="com.raad.sauditv.screensaver.SET" />
                 <action android:name="com.raad.sauditv.screensaver.CITIES" />
+                <action android:name="com.raad.sauditv.screensaver.COUNTRIES" />
+                <action android:name="com.raad.sauditv.screensaver.LEAGUES" />
                 <action android:name="com.raad.sauditv.screensaver.UPDATE" />
                 <action android:name="com.raad.sauditv.screensaver.APP_CHECK" />
             </intent-filter>

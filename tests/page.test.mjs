@@ -99,7 +99,8 @@ const SAMPLE = {
   local: () => {
     NEWS.local = [0, 1, 2, 3].map(i => ({ headline: i ? 'خبر محلي ' + i : 'City council approves the new park', source: i ? 'جريدة' : 'City Herald', t: Date.now() - i * 36e5, link: '' }));
   },
-  world: () => { NEWS.world = [0, 1, 2, 3].map(i => ({ headline: 'خبر من العالم ' + i, source: 'سكاي نيوز عربية', t: Date.now() - i * 36e5, link: '' })); },
+  // two sources: a card page holds at most two items of one source (newsCardPages)
+  world: () => { NEWS.world = [0, 1, 2, 3].map(i => ({ headline: 'خبر من العالم ' + i, source: i % 2 ? 'العربية' : 'سكاي نيوز عربية', t: Date.now() - i * 36e5, link: '' })); },
 };
 const EXPECT = { prayers: [6, 'مواقيت اليوم'], forecast: [5, 'الأيام القادمة · الرياض'], matches: [2, 'مباريات فرقك'],
                  verse: [2, 'آية اليوم'], hadith: [2, 'حديث اليوم'], shows: [1, 'هذا الأسبوع'], local: [3, 'أخبار الرياض'],
@@ -221,6 +222,106 @@ for (const [width, height] of [[1920, 1080], [1280, 720], [960, 540]]) {
       !errors.length && !r.bad.length, `${r.bad.length} spill: ` + r.bad.slice(0, 3).join(' | ') + errors.join('; '));
     await ctx.close();
   }
+}
+
+// ---- worldwide: a card page holds at most two headlines of one source; the card's later page takes the rest
+{
+  const { p, ctx, errors } = await open('tv.html', 'panel=news');
+  const r = await p.evaluate(() => {
+    const list = [0, 1, 2, 3, 4, 5].map(i => ({ headline: 'خبر ' + i, source: i < 4 ? 'مصدر نشيط' : 'مصدر آخر', t: Date.now() - i * 6e5, link: '' }));
+    const pages = newsCardPages(list).map(pg => pg.map(x => x.headline.slice(4)).join(''));
+    const one = newsCardPages(list.slice(0, 4)).map(pg => pg.length);
+    NEWS.news = list; LIST_PAGE = 0; renderPanel(false);
+    const shown = [...document.querySelectorAll('#week-list .dt')].map(e => e.textContent.split(' · ')[0]);
+    return { pages, one, shown, paged: newsPaged('news') };
+  });
+  check('news cap: at most 2 headlines of a source per card page, the others fill it, the rest on the next page',
+    !errors.length && JSON.stringify(r.pages) === '["014","235"]' && JSON.stringify(r.one) === '[2,2]'
+    && r.shown.filter(s => s === 'مصدر نشيط').length === 2 && r.shown.length === 3 && r.paged, JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+}
+
+// ---- worldwide: the country news («أخبار مصر»), its sources and Google / Bing in the country's language
+{
+  const { p, ctx, errors } = await open('tv.html', 'panel=news&newscc=EG&newsname=' + encodeURIComponent('مصر') + '&newslang=ar');
+  const r = await p.evaluate(() => ({ hd: document.getElementById('week-hd').textContent, def: newsSources('news').map(x => x.id).join(','),
+    all: countryNews('EG', 'مصر', 'ar', '').map(x => x.id).join(','),
+    fr: countryNews('FR', 'فرنسا', 'fr', 'France').filter(x => x.on).map(x => x.id + ' ' + (x.url || x.bing)).join(' | '),
+    sa: countryNews('SA', 'السعودية', 'ar', '').filter(x => x.on).map(x => x.id).join(',') }));
+  check('country news: «أخبار مصر», Egypt\'s outlets by default, Google and Bing after them; France: Google and Bing in French; Saudi as before',
+    !errors.length && r.hd === 'أخبار مصر' && r.def === 'ahram,youm7,almasryalyoum' && r.all.endsWith(',google,bing')
+    && /^google https:\/\/news\.google\.com\/rss\?hl=fr&gl=FR&ceid=FR:fr \| bing https:\/\/www\.bing\.com\/news\?format=rss&mkt=fr-FR$/.test(r.fr)
+    && r.sa === 'aawsat,okaz,sabq,spa', JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+}
+
+// ---- worldwide: an outlet whose Google search does not answer (Google News gives the TVs' VPN HTTP 403) is read from
+// a Bing News search of its site instead, kept to its own links and labelled with its name
+{
+  const at = new Date(FIXED.getTime() - 36e5).toUTCString();
+  const bing = `<?xml version="1.0"?><rss><channel><item><title>خبر من اليوم السابع</title><link>https://www.youm7.com/story/1</link>`
+    + `<pubDate>${at}</pubDate></item><item><title>خبر من موقع آخر</title><link>https://other.example/2</link><pubDate>${at}</pubDate></item></channel></rss>`;
+  const { p, ctx, errors } = await open('tv.html', 'panel=news&newscc=EG&newsname=' + encodeURIComponent('مصر') + '&newslang=ar',
+    { feeds: { 'bing\\.com/news/search\\?q=site%3Ayoum7\\.com': bing } });
+  await p.waitForFunction(() => NEWS.news.length > 0, null, { timeout: 20000 }).catch(() => {});
+  const r = await p.evaluate(() => NEWS.news.map(x => x.headline + ' | ' + x.source));
+  check('country news: Bing stands in for an outlet Google does not answer, its own links only, its name',
+    !errors.length && JSON.stringify(r) === JSON.stringify(['خبر من اليوم السابع | اليوم السابع']), JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+}
+
+// ---- worldwide: the table's league in its title; team ids of every kind; °F
+{
+  const { p, ctx, errors } = await open('tv.html', 'panel=standings&league=eng.1&leaguename=' + encodeURIComponent('الدوري الإنجليزي')
+    + '&teams=E359@eng.1,138995@tsdb.4829,136013,bogus&units=f');
+  const r = await p.evaluate(() => ({ hd: document.getElementById('week-hd').textContent, ids: CONFIG.teamIds.join(','), units: CONFIG.units,
+    url: espnStandingsUrl(CONFIG.league), espn: JSON.stringify(espnOf('E359@eng.1')), tsdb: tsdbOf('138995@tsdb.4829') }));
+  check('standings: «ترتيب الدوري الإنجليزي» from ESPN\'s eng.1; ESPN, TheSportsDB-league and older ids; units °F',
+    !errors.length && r.hd === 'ترتيب الدوري الإنجليزي' && r.ids === 'E359@eng.1,138995@tsdb.4829,136013' && r.units === 'f'
+    && r.url.endsWith('/soccer/eng.1/standings') && r.espn === '{"espn":"359","league":"eng.1"}' && r.tsdb === '138995', JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+}
+{
+  const { p, ctx, errors } = await open('tv.html', 'panel=standings');
+  const hd = await p.evaluate(() => document.getElementById('week-hd').textContent);
+  check('standings: older settings links keep «ترتيب دوري روشن»', !errors.length && hd === 'ترتيب دوري روشن', hd + errors.join('; '));
+  await ctx.close();
+}
+
+// ---- worldwide: the city's time zone for its prayer times, «بتوقيت <city>» when it is not the TV's
+{
+  const cairo = 'city=' + encodeURIComponent('القاهرة') + '&lat=30.0626&lon=31.2497&method=5&panel=prayers';
+  const a = await open('tv.html', cairo + '&tz=America%2FLos_Angeles&ptz=Africa%2FCairo');
+  const r = await a.p.evaluate(() => ({ hd: document.getElementById('week-hd').textContent, sub: document.getElementById('clock-sub').textContent,
+    label: document.getElementById('prayer-label').textContent, cairo: placeParts().h, tv: riyadhParts().h }));
+  check('another time zone: «بتوقيت القاهرة» by the prayers, the clock «التوقيت المحلي», the prayers in Cairo time',
+    !a.errors.length && r.hd === 'مواقيت اليوم · بتوقيت القاهرة' && r.sub === 'التوقيت المحلي' && r.label.endsWith('· بتوقيت القاهرة')
+    && ((r.cairo - r.tv + 24) % 24) === 10, JSON.stringify(r) + a.errors.join('; '));
+  await a.ctx.close();
+  const b = await open('tv.html', cairo + '&tz=Africa%2FCairo&ptz=Africa%2FCairo');
+  const s = await b.p.evaluate(() => [document.getElementById('week-hd').textContent, document.getElementById('clock-sub').textContent]);
+  check('the same time zone: no note, the clock «بتوقيت القاهرة»', !b.errors.length && s[0] === 'مواقيت اليوم' && s[1] === 'بتوقيت القاهرة',
+    JSON.stringify(s) + b.errors.join('; '));
+  await b.ctx.close();
+}
+
+// ---- worldwide: the offline prayer times of each method, and far north in summer (no missing Fajr or Isha)
+{
+  const { p, ctx, errors } = await open('tv.html', 'city=x&lat=30.0626&lon=31.2497&ptz=Africa%2FCairo&panel=prayers');
+  const r = await p.evaluate(() => {
+    const m = s => { const [h, mi] = s.split(':').map(Number); return h * 60 + mi; };
+    const at = new Date('2026-05-12T10:00:00Z'), out = {};
+    for (const k of [1, 2, 3, 4, 5, 9, 10, 13, 16]) { CONFIG.prayerMethod = k; const t = computePrayers(at); out[k] = [m(t.Fajr), m(t.Isha), m(t.Maghrib)]; }
+    CONFIG.latitude = 51.5072; CONFIG.longitude = -0.1276; CONFIG.cityTz = 'Europe/London';
+    const london = []; for (const k of [3, 5, 2]) { CONFIG.prayerMethod = k; london.push(computePrayers(new Date('2026-06-21T12:00:00Z'))); }
+    return { out, london };
+  });
+  const o = r.out, ok = o[5][0] < o[3][0] && o[2][0] > o[3][0] && o[4][1] === o[4][2] + 90 && o[10][1] === o[10][2] + 90
+    && o[5][1] > o[2][1] && o[3][1] !== o[16][1] && Object.values(o).every(v => v.every(Number.isFinite))
+    && r.london.every(t => /^\d\d:\d\d$/.test(t.Fajr) && /^\d\d:\d\d$/.test(t.Isha) && t.Fajr < t.Sunrise && t.Isha > t.Maghrib);
+  check('offline prayer times: each method its own Fajr and Isha (Egypt 19.5°, ISNA 15°, Umm al-Qura and Qatar +90 min); London in June',
+    !errors.length && ok, JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
 }
 
 // ---- the VPN badge: hidden when the TV has no VPN app at all; an installed one that is off still shows ✕

@@ -22,7 +22,7 @@
 ## المزايا
 
 - **بطاقة تتبدّل كل ٣٠ ثانية** جنب الساعة، في شاشة التوقف وفي الواجهة: مواقيت اليوم، آية اليوم، حديث اليوم (من صحيح
-  البخاري فقط)، طقس الأيام القادمة، مباريات فرقك، ترتيب دوري روشن، أخبار السعودية، أخبار مدينتك، أخبار العالم، أخبار التقنية
+  البخاري فقط)، طقس الأيام القادمة، مباريات فرقك، ترتيب الدوري (دوري روشن أو أي دوري تختاره)، أخبار دولتك، أخبار مدينتك، أخبار العالم، أخبار التقنية
   والذكاء الاصطناعي، جديد المسلسلات. تختار البطاقات وترتيبها لكل شاشة، ومصادر كل صفحة أخبار (تنعرض مع بعض، الأحدث أول).
 - **شكل الأرقام:** «0 1 2 3» (الافتراضي) أو «٠ ١ ٢ ٣»، في كل مكان: الشاشة والواجهة والإعدادات.
 - **صفحات التفاصيل:** OK على البطاقة في الواجهة يفتحها على كامل الشاشة (المواقيت، الأخبار مع نص الخبر، الترتيب،
@@ -35,6 +35,9 @@
   والوقت، الحساب، سعودي TV، وكل الإعدادات.
 - **علامة VPN** جنب الساعة (يعمل، أو متصل بدون إنترنت، أو مطفي)، ومع علم بلد الخروج في الواجهة. ما تظهر أبداً إذا
   ما فيه تطبيق VPN على التلفزيون.
+- **أي مدينة في العالم:** الدولة ثم المدينة (قائمة مدمجة في التطبيق من GeoNames، مع البحث)، ومواقيت الصلاة بتوقيت المدينة
+  وبطريقة حساب بلدها (أم القرى، ISNA، الهيئة المصرية…) أو اللي تختارها، والحرارة بالمئوية أو الفهرنهايت. الفرق: الدولة ثم الدوري ثم
+  النادي، أو المنتخبات.
 - **يشتغل بدون إنترنت:** الساعة والتاريخ والمواقيت ورمضان تشتغل، وآخر بيانات تبقى على الشاشة.
 - **تحديث الصفحة تلقائياً** من هذا المستودع كل ٦ ساعات، بدون إعادة تركيب.
 - **تسريع التلفزيون:** إطفاء التتبّع والإعلانات والعروض (يمكن التراجع عنه)، تجميد التطبيقات المقفلة، حركة أسرع.
@@ -99,8 +102,8 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
 ## Features
 
 - **A card that rotates every 30 s** beside the clock, on the screensaver and the home screen: today's prayers, the verse
-  of the day, the hadith of the day (Sahih al-Bukhari only), the forecast, your teams' matches, the Saudi Pro League
-  table, Saudi news, your city's news, world news, tech and AI news, new episodes. Pick the cards and their order for
+  of the day, the hadith of the day (Sahih al-Bukhari only), the forecast, your teams' matches, a league's table (the
+  Saudi Pro League or any other), your country's news, your city's news, world news, tech and AI news, new episodes. Pick the cards and their order for
   each screen, and each news page's sources (read together, newest first).
 - **Number style:** «0 1 2 3» (the default) or «٠ ١ ٢ ٣», everywhere: the screen, the home screen and the settings.
 - **Detail pages:** OK on the home screen's card opens it full screen (prayers, news with the article text, the table,
@@ -113,6 +116,9 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
   time, account, سعودي TV and all settings.
 - **A VPN mark** beside the clock (working, connected but no traffic, or off), and the exit country's flag on the home
   screen; none at all when the TV has no VPN app.
+- **Any city in the world:** the country, then the city (a list bundled in the app, from GeoNames, with a search); prayer
+  times in the city's own time zone, with its country's method (Umm al-Qura, ISNA, Egyptian…) or the one you pick; °C or
+  °F. Teams: the country, then the league, then the club, or the national teams.
 - **Works offline:** clock, dates, prayer times and Ramadan keep going; the last good data stays on screen.
 - **The page updates itself** from this repository every 6 hours, without a reinstall.
 - **A safe TV speed-up:** telemetry, ads and demos off (reversible), closed apps frozen, faster animations.
@@ -175,7 +181,8 @@ tests/                checks: build, data, fonts, scripts, private data, the pag
 ```
 
 **Data** (free, no keys): Aladhan (prayer times), Open-Meteo (weather), Yahoo and CoinGecko (markets), TVMaze
-(episodes), TheSportsDB and ESPN (matches and the table), news feeds (Asharq Al-Awsat, Okaz, Al-Watan, Sky News
+(episodes), ESPN (clubs, matches and the table of any league it carries) and TheSportsDB (the leagues ESPN does not
+carry), GeoNames and CLDR (the bundled countries and cities), Open-Meteo's geocoding (a city's search), news feeds (Asharq Al-Awsat, Okaz, Al-Watan, Sky News
 Arabia, BBC Arabic, CNN Arabic, Al Jazeera, France 24, Tech-WD, AIT News; Google News for the sites without a feed
 that answers, Bing for the city's news). Verse and hadith texts are never typed by hand: verses come from the Quran API
 (`.github/tools/fetch_verses.py`), the hadith from Sahih al-Bukhari in fawazahmed0/hadith-api
@@ -187,6 +194,8 @@ that answers, Bing for the city's news). Verse and hadith texts are never typed 
 - Home screen adapted from [mihirgupta0900/tv-home](https://github.com/mihirgupta0900/tv-home) (MIT,
   [android/launcher/LICENSE-tv-home](android/launcher/LICENSE-tv-home)).
 - Photos: Unsplash photographers, listed in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md).
+- Countries and cities: [GeoNames](https://www.geonames.org) (CC BY 4.0); the Arabic country names: Unicode CLDR (Unicode
+  license). Made by `.github/tools/gen_geo.py`.
 - Fonts: Thmanyah (by Thmanyah), and Noto Naskh Arabic for ﷺ ﴿﴾ (SIL Open Font License,
   `assets/fonts/NotoNaskhArabic-OFL.txt`).
 - Package safety ratings from [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation).
