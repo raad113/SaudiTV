@@ -39,7 +39,10 @@ public class SettingsActivity extends Activity {
     private AlertDialog progress;   // the update's progress (AppInstaller)
     private TextView progressText;
     private android.widget.ProgressBar progressBar;
-    private final AppInstaller.Listener installListener = this::onInstallStatus;
+    private final AppInstaller.Listener installListener = new AppInstaller.Listener() {
+        @Override public void onStatus(AppInstaller.Status s) { onInstallStatus(s); }
+        @Override public void homeReplaced() { restoreHome(); }
+    };
 
     /** Arabic locale for this screen, so every dialog title, list and button is laid out right-to-left. */
     @Override
@@ -510,6 +513,7 @@ public class SettingsActivity extends Activity {
         if (!canInstall()) { askInstallPermission(); return; }
         showProgress();
         AppInstaller.start(this, m);
+        refreshUpdateRow();   // «جارٍ التحديث…»
     }
 
     /** Once per TV: Android's «تثبيت التطبيقات غير المعروفة» for this app. Back from there continues the update. */
@@ -583,6 +587,20 @@ public class SettingsActivity extends Activity {
             if (AppInstaller.running()) AppInstaller.cancel(this);
             else { progress.dismiss(); progress = null; }
         });
+    }
+
+    /**
+     * The home screen's update closed it. Without this, once this screen goes (Back, or this app's own update ending
+     * its process) Android brings back the app that was open before the home screen, not the home screen. One call
+     * starts the new home screen and brings this screen back on top of it, so the home screen is right behind.
+     */
+    private void restoreHome() {
+        Intent home = AppUpdate.homeIntent(this);
+        if (home == null) return;   // our home screen isn't this TV's Home: nothing of ours to put back
+        Intent self = new Intent(this, SettingsActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        try { startActivities(new Intent[] {home, self}); }
+        catch (RuntimeException e) { android.util.Log.w("SaudiTV-Update", "home: " + e); }
     }
 
     private void onInstallStatus(AppInstaller.Status s) {

@@ -37,9 +37,12 @@ import java.util.Set;
  *    failed or cancelled download, or any mismatch, deletes the files and leaves both installed apps as they are.
  * 2. The home screen is installed first, then this app last. This app is the installer: installing it ends its own
  *    process, so nothing can come after it. Each session reports to InstallReceiver; Android asks the user to confirm
- *    (STATUS_PENDING_USER_ACTION, its own dialog), which the settings screen opens while it is in front. When this
- *    app's own install ends the process, Android closes the settings screen and the TV is back on the home screen,
- *    already the new one; the next launch of the settings says «تم التحديث إلى …» (AppUpdate.takeJustUpdated).
+ *    (STATUS_PENDING_USER_ACTION, its own dialog), which the settings screen opens while it is in front.
+ *    Updating the home screen closes it, and Android would then bring back whatever app was open before it (on the
+ *    Google TV Streamer: YouTube) once the settings screen goes. So right after the home screen's install the settings
+ *    screen puts the new home screen back behind itself (Listener.homeReplaced). When this app's own install ends the
+ *    process, Android closes the settings screen and the TV is back on the new home screen; the next launch of the
+ *    settings says «تم التحديث إلى …» (AppUpdate.takeJustUpdated).
  *    Each APK installs whole or not at all (a session is atomic). If this app's step is cancelled after the home
  *    screen's succeeded, the settings row still offers the update and installs only what is left.
  * One update at a time, in this process; the settings screen follows it through a Listener.
@@ -55,7 +58,11 @@ final class AppInstaller {
         boolean finished() { return phase == DONE || phase == FAILED; }
     }
 
-    interface Listener { void onStatus(Status s); }
+    interface Listener {
+        void onStatus(Status s);
+        /** the home screen was just updated (which closed it): put it back behind the settings screen */
+        void homeReplaced();
+    }
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static Listener listener;
@@ -357,6 +364,13 @@ final class AppInstaller {
                 if (!queue.isEmpty()) queue.remove(0);
                 done.add(pkg);
                 session = -1;
+                if (AppUpdate.HOME_PKG.equals(pkg)) {
+                    if (listener != null) listener.homeReplaced();
+                    else {   // no settings screen: at least start the home screen (Android may not allow it from here)
+                        Intent home = AppUpdate.homeIntent(app);
+                        try { if (home != null) app.startActivity(home); } catch (RuntimeException e) { Log.w(TAG, "home: " + e); }
+                    }
+                }
                 next(app);
                 return;
             default:

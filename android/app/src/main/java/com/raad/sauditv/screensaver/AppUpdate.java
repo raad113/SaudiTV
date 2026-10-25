@@ -211,6 +211,14 @@ final class AppUpdate {
         }
     }
 
+    /** This TV's Home, when it is our home screen (its explicit activity, a new task); else null. */
+    static Intent homeIntent(Context c) {
+        Intent i = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+        android.content.pm.ResolveInfo r = c.getPackageManager().resolveActivity(i, PackageManager.MATCH_DEFAULT_ONLY);
+        if (r == null || r.activityInfo == null || !HOME_PKG.equals(r.activityInfo.packageName)) return null;
+        return i.setClassName(r.activityInfo.packageName, r.activityInfo.name).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
     // ---------- after a self-update ----------
 
     /** Before this app installs itself (the process ends there): the version it goes to. */
