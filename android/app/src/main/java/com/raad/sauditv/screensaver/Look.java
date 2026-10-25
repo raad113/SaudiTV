@@ -3,7 +3,9 @@ package com.raad.sauditv.screensaver;
 /**
  * «شكل الواجهة», without Android (tests/java_test.py runs it): the home screen and the screensaver in «الكلاسيكي» (the
  * look they always had) or «الجديد» (design/concepts/1-ambient-editorial: the page's #look=new, nxBoot). Settings saved
- * before keep «الكلاسيكي»; a new install gets «الجديد» (Prefs.migrate writes FRESH). The page and the launcher are told
+ * before keep «الكلاسيكي»; a new install gets «الجديد» (Prefs.migrate writes FRESH). Either way the user chooses it once:
+ * a new install in the setup's first step («الجديد» focused), a TV set up before in the same step on its own, opened
+ * by the home screen while SetupState.lookPending (no lookChosen yet). The page and the launcher are told
  * by the settings fragment (param): a change reloads the home screen's page at once (CONFIG_CHANGED, as every setting)
  * and the screensaver's at its next start.
  */

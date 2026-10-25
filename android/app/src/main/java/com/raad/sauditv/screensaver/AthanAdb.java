@@ -9,7 +9,8 @@ import java.util.Locale;
  * «الأذان» from ADB (SaverReceiver; optimize/saver.sh athan on|off, athan-test, athan-show, and show):
  *
  *   SET  [--es athan on|off] [--es athan_fajr|athan_dhuhr|athan_asr|athan_maghrib|athan_isha full|short|off]
- *        [--es athan_voice wikimedia|asim|custom] [--es athan_fajr_voice wikimedia|asim|malmo|custom]
+ *        [--es athan_voice wikimedia|asim|abudhabi1|abudhabi2|alain|makkah|custom]
+ *        [--es athan_fajr_voice wikimedia|asim|malmo|abudhabi1|abudhabi2|maldives|alain|makkah|custom]
  *        [--es athan_volume 10…100] [--es athan_dua on|off] [--es athan_reminder 0|5|10|15|20|30]
  *   ATHAN_TEST --es prayer fajr|dhuhr|asr|maghrib|isha [--es kind full|short|reminder]   (now, as its alarm would;
  *        silent with the TV off, as the alarm)

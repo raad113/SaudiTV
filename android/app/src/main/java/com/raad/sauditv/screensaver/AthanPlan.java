@@ -30,8 +30,11 @@ final class AthanPlan {
     /** a prayer's alert: the whole athan (pauses what plays), a short one (a banner and the opening takbir), none */
     static final String FULL = "full", SHORT = "short", OFF = "off";
     static final String[][] MODES = {{FULL, "الأذان كاملاً"}, {SHORT, "تنبيه قصير"}, {OFF, "بدون"}};
-    /** «تذكير قبل الأذان»: minutes, 0 = off (the default) */
+    /** every prayer's alert until one is picked: the short one */
+    static final String MODE_DEFAULT = SHORT;
+    /** «تذكير قبل الأذان»: minutes, 0 = off; 5 by default */
     static final int[] REMINDERS = {0, 5, 10, 15, 20, 30};
+    static final int REMINDER_DEFAULT = 5;
     /** the athan's own volume, percent (as the radio's: RadioStations.gain squares it) */
     static final int VOLUME_MIN = 10, VOLUME_MAX = 100, VOLUME_STEP = 10, VOLUME_DEFAULT = 80;
 
@@ -44,10 +47,10 @@ final class AthanPlan {
         return -1;
     }
 
-    /** a stored or typed mode: full, short or off; anything else: full (the default) */
+    /** a stored or typed mode: full, short or off; anything else: the default (short) */
     static String mode(String v) {
-        if (SHORT.equals(v) || OFF.equals(v)) return v;
-        return FULL;
+        if (FULL.equals(v) || SHORT.equals(v) || OFF.equals(v)) return v;
+        return MODE_DEFAULT;
     }
 
     static boolean validMode(String v) { return FULL.equals(v) || SHORT.equals(v) || OFF.equals(v); }
@@ -88,8 +91,8 @@ final class AthanPlan {
     /** What the settings say, read once (AthanPrefs on Android, plain values in the tests). */
     static final class Settings {
         boolean on = true;
-        final String[] modes = {FULL, FULL, FULL, FULL, FULL};
-        int reminder;
+        final String[] modes = {MODE_DEFAULT, MODE_DEFAULT, MODE_DEFAULT, MODE_DEFAULT, MODE_DEFAULT};
+        int reminder = REMINDER_DEFAULT;
 
         boolean any() {
             if (!on) return false;

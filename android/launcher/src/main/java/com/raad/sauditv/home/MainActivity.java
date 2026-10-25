@@ -158,9 +158,11 @@ public class MainActivity extends Activity {
     };
     /** the screensaver app's last app-update check (its ConfigProvider): available = the newer versionCode, 0 = none */
     static final android.net.Uri UPDATE = android.net.Uri.parse("content://com.raad.sauditv.screensaver.config/update");
-    /** the screensaver app's first-run setup: done = 1 once finished or skipped (an older app has no such column) */
+    /** the screensaver app's first-run setup: done = 1 once finished or skipped (an older app has no such column);
+     *  look_pending = 1 while «شكل الواجهة» was never chosen on a TV set up before (an older app: no such column) */
     static final android.net.Uri SETUP = android.net.Uri.parse("content://com.raad.sauditv.screensaver.config/setup");
     private static boolean setupAsked;   // once per start of this app: the first-run setup, while not done
+    private static boolean lookAsked;    // once per start: the look chooser opened, or the app answered it is not due
 
     // ---------------------------------------------------------------- lifecycle
 
@@ -226,20 +228,32 @@ public class MainActivity extends Activity {
         // Catch installs/removals that happened while another app was in front.
         if (getPackageManager().getChangedPackages(packageSeq) != null) buildApps();
         if (firstShow) { firstShow = false; playEntrance(); }
-        if (!setupAsked) { setupAsked = true; openSetupIfNew(); }
+        if (!setupAsked || !lookAsked) openSetupIfNew();
     }
 
     /** A new install: the screensaver app's first-run setup (its SetupActivity), once per start of this app, while its
-     *  ConfigProvider says it is not done. Nothing when that app is missing or older (no "done" column). */
+     *  ConfigProvider says it is not done. Nothing when that app is missing or older (no "done" column).
+     *  A TV set up before «شكل الواجهة» was asked (look_pending 1): SetupActivity's look step alone (its "lookOnly"),
+     *  once, and from here only (the home screen in front: onResume). Without the column (an older app, or none) it is
+     *  not due, and asked again on the next return here: the app may have been updated meanwhile (HomeLook.ask). */
     private void openSetupIfNew() {
-        long done = 1;
+        long done = -1, look = -1;
         try (android.database.Cursor c = getContentResolver().query(SETUP, null, null, null, null)) {
-            int i = c == null ? -1 : c.getColumnIndex("done");
-            if (i >= 0 && c.moveToFirst()) done = c.getLong(i);
+            if (c != null && c.moveToFirst()) {
+                int i = c.getColumnIndex("done"), j = c.getColumnIndex("look_pending");
+                if (i >= 0) done = c.getLong(i);
+                if (j >= 0) look = c.getLong(j);
+            }
         } catch (RuntimeException e) {
-            done = 1;
+            done = -1;
+            look = -1;
         }
-        if (done == 0) launch(new Intent().setClassName(SAVER_PKG, SAVER_PKG + ".SetupActivity"));
+        int ask = HomeLook.ask(setupAsked ? -1 : done, look);   // the setup once per start, as before
+        setupAsked = true;
+        if (look >= 0) lookAsked = true;   // answered: opened now, or not due (a new install's setup has its own step)
+        Intent setup = new Intent().setClassName(SAVER_PKG, SAVER_PKG + ".SetupActivity");
+        if (ask == HomeLook.ASK_SETUP) launch(setup);
+        else if (ask == HomeLook.ASK_LOOK) launch(setup.putExtra("lookOnly", true));
     }
 
     @Override
@@ -1225,7 +1239,7 @@ public class MainActivity extends Activity {
     // each). The dock band is HomePage.DOCK_H_DP tall (104: 138px); in it, for either shape and focus look, the
     // focused tile with its ring or lift fits under its top edge and its name clear under the tile, inside the band.
     static final float DESIGN_DP = 0.75f;
-    // the band's side padding and corners; «زوايا دائرية»: banners 58 tall (16:9), 16px from the band's top, 16px
+    // the band's side padding and corners; «مستطيلات»: banners 58 tall (16:9), 16px from the band's top, 16px
     // apart, the name 16px under them (grid: 14dp, clear of a larger banner's ring), 20px corners (were 11dp)
     static final int DOCK_PAD_DP = 14, DOCK_TILE_H_DP = 58, DOCK_RADIUS_DP = 18;
     static final float DOCK_TOP_DP = 12f, DOCK_GAP_DP = 12f, DOCK_LABEL_GAP_DP = 12f, GRID_LABEL_GAP_DP = 14f;

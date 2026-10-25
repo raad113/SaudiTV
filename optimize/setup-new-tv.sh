@@ -39,7 +39,8 @@ METHOD="${METHOD:-}"                        # «طريقة الحساب»: auto 
 UNITS="${UNITS:-}"                          # the temperature: auto (the country's), c or f; empty: left as it is
 LEAGUE="${LEAGUE:-}"                        # «الدوري في الترتيب»: auto or optimize/saver.sh leagues' id; empty: as it is
 NEWS_COUNTRY="${NEWS_COUNTRY:-}"            # «أخبار <الدولة>»: auto (the city's country) or a code; empty: as it is
-ROTATE="${ROTATE:-30}"                      # seconds per card. Fixed in our APK (Prefs.java, HomePage.java); checked
+ROTATE="${ROTATE:-}"                        # «مدة كل بطاقة»: seconds per card, 10 15 20 30 or 60 (saver.sh rotate);
+                                            #   empty: left as it is (15 on a new install)
 if ! declare -p TEAMS > /dev/null 2>&1; then
   TEAMS=(                                   # followed teams, in order: TheSportsDB id:English name (the app shows the
     "136137:Saudi Arabia"                   #   Arabic name from its own table). Find ids: optimize/saver.sh find-team الهلال
@@ -356,9 +357,6 @@ else
     fi
   fi
 fi
-if [ "$ROTATE" = 30 ]; then ok "cards change every 30 s (built into our APK)"
-else warn "ROTATE=$ROTATE, but our APK is built with 30 s (Prefs.panelParams, HomePage.java; rebuild to change)"; fi
-
 show=$(optimize/saver.sh show 2>/dev/null | tr -d '\r')
 changed=no
 saver_set() {   # $1 label, $2.. the saver.sh command
@@ -373,6 +371,10 @@ saver_set() {   # $1 label, $2.. the saver.sh command
   did "$label set"; changed=yes
 }
 line() { sed -n "s/^$1: //p" <<< "$show"; }   # a value of optimize/saver.sh show
+# «مدة كل بطاقة»: each card's seconds (the settings' «شاشة التوقف»; the screensaver's and the home screen's)
+if [ -n "$ROTATE" ]; then
+  if [ "$(line rotate)" = "$ROTATE" ]; then ok "cards change every $ROTATE s"; else saver_set "card time ($ROTATE s)" rotate "$ROTATE"; fi
+fi
 # the country first: the city's time zone is looked up in it
 country_set=no
 if [ -n "$COUNTRY" ]; then

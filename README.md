@@ -104,7 +104,7 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
 
 ## Features
 
-- **A card that rotates every 30 s** beside the clock, on the screensaver and the home screen: today's prayers, the verse
+- **A card that rotates every 15 s** (or 10, 20, 30, 60: «مدة كل بطاقة») beside the clock, on the screensaver and the home screen: today's prayers, the verse
   of the day, the hadith of the day (Sahih al-Bukhari only), the forecast, your teams' matches, a league's table (the
   Saudi Pro League or any other), your country's news, your city's news, world news, tech and AI news. Pick the cards and their order for
   each screen, and each news page's sources (read together, newest first).

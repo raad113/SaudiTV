@@ -11,7 +11,7 @@ import android.graphics.Typeface;
 import android.view.View;
 
 /**
- * The pictures in «شكل الواجهة» (SettingsActivity.pickLook), as TilePreview draws the apps' looks: a small home screen in
+ * The pictures in «شكل الواجهة» (SettingsActivity.pickLook, SetupActivity's look step), as TilePreview draws the apps' looks: a small home screen in
  * each look, drawn (no image file), 16:9. «الكلاسيكي»: the photo under its green-black veil, the dates and the weather
  * on top, the big clock in the middle beside the glass card, the info strip and the ticker tape at the bottom.
  * «الجديد» (design/concepts/1-ambient-editorial): the dusk photo, the pills and the dateline, the clock and its
@@ -28,12 +28,15 @@ final class LookPreview extends View {
     private final int w, h;
     private float k;
 
-    LookPreview(Context c, String look) {
+    LookPreview(Context c, String look) { this(c, look, W_DP); }
+
+    /** the picture wDp wide, 16:9 (the setup's look cards, SetupActivity), drawn the same way scaled */
+    LookPreview(Context c, String look, int wDp) {
         super(c);
         nw = Look.NEW.equals(Look.of(look));
         float d = c.getResources().getDisplayMetrics().density;
-        w = Math.round(W_DP * d);
-        h = Math.round(H_DP * d);
+        w = Math.round(wDp * d);
+        h = Math.round(wDp * 9f / 16f * d);
     }
 
     @Override protected void onMeasure(int ws, int hs) { setMeasuredDimension(w, h); }

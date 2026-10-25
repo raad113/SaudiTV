@@ -8,11 +8,12 @@ import java.util.TimeZone;
 
 /**
  * «الأذان»'s settings, in the app's one SharedPreferences (Prefs) beside the others, and the place they are computed
- * for (the city, its time zone and the prayer method: Prefs). Defaults: on, every prayer the full athan, the bundled
- * voices (AthanVoices; Fajr its own choice), no reminder, no dua.
+ * for (the city, its time zone and the prayer method: Prefs). Defaults: on, every prayer a short alert
+ * (AthanPlan.MODE_DEFAULT), the bundled voices (AthanVoices; Fajr its own choice), a reminder 5 minutes before
+ * (AthanPlan.REMINDER_DEFAULT; «بدون» can be picked), no dua.
  *
  * Keys: athanOn; athan_fajr … athan_isha (full | short | off); athanVoice, athanFajrVoice (AthanVoices ids or custom);
- * athanVolume (10 … 100); athanDua; athanReminder (minutes, 0 = off); athanCustom_main / athanCustom_fajr (the name of
+ * athanVolume (10 … 100); athanDua; athanReminder (minutes, 0 = off, 5 by default); athanCustom_main / athanCustom_fajr (the name of
  * «صوت من عندي», its file in customFile). A change of any key that moves an alarm reschedules it (AthanScheduler.watch).
  */
 final class AthanPrefs {
@@ -34,7 +35,7 @@ final class AthanPrefs {
     boolean on() { return sp.getBoolean(ON, true); }
     void setOn(boolean v) { sp.edit().putBoolean(ON, v).apply(); }
 
-    String mode(int prayer) { return AthanPlan.mode(sp.getString(modeKey(prayer), AthanPlan.FULL)); }
+    String mode(int prayer) { return AthanPlan.mode(sp.getString(modeKey(prayer), AthanPlan.MODE_DEFAULT)); }
     void setMode(int prayer, String m) { sp.edit().putString(modeKey(prayer), AthanPlan.mode(m)).apply(); }
 
     /** the voice of a prayer's athan: Fajr its own (AthanVoices.of) */
@@ -49,7 +50,7 @@ final class AthanPrefs {
     boolean dua() { return sp.getBoolean(DUA, false); }
     void setDua(boolean v) { sp.edit().putBoolean(DUA, v).apply(); }
 
-    int reminder() { return AthanPlan.reminder(sp.getInt(REMINDER, 0)); }
+    int reminder() { return AthanPlan.reminder(sp.getInt(REMINDER, AthanPlan.REMINDER_DEFAULT)); }
     void setReminder(int m) { sp.edit().putInt(REMINDER, AthanPlan.reminder(m)).apply(); }
 
     /** «صوت من عندي»: the name it was picked by (a file's name, an address's host), "" when there is none */

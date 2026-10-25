@@ -3,7 +3,7 @@ Athan recordings bundled with سعودي TV (the screensaver app's «الأذا�
 
 Each file was trimmed, mixed down to mono, loudness-normalised (-16 LUFS) and encoded to Opus/OGG at 48 kbps by
 this project (optimize/run is where the originals were downloaded; they are not part of the repository). Nothing
-else was changed. The settings screen shows these same credits («الأذان» › «حقوق التسجيلات»).
+else was changed (the "Changes" lines say where each was cut). The settings screen shows these same credits («الأذان» › «حقوق التسجيلات»).
 
 athan-wikimedia.ogg
   Title:   Beautiful adhan
@@ -23,6 +23,47 @@ athan-malmo.ogg
   Licence: Creative Commons Attribution 3.0 Unported (CC BY 3.0) - https://creativecommons.org/licenses/by/3.0/
   Source:  https://commons.wikimedia.org/wiki/File:Eid_al-Fitr_Fajr_azan_at_Malm%C3%B6_Mosque_-_19_August_2012.webm
   Changes: the audio was extracted from the video, cut to the athan (11.8 s to 237.0 s), mixed to mono,
+           loudness-normalised and re-encoded.
+
+athan-abudhabi-evening.ogg
+  Title:   muezzin_abends_medicalcenter.flac (Abu Dhabi, evening call to prayer)
+  Author:  nikitralala (Freesound user)
+  Licence: CC0 1.0 Universal (public domain dedication) - https://creativecommons.org/publicdomain/zero/1.0/
+  Source:  https://freesound.org/people/nikitralala/sounds/331518/
+  Changes: made from Freesound's public high-quality preview, cut to the athan (24.0 s to 214.0 s) with short
+           fades, mixed to mono, loudness-normalised and re-encoded.
+
+athan-abudhabi-noon.ogg
+  Title:   AbuDhabi_12_muezzin.flac (Abu Dhabi, noon call to prayer)
+  Author:  nikitralala (Freesound user)
+  Licence: CC0 1.0 Universal (public domain dedication) - https://creativecommons.org/publicdomain/zero/1.0/
+  Source:  https://freesound.org/people/nikitralala/sounds/331438/
+  Changes: made from Freesound's public high-quality preview, cut to the athan (21.5 s to 227.0 s) with short
+           fades, mixed to mono, loudness-normalised and re-encoded.
+
+athan-maldives-fajr.ogg
+  Title:   Morning call to prayer on Bodufolhudhoo, Maldives
+  Author:  jrosin (Freesound user)
+  Licence: Creative Commons Attribution 4.0 International (CC BY 4.0) - https://creativecommons.org/licenses/by/4.0/
+  Source:  https://freesound.org/people/jrosin/sounds/861625/
+  Attribution: "Morning call to prayer on Bodufolhudhoo, Maldives" by jrosin (freesound.org/s/861625), CC BY 4.0
+  Changes: made from Freesound's public high-quality preview, cut to the athan (5.5 s to 273.0 s) with short
+           fades, mixed to mono, loudness-normalised and re-encoded.
+
+athan-alain.ogg
+  Title:   Muezzin in Al Ain, United Arab Emirates with birds
+  Author:  Agim (Freesound user)
+  Licence: CC0 1.0 Universal (public domain dedication) - https://creativecommons.org/publicdomain/zero/1.0/
+  Source:  https://freesound.org/people/Agim/sounds/417865/
+  Changes: made from Freesound's public high-quality preview, cut to the athan (0 s to 170.0 s) with short
+           fades, mixed to mono, loudness-normalised and re-encoded.
+
+athan-makkah.ogg
+  Title:   Maghrib Adhan at the Masjid al Haram, Mecca - 25 Feb, 2012 (audio track only, trimmed to the athan)
+  Author:  3omar Faruq (YouTube video VbQnPT6ntNg, via Wikimedia Commons)
+  Licence: Creative Commons Attribution 3.0 Unported (CC BY 3.0) - https://creativecommons.org/licenses/by/3.0/
+  Source:  https://commons.wikimedia.org/wiki/File:Maghrib_Adhan_at_the_Masjid_al_Haram,_Mecca_-_25_Feb,_2012.webm
+  Changes: the audio was extracted from the video, cut to the athan (113.5 s to 292.5 s) with short fades,
            loudness-normalised and re-encoded.
 
 «صوت من عندي» (a file or an address the user picks) is copied into the app's private storage on that TV only; it is

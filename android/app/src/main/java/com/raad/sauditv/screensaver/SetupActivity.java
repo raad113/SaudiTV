@@ -19,19 +19,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The first-run setup: four steps, everything else stays in the settings. Shown once on a new install (SetupState:
+ * The first-run setup: five steps, everything else stays in the settings. Shown once on a new install (SetupState:
  * the home screen asks ConfigProvider /setup at its start, the settings check on opening), again from the settings'
  * «معالج الإعداد» or optimize/saver.sh setup.
- *  1. «مدينتك»: the city (PlaceDetect's guess, «جارٍ تحديد موقعك…» while it runs), «تغيير» (the settings' own place
+ *  1. «شكل الواجهة»: two big cards side by side, each the home screen's picture in that look (LookPreview, 16:9) and
+ *     its name; «الجديد» first and focused (Look.FRESH; once a look was chosen: that one); OK saves it (Prefs.setLook)
+ *     and goes on. First, so PlaceDetect has had a moment when the city's step comes
+ *  2. «مدينتك»: the city (PlaceDetect's guess, «جارٍ تحديد موقعك…» while it runs), «تغيير» (the settings' own place
  *     picker, Pickers); «التالي» takes it as it is
- *  2. «ماذا تعرض شاشة التوقف؟»: the cards beside the clock, ticked (Prefs.panel, at least one)
- *  3. «إذاعة القرآن الكريم»: off or where it plays (RadioWhen.MODES, Prefs.setRadioMode)
- *  4. «فريقك المفضل»: the followed teams (Prefs teams) and «إضافة فريق» (Pickers.pickTeam)
+ *  3. «ماذا تعرض شاشة التوقف؟»: the cards beside the clock, ticked (Prefs.panel, at least one)
+ *  4. «إذاعة القرآن الكريم»: off or where it plays (RadioWhen.MODES, Prefs.setRadioMode)
+ *  5. «فريقك المفضل»: the followed teams (Prefs teams) and «إضافة فريق» (Pickers.pickTeam)
  * then «تم!» and «ابدأ»: the home screen. Each choice is saved at once, as in the settings; «تخطي» keeps what is set
- * and ends it. Finishing or skipping sets setupDone. Back: the step before (on the first: as «تخطي»).
+ * and ends it. Finishing or skipping sets setupDone and lookChosen (the look kept). Back: the step before (on the
+ * first: as «تخطي»).
+ * LOOK_ONLY (the home screen, once, for a TV set up before this build: SetupState.lookPending): the look step alone,
+ * no step count or buttons; OK saves the look, Back keeps the one set; either way lookChosen, then the home screen.
  */
 public class SetupActivity extends Activity {
-    private static final int STEPS = 4;
+    private static final int STEPS = 5;
+    private static final int STEP_LOOK = 0, STEP_CITY = 1, STEP_CARDS = 2, STEP_RADIO = 3, STEP_TEAMS = 4;
+    /** an intent extra (boolean): the look step only (the home screen's one-time chooser, ConfigProvider look_pending) */
+    static final String LOOK_ONLY = "lookOnly";
+    /** the look cards' pictures, 16:9: two side by side with their names fit above the buttons on a 960 x 540 dp screen */
+    static final int LOOK_W_DP = 320;
     private static final int GOLD = 0xFFD6AF6B, TEXT = 0xFFF6EFE0, DIM = 0xFFC6BBA4;
     private static final int DETECT_POLL_MS = 1000, DETECT_TRIES = 10;
     /** a choice row's height and the gap under it: four rows (the radio's four choices) fit whole above the buttons on
@@ -42,6 +53,7 @@ public class SetupActivity extends Activity {
     private Pickers pickers;
     private Mouse mouse;
     private int step;   // 0 … STEPS-1, STEPS = the final screen
+    private boolean lookOnly;   // LOOK_ONLY: the look step, nothing else
     private TextView stepLabel, title, subtitle;
     private LinearLayout dots, content, bar;
     private ScrollView contentScroll;
@@ -51,7 +63,7 @@ public class SetupActivity extends Activity {
     private int detectTries;
     private final Runnable detectPoll = new Runnable() {
         @Override public void run() {
-            if (isFinishing() || step != 0) return;
+            if (isFinishing() || step != STEP_CITY) return;
             if (!detecting() || ++detectTries >= DETECT_TRIES) { showStep(keyInFocus()); return; }
             content.postDelayed(this, DETECT_POLL_MS);
         }
@@ -72,7 +84,9 @@ public class SetupActivity extends Activity {
         Geo.pickerOpened();   // its place pickers' cities are let go when the last such screen closes (onDestroy)
         prefs = new Prefs(this);
         pickers = new Pickers(this, prefs, () -> showStep(keyInFocus()));
+        lookOnly = getIntent() != null && getIntent().getBooleanExtra(LOOK_ONLY, false);
         if (b != null) step = Math.max(0, Math.min(STEPS, b.getInt("step", 0)));
+        if (lookOnly) step = STEP_LOOK;
 
         FrameLayout root = new FrameLayout(this);
         root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
@@ -154,25 +168,41 @@ public class SetupActivity extends Activity {
         super.onDestroy();
     }
 
-    /** Back: the step before; on the first, as «تخطي»; on the final screen, as «ابدأ» */
+    /** Back: the step before; on the first, as «تخطي»; on the final screen, as «ابدأ»; look-only: the look kept */
     @Override
     public void onBackPressed() {
-        if (step >= STEPS) finishSetup();
+        if (lookOnly) finishLook();
+        else if (step >= STEPS) finishSetup();
         else if (step == 0) finishSetup();
         else go(step - 1);
     }
 
     private void go(int to) {
-        if (to == 3 && step != 3) teamsRead = false;
+        if (to == STEP_TEAMS && step != STEP_TEAMS) teamsRead = false;
         step = to;
-        if (step >= STEPS) prefs.setSetupDone(true);   // «إنهاء»: done, whatever happens on the final screen
+        if (step >= STEPS) {   // «إنهاء»: done, whatever happens on the final screen
+            prefs.setSetupDone(true);
+            prefs.setLookChosen(true);
+        }
         showStep(null);
     }
 
-    /** done (finished or skipped): the home screen, ours when it is installed */
+    /** done (finished or skipped; the look as it is, chosen): the home screen, ours when it is installed */
     private void finishSetup() {
         prefs.setSetupDone(true);
+        prefs.setLookChosen(true);
         pickers.changed();
+        goHome();
+    }
+
+    /** look-only done (a look picked, or Back: the one set kept): never asked again, then the home screen */
+    private void finishLook() {
+        prefs.setLookChosen(true);
+        pickers.changed();
+        goHome();
+    }
+
+    private void goHome() {
         Intent home = new Intent().setClassName("com.raad.sauditv.home", "com.raad.sauditv.home.MainActivity")
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try { startActivity(home); }
@@ -197,9 +227,9 @@ public class SetupActivity extends Activity {
         bar.removeAllViews();
         dots.removeAllViews();
         boolean last = step >= STEPS;
-        stepLabel.setVisibility(last ? View.GONE : View.VISIBLE);
-        dots.setVisibility(last ? View.GONE : View.VISIBLE);
-        if (!last) {
+        stepLabel.setVisibility(last || lookOnly ? View.GONE : View.VISIBLE);
+        dots.setVisibility(last || lookOnly ? View.GONE : View.VISIBLE);
+        if (!last && !lookOnly) {
             stepLabel.setText("الخطوة " + num(step + 1) + " من " + num(STEPS));
             for (int i = 0; i < STEPS; i++) {
                 View d = new View(this);
@@ -214,14 +244,17 @@ public class SetupActivity extends Activity {
             }
         }
         switch (step) {
-            case 0: stepCity(); break;
-            case 1: stepCards(); break;
-            case 2: stepRadio(); break;
-            case 3: stepTeams(); break;
+            case STEP_LOOK: stepLook(); break;
+            case STEP_CITY: stepCity(); break;
+            case STEP_CARDS: stepCards(); break;
+            case STEP_RADIO: stepRadio(); break;
+            case STEP_TEAMS: stepTeams(); break;
             default: stepDone(); break;
         }
-        // the bottom bar: the primary (OK = the suggestion), «رجوع» (not on the first), «تخطي»
-        if (last) {
+        // the bottom bar: the primary (OK = the suggestion), «رجوع» (not on the first), «تخطي»; look-only: none
+        if (lookOnly) {
+            primary = null;
+        } else if (last) {
             primary = button("start", "ابدأ", true, this::finishSetup);
         } else {
             primary = button("next", step == STEPS - 1 ? "إنهاء" : "التالي", true, () -> go(step + 1));
@@ -229,8 +262,9 @@ public class SetupActivity extends Activity {
             button("skip", "تخطي", false, this::finishSetup);
         }
         View want = focusKey == null ? null : findViewWithTagIn(focusKey);
+        if (want == null && step == STEP_LOOK) want = content.findViewWithTag(lookKey(prefs.lookChosen() ? prefs.look() : Look.FRESH));
         final View target = want != null ? want : primary;
-        target.requestFocus();
+        if (target != null) target.requestFocus();
         if (want == null) contentScroll.scrollTo(0, 0);
     }
 
@@ -240,6 +274,49 @@ public class SetupActivity extends Activity {
     }
 
     // ---------- the steps ----------
+
+    private static String lookKey(String look) { return "look_" + Look.of(look); }
+
+    /** two cards side by side, «الجديد» first (on the right: an Arabic row's start), each its picture and its name; OK
+     *  saves it and goes on (look-only: back to the home screen) */
+    private void stepLook() {
+        title.setText("شكل الواجهة");
+        subtitle.setText(lookOnly ? "للشاشة الرئيسية وشاشة التوقف، ويمكنك تغييره لاحقًا من الإعدادات"
+            : "للشاشة الرئيسية وشاشة التوقف");
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.addView(row, new LinearLayout.LayoutParams(-1, -2));
+        for (int i = Look.LOOKS.length - 1; i >= 0; i--) {   // Look.LOOKS is «الكلاسيكي», «الجديد»: «الجديد» first here
+            final String look = Look.LOOKS[i][0];
+            LinearLayout c = new LinearLayout(this);
+            c.setTag(lookKey(look));
+            c.setOrientation(LinearLayout.VERTICAL);
+            c.setGravity(Gravity.CENTER_HORIZONTAL);
+            c.setPadding(dp(12), dp(12), dp(12), dp(10));
+            c.setFocusable(true);
+            c.setClickable(true);
+            final GradientDrawable bg = new GradientDrawable();
+            bg.setCornerRadius(dp(14));
+            focusLook(bg, false);
+            c.setBackground(bg);
+            c.setOnFocusChangeListener((v, has) -> focusLook(bg, has));
+            c.addView(new LookPreview(this, look, LOOK_W_DP));
+            TextView name = text(Look.LOOKS[i][1], 19, TEXT, "Thmanyah-Medium");
+            name.setGravity(Gravity.CENTER);
+            name.setPadding(0, dp(8), 0, 0);
+            c.addView(name, new LinearLayout.LayoutParams(-1, -2));
+            c.setOnClickListener(v -> {
+                prefs.setLook(look);   // chosen (lookChosen), as in the settings
+                if (lookOnly) finishLook();
+                else { pickers.changed(); go(step + 1); }
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
+            if (i < Look.LOOKS.length - 1) lp.setMarginStart(dp(24));
+            row.addView(c, lp);
+        }
+    }
 
     private boolean detecting() { return prefs.raw().getBoolean(PlaceDetect.PENDING, false); }
 
@@ -260,7 +337,7 @@ public class SetupActivity extends Activity {
 
     private void stepCards() {
         title.setText("ماذا تعرض شاشة التوقف؟");
-        subtitle.setText("بجانب الساعة، تتناوب البطاقات المختارة");
+        subtitle.setText("على شاشة التوقف، تتناوب البطاقات المختارة");
         final List<String> order = new ArrayList<>();
         for (String s : prefs.panel().split(",")) {
             s = s.trim();

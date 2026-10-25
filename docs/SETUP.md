@@ -269,7 +269,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 ### 10. The tools
 | | |
 |---|---|
-| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `autoupdate`, `lowpower`, `update`, `app-check`, `radio`, `radio-station`, `radio-volume`, `radio-when`, `radio-stations`, `radio-test`, `radio-hold`, `tape` |
+| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `autoupdate`, `fps` (`lowpower`), `update`, `app-check`, `radio`, `radio-station`, `radio-volume`, `radio-when`, `radio-stations`, `radio-test`, `radio-hold`, `tape` |
 | `optimize/dock.sh` | the favourites row: `show`, `apps`, `set`, `reset` |
 | `optimize/check-home.sh` | opens an app, presses Home, says whether our home screen came back |
 | `optimize/start-saver.sh` · `shot.sh` | start the screensaver now · screenshots without navigating |
@@ -300,7 +300,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
   `optimize/saver.sh tape gold,btc,cur` (`auto` for the country's own list).
 - **A mouse** works on the home screen, its pages and the settings: hover moves the focus, a click is OK, the wheel is
   ▲▼, the right button is Back; the pointer hides after 3 s still, and never shows over the screensaver.
-- **The athan** (settings > «الأذان»; on by default, every prayer the full athan): each prayer's alert («الأذان كاملاً»,
+- **The athan** (settings > «الأذان»; on by default, every prayer a short alert, a reminder 5 minutes before): each prayer's alert («الأذان كاملاً»,
   «تنبيه قصير» or «بدون»), the voice and the Fajr voice (bundled recordings, `assets/athan/CREDITS.txt`, or «صوت من عندي»:
   a file or an address, copied into the app's own storage on that TV), its volume, a dua after it, a reminder before it,
   «تجربة الأذان». The screensaver app keeps one exact alarm for the next one (AthanScheduler) at the times the page

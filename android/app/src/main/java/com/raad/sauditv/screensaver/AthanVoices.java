@@ -7,7 +7,8 @@ package com.raad.sauditv.screensaver;
  *
  * The Fajr default is a regular athan: the one Fajr recording with a clean licence (Malmö, 2012) could not be confirmed
  * to contain «الصلاة خير من النوم» (its 12 phrases are the count of a regular athan), so it is offered for Fajr only,
- * never as the default; FAJR_DEFAULT is the line to change once someone has listened to it.
+ * never as the default; FAJR_DEFAULT is the line to change once someone has listened to it. The Maldives recording
+ * (its uploader says it is the Fajr call) is Fajr-only the same way and has not been listened to either.
  *
  * Plain Java (no android.*): tests/java_test.py compiles it without Android.
  */
@@ -38,6 +39,23 @@ final class AthanVoices {
             "Eid al-Fitr Fajr azan at Malmö Mosque, 19 August 2012", "Islamic Center Malmö", "CC BY 3.0",
             "https://creativecommons.org/licenses/by/3.0/",
             "https://commons.wikimedia.org/wiki/File:Eid_al-Fitr_Fajr_azan_at_Malm%C3%B6_Mosque_-_19_August_2012.webm"),
+        new Voice("abudhabi1", "أذان من أبوظبي ١", "athan/athan-abudhabi-evening.ogg", false,
+            "muezzin_abends_medicalcenter.flac", "nikitralala", "CC0 1.0", CC0,
+            "https://freesound.org/people/nikitralala/sounds/331518/"),
+        new Voice("abudhabi2", "أذان من أبوظبي ٢", "athan/athan-abudhabi-noon.ogg", false,
+            "AbuDhabi_12_muezzin.flac", "nikitralala", "CC0 1.0", CC0,
+            "https://freesound.org/people/nikitralala/sounds/331438/"),
+        new Voice("maldives", "أذان فجر من جزر المالديف", "athan/athan-maldives-fajr.ogg", true,
+            "Morning call to prayer on Bodufolhudhoo, Maldives", "jrosin", "CC BY 4.0",
+            "https://creativecommons.org/licenses/by/4.0/",
+            "https://freesound.org/people/jrosin/sounds/861625/"),
+        new Voice("alain", "أذان من العين", "athan/athan-alain.ogg", false,
+            "Muezzin in Al Ain, United Arab Emirates with birds", "Agim", "CC0 1.0", CC0,
+            "https://freesound.org/people/Agim/sounds/417865/"),
+        new Voice("makkah", "أذان من المسجد الحرام", "athan/athan-makkah.ogg", false,
+            "Maghrib Adhan at the Masjid al Haram, Mecca, 25 Feb 2012", "3omar Faruq", "CC BY 3.0",
+            "https://creativecommons.org/licenses/by/3.0/",
+            "https://commons.wikimedia.org/wiki/File:Maghrib_Adhan_at_the_Masjid_al_Haram,_Mecca_-_25_Feb,_2012.webm"),
     };
 
     static final String DEFAULT = "wikimedia";

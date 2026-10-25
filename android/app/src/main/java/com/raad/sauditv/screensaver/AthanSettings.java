@@ -5,10 +5,15 @@ import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
+import android.media.AudioAttributes;
 import android.media.MediaMetadataRetriever;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.provider.Settings;
 import android.text.InputType;
@@ -58,8 +63,8 @@ final class AthanSettings {
                 : "لا توجد صفحة لهذا الإذن في التلفاز: قد يتأخر الأذان دقائق · اضغط لطريقة السماح", R.drawable.ic_sync, this::askExact);
         a.row("الأذان", onLabel(), R.drawable.ic_volume, () -> { prefs.setOn(!prefs.on()); a.render(); });
         a.row("الصلوات", modesLabel(), R.drawable.ic_screensaver, this::pickPrayers);
-        a.row("صوت المؤذن", voiceLabel(false), R.drawable.ic_radio, () -> pickVoice(false));
-        a.row("صوت أذان الفجر", voiceLabel(true), R.drawable.ic_radio, () -> pickVoice(true));
+        a.row("صوت المؤذن", voiceLabel(false) + " · اختر صوتًا لتسمعه", R.drawable.ic_radio, () -> pickVoice(false));
+        a.row("صوت أذان الفجر", voiceLabel(true) + " · اختر صوتًا لتسمعه", R.drawable.ic_radio, () -> pickVoice(true));
         a.row("مستوى صوت الأذان", a.num(prefs.volume()) + Prefs.percent(a), R.drawable.ic_volume, this::pickVolume);
         a.row("دعاء بعد الأذان", prefs.dua() ? "يظهر على الشاشة بعد الأذان" : "متوقف", R.drawable.ic_star,
             () -> { prefs.setDua(!prefs.dua()); a.render(); });
@@ -144,7 +149,8 @@ final class AthanSettings {
             }).show();
     }
 
-    /** the bundled voices (the Fajr list with the Fajr-only ones), then «صوت من عندي…» */
+    /** the bundled voices (the Fajr list with the Fajr-only ones), then «صوت من عندي…». A bundled one picked is kept and
+     *  heard at once (playPreview), the list staying open to try another; «تم», Back or any close stops it. */
     private void pickVoice(final boolean fajr) {
         final List<AthanVoices.Voice> voices = AthanVoices.offered(fajr);
         String[] labels = new String[voices.size() + 1];
@@ -156,12 +162,82 @@ final class AthanSettings {
         }
         labels[voices.size()] = "صوت من عندي…";
         if (AthanVoices.CUSTOM.equals(cur)) sel = voices.size();
-        pickers.dialog().setTitle(fajr ? "صوت أذان الفجر" : "صوت المؤذن")
-            .setSingleChoiceItems(labels, sel, (d, i) -> {
-                d.dismiss();
-                if (i < voices.size()) { prefs.setVoice(fajr, voices.get(i).id); a.render(); }
-                else pickCustom(fajr);
-            }).show();
+        final boolean[] picked = {false};
+        AlertDialog d = pickers.dialog().setTitle(fajr ? "صوت أذان الفجر" : "صوت المؤذن")
+            .setSingleChoiceItems(labels, sel, (x, i) -> {
+                if (i < voices.size()) {
+                    prefs.setVoice(fajr, voices.get(i).id);
+                    picked[0] = true;
+                    playPreview(voices.get(i));
+                } else { x.dismiss(); pickCustom(fajr); }
+            })
+            .setPositiveButton("تم", null)
+            .create();
+        d.setOnDismissListener(x -> {
+            stopPreview();
+            if (picked[0]) a.render();   // the row's new voice
+        });
+        d.show();
+    }
+
+    // ---------------------------------------------------------------- the voice's preview
+
+    /** a preview plays this long at most */
+    private static final long PREVIEW_MS = 20000;
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private final Runnable previewCap = this::stopPreview;
+    private MediaPlayer preview;
+    private boolean previewHeld;   // «إذاعة القرآن الكريم» held for it (RadioService.hold, the athan's hook)
+
+    /** a bundled voice now, from its asset as AthanService plays it, at the athan's volume (the previous one stopped) */
+    private void playPreview(AthanVoices.Voice v) {
+        stopPlayer();
+        if (!previewHeld && !AthanService.playing()
+                && ("playing".equals(RadioService.state()) || "loading".equals(RadioService.state()))) {
+            RadioService.hold(a, true);
+            previewHeld = true;
+        }
+        MediaPlayer mp = new MediaPlayer();
+        preview = mp;
+        try {
+            mp.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
+            try (AssetFileDescriptor fd = a.getAssets().openFd(v.file)) {
+                mp.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
+            }
+            mp.setOnPreparedListener(p -> {
+                if (p != preview) return;
+                float g = RadioStations.gain(prefs.volume());
+                p.setVolume(g, g);
+                p.start();
+                main.postDelayed(previewCap, PREVIEW_MS);
+            });
+            mp.setOnCompletionListener(p -> { if (p == preview) stopPreview(); });
+            mp.setOnErrorListener((p, what, extra) -> { if (p == preview) stopPreview(); return true; });
+            mp.prepareAsync();
+        } catch (Exception x) {
+            android.util.Log.w(AthanScheduler.TAG, "preview: " + x);
+            stopPreview();
+        }
+    }
+
+    /** the preview's player stopped and released (the radio still held) */
+    private void stopPlayer() {
+        main.removeCallbacks(previewCap);
+        MediaPlayer p = preview;
+        preview = null;
+        if (p == null) return;
+        try { p.stop(); } catch (IllegalStateException ignored) { }
+        p.release();
+    }
+
+    /** the preview's end (its time, the list closed, the settings left: SettingsActivity.onPause); the radio let go */
+    void stopPreview() {
+        stopPlayer();
+        if (previewHeld) {
+            previewHeld = false;
+            if (!AthanService.playing()) RadioService.hold(a, false);   // an athan come meanwhile keeps its own hold
+        }
     }
 
     /** «صوت من عندي»: the one kept here, a file on the TV, or an address */

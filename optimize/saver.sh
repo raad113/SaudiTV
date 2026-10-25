@@ -19,10 +19,16 @@
 #   optimize/saver.sh clubs eng.1                  an ESPN league's clubs (or fifa.friendly: the national teams), as
 #                                                  E<id>@<league>:Name for teams
 #   optimize/saver.sh teams 136013:Al-Hilal E359@eng.1:Arsenal    followed teams in order (up to 10)
-#   optimize/saver.sh card prayers,forecast,news   beside the clock: one, or several that rotate every 30 s, of
+#   optimize/saver.sh card prayers,forecast,news   «بطاقات شاشة التوقف»: one, or several that take turns (rotate), of
 #                                                  prayers verse hadith forecast matches standings news local world tech;
 #                                                  or none (verse: the Quran; hadith: Sahih al-Bukhari)
-#   optimize/saver.sh home-card prayers,news       the home screen's card: the same choices
+#   optimize/saver.sh home-card prayers,news       the home screen's card: the same choices («الجديد»: its «اليوم» row,
+#                                                  in that order, the news pages one card; none: its own four)
+#   optimize/saver.sh rotate 10|15|20|30|60        «مدة كل بطاقة»: each card's seconds (15 by default), the screensaver's
+#                                                  and the home screen's, both looks
+#   optimize/saver.sh facts prayer,weather,hijri   «سطور شاشة التوقف», «الجديد»'s screensaver lines bottom left: up to 4,
+#                                                  in order, of prayer match weather ramadan hijri (the Hijri date); ""
+#                                                  = the default prayer,match,weather,ramadan
 #   optimize/saver.sh numerals 0-9|arabic          «شكل الأرقام»: 0 1 2 3 (the default) or ٠ ١ ٢ ٣, everywhere
 #   optimize/saver.sh tiles rounded|circle         «شكل التطبيقات», the home screen's apps: banners with rounded
 #                                                  corners (the default) or round icons with their names
@@ -33,7 +39,8 @@
 #   optimize/saver.sh sources world skynews,bbc    a news page's sources (news tech local world), read together; ""
 #                                                  = its defaults. The ids: optimize/saver.sh show (sources_…)
 #   optimize/saver.sh autoupdate on|off            the page's auto-update from github.com/raad113/SaudiTV (on by default)
-#   optimize/saver.sh lowpower on|off              «توفير الطاقة»: the ticker tape at 30 frames a second, not 60 (off by default)
+#   optimize/saver.sh fps 30|60                    «معدل الإطارات»: the ticker tape at 30 frames a second (the default,
+#                                                  lighter) or 60 (smoother); lowpower on|off is the same, as 30|60
 #   optimize/saver.sh photos ours,bing             «مصادر الصور», the background photos, shown in turn: ours (the repo's)
 #                                                  bing (Bing's photo of the day) world (Commons' picture of the day);
 #                                                  "" = ours. saudi (places of Saudi Arabia, Wikimedia Commons) is off
@@ -113,12 +120,22 @@ case "${1:-}" in
     send SET "--es teams $(quote "$(IFS=,; echo "$*")")" ;;
   card)      send SET "--es panel $(quote "${2:?usage: optimize/saver.sh card prayers}")" ;;
   home-card) send SET "--es home_panel $(quote "${2:?usage: optimize/saver.sh home-card none}")" ;;
+  rotate)
+    case "${2:-}" in 10|15|20|30|60) ;; *) echo "usage: optimize/saver.sh rotate 10|15|20|30|60 (seconds)"; exit 1 ;; esac
+    send SET "--es rotate $2" ;;
+  facts)
+    [ $# -ge 2 ] || { echo "usage: optimize/saver.sh facts prayer,match,weather,ramadan,hijri (up to 4; \"\" = the default)"; exit 1; }
+    case ",$2," in *[!a-z,]*) echo "usage: optimize/saver.sh facts prayer,match,weather,ramadan,hijri (up to 4; \"\" = the default)"; exit 1 ;; esac
+    send SET "--es facts $(quote "$2")" ;;
   autoupdate)
     case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh autoupdate on|off"; exit 1 ;; esac
     send SET "--es autoupdate $v" ;;
-  lowpower)
-    case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh lowpower on|off"; exit 1 ;; esac
-    send SET "--es lowpower $v" ;;
+  fps)
+    case "${2:-}" in 30|60) v=$2 ;; *) echo "usage: optimize/saver.sh fps 30|60"; exit 1 ;; esac
+    send SET "--es fps $v" ;;
+  lowpower)   # the older «توفير الطاقة»: on = fps 30, off = fps 60
+    case "${2:-}" in on|true) v=30 ;; off|false) v=60 ;; *) echo "usage: optimize/saver.sh fps 30|60 (or lowpower on|off)"; exit 1 ;; esac
+    send SET "--es fps $v" ;;
   photos)
     [ $# -ge 2 ] || { echo "usage: optimize/saver.sh photos ours,bing,world (\"\" = the defaults: ours)"; exit 1; }
     case ",$2," in *[!a-z,]*) echo "usage: optimize/saver.sh photos ours,bing,world (\"\" = the defaults: ours)"; exit 1 ;; esac
@@ -181,5 +198,5 @@ case "${1:-}" in
       *) echo "usage: optimize/saver.sh athan-test fajr|dhuhr|asr|maghrib|isha [full|short|reminder]"; exit 1 ;;
     esac ;;
   athan-show) send ATHAN_SHOW ;;
-  *) sed -n '2,67p' "$0"; exit 1 ;;
+  *) sed -n '2,75p' "$0"; exit 1 ;;
 esac

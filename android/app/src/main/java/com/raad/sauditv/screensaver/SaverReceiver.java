@@ -23,12 +23,16 @@ import java.util.List;
  *       [--es league auto|ksa.1|eng.1|tsdb.4829…] [--es news_country auto|SA|EG…]
  *       [--es teams '136013:Al-Hilal,E929@ksa.1:Al Hilal,138995@tsdb.4829:Al Ahly']
  *       [--es panel prayers | prayers,forecast,news,local,world,verse,hadith] [--es home_panel none]
- *       [--es autoupdate true|false] [--es numerals latn|arab] [--es lowpower true|false]   («توفير الطاقة»)
+ *       [--es autoupdate true|false] [--es numerals latn|arab] [--es fps 30|60]   («معدل الإطارات»; the older
+ *       --es lowpower true|false is read as fps 30|60)
  *       [--es src_news aawsat,okaz] [--es src_tech …] [--es src_local …] [--es src_world …]   ("" = the page's defaults)
  *       [--es photos ours,bing,world]   («مصادر الصور», Prefs.PHOTO_SOURCES; "" = the defaults: ours; saudi is read
  *       as ours while Prefs.SAUDI_PHOTOS is off, else saudi,ours by default)
  *       [--es tile_shape rounded|circle] [--es focus_style google|apple]   (the home screen's app tiles)
  *       [--es look classic|new]   («شكل الواجهة»: the home screen and the screensaver, Look)
+ *       [--es rotate 10|15|20|30|60]   («مدة كل بطاقة»: each card's seconds, both looks, the screensaver and the home screen)
+ *       [--es facts prayer,match,weather,ramadan,hijri]   («سطور شاشة التوقف», «الجديد»'s screensaver: up to 4 in order;
+ *       "" = the default prayer,match,weather,ramadan; SaverOptions)
  *       [--es radio on|off] [--es radio_station saudi|cairo|63|https://…] [--es radio_volume 10…100]
  *       [--es radio_when both|saver|home]
  *       («إذاعة القرآن الكريم»: RadioService; a station id from RADIO_STATIONS, or any http(s) address; RadioWhen)
@@ -275,8 +279,12 @@ public class SaverReceiver extends BroadcastReceiver {
         }
         String auto = i.getStringExtra("autoupdate");
         if (auto != null && !auto.equals("true") && !auto.equals("false")) return "error: autoupdate is true or false";
-        String lowPower = i.getStringExtra("lowpower");   // «توفير الطاقة»
+        String fpsRaw = i.getStringExtra("fps");   // «معدل الإطارات»
+        if (fpsRaw != null && !fpsRaw.trim().equals("30") && !fpsRaw.trim().equals("60")) return "error: fps is 30 or 60";
+        String lowPower = i.getStringExtra("lowpower");   // the older «توفير الطاقة»: true = 30, false = 60
         if (lowPower != null && !lowPower.equals("true") && !lowPower.equals("false")) return "error: lowpower is true or false";
+        final int fps = fpsRaw != null ? Integer.parseInt(fpsRaw.trim())
+            : lowPower == null ? 0 : lowPower.equals("true") ? Prefs.FPS_LOW : Prefs.FPS_HIGH;
         String photosRaw = i.getStringExtra("photos");   // «مصادر الصور»
         List<String> photos = null;
         if (photosRaw != null) {
@@ -296,6 +304,13 @@ public class SaverReceiver extends BroadcastReceiver {
         if (focus != null && !known(Prefs.FOCUS_STYLES, focus)) return "error: focus_style is " + names(Prefs.FOCUS_STYLES);
         String lookRaw = i.getStringExtra("look"), look = Look.parse(lookRaw);   // «شكل الواجهة»
         if (lookRaw != null && look == null) return "error: look is " + names(Look.LOOKS);
+        String factsRaw = i.getStringExtra("facts");   // «سطور شاشة التوقف» («الجديد»'s screensaver)
+        List<String> facts = factsRaw == null ? null : SaverOptions.parseFacts(factsRaw);
+        if (factsRaw != null && facts == null)
+            return "error: facts is up to " + SaverOptions.MAX_FACTS + " comma-separated, in order, of " + names(SaverOptions.FACTS) + " (\"\" = the default)";
+        String rotateRaw = i.getStringExtra("rotate");   // «مدة كل بطاقة»
+        int rotate = rotateRaw == null ? -1 : SaverOptions.parseRotate(rotateRaw);
+        if (rotateRaw != null && rotate < 0) return "error: rotate is " + rotateNames() + " (seconds)";
         java.util.Map<String, List<String>> sources = new java.util.LinkedHashMap<>();
         for (String page : Prefs.NEWS_PAGES) {
             String raw = i.getStringExtra("src_" + page);
@@ -365,12 +380,14 @@ public class SaverReceiver extends BroadcastReceiver {
         if (panel != null) p.setPanel(panel);
         if (home != null) p.setHomePanel(home);
         if (auto != null) p.setAutoUpdate(Boolean.parseBoolean(auto));
-        if (lowPower != null) p.setLowPower(Boolean.parseBoolean(lowPower));
+        if (fps != 0) p.setFps(fps);
         if (photos != null) p.setPhotoSources(photos);
         if (numerals != null) p.setNumerals(numerals);
         if (shape != null) p.setTileShape(shape);
         if (focus != null) p.setFocusStyle(focus);
         if (look != null) p.setLook(look);
+        if (facts != null) p.setSaverFacts(facts);
+        if (rotate > 0) p.setRotateSec(rotate);
         for (java.util.Map.Entry<String, List<String>> e : sources.entrySet()) p.setSources(e.getKey(), e.getValue());
         if (station != null) p.setRadioStation(station[0], station[1], station[2]);
         if (volume > 0) p.setRadioVolume(volume);
@@ -397,11 +414,13 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\nteams: " + Prefs.join(p.teams(), ", ")
             + "\npanel: " + p.panel() + "\nhome_panel: " + p.homePanel()
             + "\nautoupdate: " + p.autoUpdate()
-            + "\nlowpower: " + (p.lowPower() ? "on" : "off")
+            + "\nfps: " + p.fps()
             + "\nphotos: " + Prefs.join(p.photoSources(), ",")
             + "\nnumerals: " + p.numerals()
             + "\ntile_shape: " + p.tileShape() + "\nfocus_style: " + p.focusStyle()
             + "\nlook: " + p.look() + " (" + Look.label(p.look()) + ")"
+            + "\nrotate: " + p.rotateSec()
+            + "\nfacts: " + Prefs.join(p.saverFacts(), ",") + (p.raw().contains("saverFacts") ? "" : " (default)")
             + "\nradio: " + (p.radioOn() ? "on" : "off")
             + "\nradio_station: " + p.radioStation() + " " + p.radioName()
                 + (RadioStations.CUSTOM.equals(p.radioStation()) ? " " + p.radioUrl() : "")
@@ -411,6 +430,13 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\ntape: " + (p.tapeAuto() ? "auto (" + Prefs.join(p.tapeShown(), ",") + ")" : Prefs.join(p.tape(), ","))
             + AthanAdb.describe(c)   // athan, athan_next, athan_screen_over_apps, athan_exact_alarms
             + sourcesLine(p);
+    }
+
+    /** "10|15|20|30|60" */
+    private static String rotateNames() {
+        StringBuilder b = new StringBuilder();
+        for (int s : SaverOptions.ROTATE_SECS) b.append(b.length() > 0 ? "|" : "").append(s);
+        return b.toString();
     }
 
     private static boolean known(String[][] table, String v) {

@@ -60,8 +60,10 @@ with tempfile.TemporaryDirectory() as tmp:
         (("radio-when", "home"), AM + "SET --es radio_when home"),
         (("tape", "gold,btc,cur"), AM + "SET --es tape 'gold,btc,cur'"),
         (("tape", "auto"), AM + "SET --es tape 'auto'"),
-        (("lowpower", "on"), AM + "SET --es lowpower true"),
-        (("lowpower", "off"), AM + "SET --es lowpower false"),
+        (("fps", "30"), AM + "SET --es fps 30"),
+        (("fps", "60"), AM + "SET --es fps 60"),
+        (("lowpower", "on"), AM + "SET --es fps 30"),
+        (("lowpower", "off"), AM + "SET --es fps 60"),
         (("photos", "saudi,ours,bing"), AM + "SET --es photos 'saudi,ours,bing'"),
         (("photos", "world"), AM + "SET --es photos 'world'"),
         (("photos", ""), AM + "SET --es photos ''"),
@@ -74,26 +76,36 @@ with tempfile.TemporaryDirectory() as tmp:
         (("look", "new"), AM + "SET --es look new"),
         (("look", "classic"), AM + "SET --es look classic"),
         (("look", "الجديد"), AM + "SET --es look new"),
+        (("rotate", "15"), AM + "SET --es rotate 15"),
+        (("rotate", "60"), AM + "SET --es rotate 60"),
+        (("facts", "prayer,weather,hijri"), AM + "SET --es facts 'prayer,weather,hijri'"),
+        (("facts", ""), AM + "SET --es facts ''"),
     ]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: sends «{want[len(AM):]}»", code == 0 and out == want, (code, out))
     for args in [("radio",), ("radio", "maybe"), ("radio-volume", "5"), ("radio-volume", "101"), ("radio-volume", "loud"),
                  ("radio-volume",), ("radio-station",), ("radio-hold", "x"), ("radio-when",), ("radio-when", "always"),
-                 ("tape",), ("lowpower",), ("lowpower", "maybe"), ("photos",), ("photos", "saudi;rm -rf"), ("athan",), ("athan", "maybe"), ("athan-test",),
-                 ("athan-test", "noon"), ("athan-test", "asr", "loud"), ("look",), ("look", "modern"), ("look", "new;rm")]:
+                 ("tape",), ("lowpower",), ("lowpower", "maybe"), ("fps",), ("fps", "45"), ("fps", "30;rm"), ("photos",), ("photos", "saudi;rm -rf"), ("athan",), ("athan", "maybe"), ("athan-test",),
+                 ("athan-test", "noon"), ("athan-test", "asr", "loud"), ("look",), ("look", "modern"), ("look", "new;rm"),
+                 ("rotate",), ("rotate", "45"), ("rotate", "15;rm"), ("facts",), ("facts", "hijri;rm -rf")]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: refused, nothing sent", code != 0 and "am broadcast" not in out, (code, out))
     code, out = saver("help")
     check("saver.sh usage lists the radio commands and the ticker's", code != 0 and all(c in out for c in (
         "radio on|off", "radio-station", "radio-volume", "radio-stations", "radio-test", "radio-hold", "radio-when both|saver|home",
         "tape auto|")), out[-900:])
-    check("saver.sh usage lists lowpower («توفير الطاقة»)", "optimize/saver.sh lowpower on|off" in saver("help")[1], "")
+    check("saver.sh usage lists fps («معدل الإطارات», lowpower its alias)",
+          "optimize/saver.sh fps 30|60" in saver("help")[1] and "lowpower on|off" in saver("help")[1], "")
     check("saver.sh usage lists look («شكل الواجهة»: classic, new) and still ends with the athan's (the whole header)",
           "optimize/saver.sh look classic|new" in saver("help")[1] and "optimize/saver.sh athan-show" in saver("help")[1], "")
     check("saver.sh usage lists photos («مصادر الصور»: ours bing world; saudi off for now, read as ours)",
           "optimize/saver.sh photos ours,bing" in saver("help")[1]
           and all(w in saver("help")[1] for w in ("saudi (", "ours (", "bing (", "world (", '"" = ours', "read as ours")), "")
     usage = saver("help")[1]
+    check("saver.sh usage lists rotate («مدة كل بطاقة») and facts («سطور شاشة التوقف»: its five ids, up to 4)",
+          "optimize/saver.sh rotate 10|15|20|30|60" in usage and "optimize/saver.sh facts prayer,weather,hijri" in usage
+          and all(w in usage for w in ("prayer match weather ramadan hijri", "up to 4", "«بطاقات شاشة التوقف»"))
+          and "rotate every 30 s" not in usage, usage[-1500:])
     check("saver.sh usage lists the athan's commands (athan on|off, athan-test, athan-show)",
           all(c in usage for c in ("optimize/saver.sh athan on|off", "optimize/saver.sh athan-test fajr|dhuhr|asr|maghrib|isha",
                                    "optimize/saver.sh athan-show")), usage[-900:])
@@ -131,6 +143,12 @@ rx = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/SaverReceiv
 check("SaverReceiver: takes look (classic|new, Look.parse, checked before saving) and shows it (look: …)",
       'getStringExtra("look")' in rx and "Look.parse(" in rx and rx.index('getStringExtra("look")') < rx.index("p.setLook(")
       and '"\\nlook: " + p.look()' in rx)
+check("SaverReceiver: takes rotate (SaverOptions.parseRotate: 10|15|20|30|60) and facts (SaverOptions.parseFacts), checked "
+      "before saving; shows rotate: and facts:",
+      'getStringExtra("rotate")' in rx and 'getStringExtra("facts")' in rx and "SaverOptions.parseRotate(" in rx
+      and "SaverOptions.parseFacts(" in rx and rx.index('getStringExtra("rotate")') < rx.index("p.setCountry(cc)") < rx.index("p.setRotateSec(")
+      and rx.index('getStringExtra("facts")') < rx.index("p.setCountry(cc)") < rx.index("p.setSaverFacts(")
+      and '"\\nrotate: " + p.rotateSec()' in rx and '"\\nfacts: " + Prefs.join(p.saverFacts(), ",")' in rx)
 man = (ROOT / "android/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
 check("SaverReceiver: takes radio, radio_station and radio_volume, and checks them before saving",
       all(f'getStringExtra("{k}")' in rx for k in ("radio", "radio_station", "radio_volume"))
@@ -154,9 +172,11 @@ check("Prefs: the settings' one radio choice is stored as radio on/off and radio
       re.search(r'void setRadioMode\(String m\) \{\s*sp\.edit\(\)\.putString\("radioWhen", RadioWhen\.modeWhen\(m, radioWhen\(\)\)\)'
                 r'\.putBoolean\("radioOn", RadioWhen\.modeOn\(m\)\)\.apply\(\);', prefs) is not None)
 check("SaverReceiver: show (GET) has setup_done", '"\\nsetup_done: " + p.setupDone()' in rx)
-check("SaverReceiver: takes lowpower (true|false, checked before saving) and shows it (lowpower: on|off)",
-      'getStringExtra("lowpower")' in rx and rx.index('getStringExtra("lowpower")') < rx.index("p.setLowPower(")
-      and '"\\nlowpower: " + (p.lowPower() ? "on" : "off")' in rx)
+check("SaverReceiver: takes fps (30|60) and lowpower (true|false, read as 30|60), checked before saving; shows fps: 30|60",
+      'getStringExtra("fps")' in rx and 'getStringExtra("lowpower")' in rx and '"error: fps is 30 or 60"' in rx
+      and rx.index('getStringExtra("fps")') < rx.index("p.setFps(fps)") and rx.index('getStringExtra("lowpower")') < rx.index("p.setFps(fps)")
+      and 'lowPower.equals("true") ? Prefs.FPS_LOW : Prefs.FPS_HIGH' in rx
+      and '"\\nfps: " + p.fps()' in rx and "lowpower: " not in rx.split("describe(Context c, Prefs p)")[1])
 check("SaverReceiver: takes photos (a list of Prefs.PHOTO_SOURCES, checked before saving) and shows it (photos: …)",
       'getStringExtra("photos")' in rx and "known(Prefs.PHOTO_SOURCES, s)" in rx
       and rx.index('getStringExtra("photos")') < rx.index("p.setCountry(cc)") < rx.index("p.setPhotoSources(photos)")
@@ -176,8 +196,10 @@ check("Prefs: reaches the page as &photos= once picked, and always while SAUDI_P
 check("SettingsActivity: the «مصادر الصور» checklist offers only Prefs.photoSourceOffered sources",
       "if (Prefs.photoSourceOffered(x[0])) offered.add(x);" in settings
       and "final String[][] all = offered.toArray(new String[0][]);" in settings)
-check("Prefs: «توفير الطاقة» is off by default and reaches the page as &lowpower=1",
-      'sp.getBoolean("lowPower", false)' in prefs and '(lowPower() ? "&lowpower=1" : "")' in prefs)
+check("Prefs: «معدل الإطارات» is 30 by default (an int fps, the older lowPower boolean not read); 30 reaches the page as &lowpower=1",
+      'sp.getInt("fps", FPS_LOW) == FPS_HIGH ? FPS_HIGH : FPS_LOW' in prefs and "FPS_LOW = 30, FPS_HIGH = 60" in prefs
+      and "boolean lowPower() { return fps() == FPS_LOW; }" in prefs and 'getBoolean("lowPower"' not in prefs
+      and '(lowPower() ? "&lowpower=1" : "")' in prefs)
 check("manifest: SetupActivity is there and exported (the home screen and saver.sh setup open it)",
       re.search(r'android:name="\.SetupActivity"\s+android:exported="true"', man) is not None)
 for a in ("ATHAN_TEST", "ATHAN_SHOW"):
@@ -229,6 +251,20 @@ check("RadioService: the athan's hook (PAUSE_FOR_ATHAN / RESUME_AFTER_ATHAN, hol
       'ACTION_PAUSE_FOR_ATHAN = "com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN"' in svc
       and 'ACTION_RESUME_AFTER_ATHAN = "com.raad.sauditv.screensaver.RESUME_AFTER_ATHAN"' in svc
       and "static void hold(Context c, boolean on)" in svc and "athan" in (ROOT / "docs/SETUP.md").read_text(encoding="utf-8"))
+athan_prefs = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/AthanPrefs.java").read_text(encoding="utf-8")
+check("athan defaults: every prayer a short alert, a reminder 5 min before («بدون» still in the list)",
+      "sp.getString(modeKey(prayer), AthanPlan.MODE_DEFAULT)" in athan_prefs and "sp.getInt(REMINDER, AthanPlan.REMINDER_DEFAULT)" in athan_prefs)
+pick = ui[ui.index("private void pickVoice("):ui.index("private void pickCustom(")]
+check("settings: a bundled voice picked is kept and heard at once, the list staying open («تم» closes); any close stops "
+      "the preview; «صوت من عندي…» still closes it for its own list",
+      "prefs.setVoice(fajr, voices.get(i).id);" in pick and "playPreview(voices.get(i));" in pick
+      and '.setPositiveButton("تم", null)' in pick and "d.setOnDismissListener(x -> {" in pick and "stopPreview();" in pick
+      and "x.dismiss(); pickCustom(fajr);" in pick and "اختر صوتًا لتسمعه" in render)
+check("settings: the preview from the voice's asset at the athan's volume, 20 s at most, always released; the radio held "
+      "(the athan's hook) only while it plays, and stopped when the settings are left",
+      "a.getAssets().openFd(v.file)" in pick and "RadioStations.gain(prefs.volume())" in pick and "PREVIEW_MS = 20000" in pick
+      and "p.release();" in pick and "RadioService.hold(a, true);" in pick and "RadioService.hold(a, false);" in pick
+      and "athan.stopPreview();" in (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/SettingsActivity.java").read_text(encoding="utf-8"))
 
 print()
 print(f"{len(failures)} failed" if failures else "all saver.sh tests passed")

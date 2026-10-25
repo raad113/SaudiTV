@@ -185,14 +185,35 @@ check("settings: the place and «إضافة فريق» pickers are shared with t
 check("settings: «معالج الإعداد» opens the setup; a new install's settings open it first",
       'row("معالج الإعداد"' in settings_src and "SetupActivity.class" in settings_src
       and re.search(r"if \(!prefs\.setupDone\(\)[^\n]*\{\s*startActivity\(new Intent\(this, SetupActivity\.class\)\);", settings_src))
-check("setup: four steps (city, cards, radio, team), the screensaver cards' pref, the radio's one choice, the teams' pref",
-      "STEPS = 4" in setup_src and all(t in setup_src for t in ('"مدينتك"', '"ماذا تعرض شاشة التوقف؟"', '"إذاعة القرآن الكريم"', '"فريقك المفضل"'))
+check("setup: five steps (look, city, cards, radio, team), the screensaver cards' pref, the radio's one choice, the teams' pref",
+      "STEPS = 5" in setup_src and all(t in setup_src for t in ('"شكل الواجهة"', '"مدينتك"', '"ماذا تعرض شاشة التوقف؟"', '"إذاعة القرآن الكريم"', '"فريقك المفضل"'))
       and "prefs.setPanel(" in setup_src and "prefs.setRadioMode(" in setup_src and 'prefs.setList("teams"' in setup_src
       and "يبقى عنصر واحد على الأقل" in setup_src)
 check("setup: finishing or skipping sets setupDone; Mouse attached as in the settings",
       setup_src.count("prefs.setSetupDone(true)") >= 2 and "Mouse.attach(this, true)" in setup_src
       and "mouse.generic(e)" in setup_src and "mouse.touch(e)" in setup_src)
 prefs_src = (SAVER_SRC / "Prefs.java").read_text(encoding="utf-8")
+# ---- the screensaver section: «شاشة التوقف» (was «بجانب الساعة»), «البطاقات» (was «المحتوى»), «مدة كل بطاقة» and,
+# in «الجديد» only, «سطور شاشة التوقف» (at most four: «أربعة على الأكثر»)
+saver_sec = settings_src[settings_src.index('header("شاشة التوقف");'):settings_src.index('header("الشاشة الرئيسية (سعودي TV)");')]
+check("settings: the screensaver section is «شاشة التوقف» with «البطاقات», «مدة كل بطاقة» and («الجديد» only) «سطور شاشة التوقف»",
+      'row("البطاقات", prefs.panelTitle(prefs.panel())' in saver_sec and 'row("مدة كل بطاقة", rotateLabel(prefs.rotateSec())' in saver_sec
+      and re.search(r'if \(Look\.NEW\.equals\(prefs\.look\(\)\)\)\s*row\("سطور شاشة التوقف"', saver_sec) is not None
+      and 'header("بجانب الساعة")' not in settings_src and 'row("المحتوى"' not in settings_src
+      and '"بطاقات شاشة التوقف") + " (تتناوب بترتيب الأرقام)"' in settings_src and '"بجانب الساعة")' not in settings_src)
+check("settings: «سطور شاشة التوقف» is the ordered picker with at most SaverOptions.MAX_FACTS («أربعة على الأكثر»); «مدة كل بطاقة» "
+      "offers SaverOptions.ROTATE_SECS as «١٥ ثانية» (the chosen digits)",
+      "SaverOptions::factLabel, true, SaverOptions.MAX_FACTS," in settings_src and '"أربعة على الأكثر"' in settings_src
+      and "order.size() >= max" in settings_src and "final int[] values = SaverOptions.ROTATE_SECS;" in settings_src
+      and 'return num(sec) + " ثانية";' in settings_src)
+check("Prefs: «مدة كل بطاقة» an int rotateSec (15 by default) sent as &rotate= always; «سطور شاشة التوقف» a string saverFacts "
+      "sent as &facts= only when not the default; panelParams no longer fixes 30 s",
+      'sp.getInt("rotateSec", SaverOptions.DEFAULT_ROTATE)' in prefs_src and '+ "&rotate=" + rotateSec()' in prefs_src
+      and 'sp.getString("saverFacts", null)' in prefs_src and "+ SaverOptions.factsParam(saverFacts())" in prefs_src
+      and "&rotate=30" not in prefs_src and "DEFAULT_ROTATE = 15" in (SAVER_SRC / "SaverOptions.java").read_text(encoding="utf-8"))
+home_page = (ROOT / "android/launcher/src/main/java/com/raad/sauditv/home/HomePage.java").read_text(encoding="utf-8")
+check("launcher: the home card's seconds from the settings fragment (HomeLook.rotateSec), not a fixed 30",
+      "int sec = HomeLook.rotateSec(frag);" in home_page and '"&rotate=" + sec' in home_page and "&rotate=30" not in home_page)
 check("numerals: the «شكل الأرقام» labels and the updater's versions go through one LRI…PDI helper (Prefs.ltr), no LRO/RLM",
       'static String ltr(String s) { return s == null ? "" : "\u2066" + s + "\u2069"; }' in prefs_src
       and 'ltr("0 1 2 3")' in prefs_src and "‭" not in prefs_src and "‏" not in prefs_src
@@ -203,9 +224,18 @@ check("setup: Prefs.migrate writes setupDone once: an earlier read or saved sett
 cp_src = (SAVER_SRC / "ConfigProvider.java").read_text(encoding="utf-8")
 home_main = (ROOT / "android/launcher/src/main/java/com/raad/sauditv/home/MainActivity.java").read_text(encoding="utf-8")
 check("setup: ConfigProvider /setup answers done; the home screen opens SetupActivity once per start while it is 0",
-      '"/setup".equals(uri.getPath())' in cp_src and 'new String[] {"done"}' in cp_src
-      and "config/setup" in home_main and "if (!setupAsked) { setupAsked = true; openSetupIfNew(); }" in home_main
+      '"/setup".equals(uri.getPath())' in cp_src and 'new String[] {"done", "look_pending"}' in cp_src
+      and "config/setup" in home_main and "if (!setupAsked || !lookAsked) openSetupIfNew();" in home_main
+      and "HomeLook.ask(setupAsked ? -1 : done, look)" in home_main
       and 'SAVER_PKG + ".SetupActivity"' in home_main and "private static boolean setupAsked" in home_main)
+check("look chooser: ConfigProvider's look_pending is Prefs.lookPending (SetupState); the home screen opens the setup's "
+      "look step alone (lookOnly); a look set anywhere marks it chosen (Prefs.setLook), as finishing, skipping or Back",
+      "p.lookPending() ? 1 : 0" in cp_src and "SetupState.lookPending(setupDone(), lookChosen())" in prefs_src
+      and 'putExtra("lookOnly", true)' in home_main and 'LOOK_ONLY = "lookOnly"' in setup_src
+      and '.putBoolean(SetupState.LOOK_CHOSEN, true)' in prefs_src[prefs_src.index("void setLook("):prefs_src.index("void setLook(") + 200]
+      and "SetupState.LOOK_CHOSEN" not in mig
+      and setup_src.count("prefs.setLookChosen(true)") >= 3 and "if (lookOnly) finishLook();" in setup_src
+      and "new LookPreview(this, look, LOOK_W_DP)" in setup_src)
 block = re.search(r"const NEWS_SOURCES = \{(.*?)\n\};", tmpl, re.S).group(1)
 page_src = {}
 for m in re.finditer(r"\n  (\w+): \[(.*?)\n  \],", block, re.S):
@@ -325,9 +355,20 @@ tile_src = (SAVER_SRC / "TilePreview.java").read_text(encoding="utf-8")
 check("«شكل التحديد»: Apple TV's picture takes Google TV's room (same row height and spacing), a smaller shadow (SHADOW_FIT)",
       "static final float SHADOW_FIT = 0.4f;" in tile_src and "DESIGN_DP * density * k * SHADOW_FIT" in tile_src
       and "shadowPad * s" not in tile_src)
-check("«توفير الطاقة»: its own icon (a leaf, ic_eco), tinted as the other rows",
-      'row("توفير الطاقة", lowPowerLabel(), R.drawable.ic_eco' in settings_src
+check("«معدل الإطارات»: its own icon (a leaf, ic_eco), tinted as the other rows",
+      'row("معدل الإطارات", fpsLabel(prefs.fps()), R.drawable.ic_eco' in settings_src
       and (SAVER_SRC.parents[4] / "res/drawable/ic_eco.xml").is_file())
+check("«معدل الإطارات»: «٣٠ إطارًا في الثانية (أخف)» or «٦٠ … (أنعم)», a list of the two, saved and the home screen told",
+      'num(fps) + " إطارًا في الثانية " + (fps == Prefs.FPS_HIGH ? "(أنعم)" : "(أخف)")' in settings_src
+      and "final int[] values = {Prefs.FPS_LOW, Prefs.FPS_HIGH};" in settings_src
+      and "prefs.setFps(values[i]); d.dismiss(); changed(); render();" in settings_src
+      and 'row("توفير الطاقة"' not in settings_src and "setLowPower" not in settings_src)
+check("«تحديث التطبيق»: one row checks the apps' release and refreshes the page (Updater, quietly: one toast); "
+      "«تحقق من التحديث الآن» is gone, «التحديث التلقائي للصفحة» stays",
+      'updateRow = row("تحديث التطبيق", appUpdateLabel(), R.drawable.ic_sync, new Runnable() { public void run() { updateAllNow(); } });' in settings_src
+      and "Updater.check(app, true)" in settings_src.split("private void updateAllNow()")[1].split("appUpdateNow();")[0]
+      and 'row("تحقق من التحديث الآن"' not in settings_src and 'toast("جارٍ التحقق…")' not in settings_src
+      and 'row("التحديث التلقائي للصفحة"' in settings_src)
 
 # ---- what the apps cost the TV (measured on TV 1: optimize/run/perf): nothing of ours left running or held for nothing
 HOME_SRC = ROOT / "android/launcher/src/main/java/com/raad/sauditv/home"
@@ -392,9 +433,9 @@ check("perf: the screensaver app tells /radio of every change (RadioNotify: the 
 check("perf: the home page's «يُتلى الآن» is told (#radiopush=1, window.sauditvRadioChanged), not asked every 3 s",
       '"&radiopush=1"' in hp_src and "window.sauditvRadioChanged && window.sauditvRadioChanged()" in hp_src
       and "if(!CONFIG.radioPush) setInterval(tickRadio, 3000);" in tmpl and "window.sauditvRadioChanged = () => tickRadio();" in tmpl)
-check("perf: «توفير الطاقة» in the settings' «التطبيق» (off by default), the page's ticker in 30 steps a second (steps())",
-      'row("توفير الطاقة", lowPowerLabel()' in settings_src and "prefs.setLowPower(!prefs.lowPower()); changed(); render();" in settings_src
-      and settings_src.index('header("التطبيق")') < settings_src.index('row("توفير الطاقة"')
+check("perf: «معدل الإطارات» in the settings' «التطبيق» (30 by default), the page's ticker in 30 steps a second (steps())",
+      'row("معدل الإطارات", fpsLabel(prefs.fps())' in settings_src
+      and settings_src.index('header("التطبيق")') < settings_src.index('row("معدل الإطارات"')
       and "const TAPE_LOW_FPS = 30;" in tmpl and "easing: CONFIG.lowPower ? `steps(${Math.max(1, Math.round(w / TAPE_SPEED * TAPE_LOW_FPS))}, end)` : 'linear'" in tmpl
       and "lowPower: _Q.get('lowpower') === '1'" in tmpl)
 

@@ -538,6 +538,11 @@
   .nx-ch span{height:20px;line-height:18px;padding:0 7px;border-radius:10px;border:1px solid rgba(255,255,255,.16);font-size:11.5px;
     color:var(--i2);white-space:nowrap}
   .nx-ch .on{background:var(--g);color:var(--pi);border-color:transparent;font-weight:500}
+  .nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sm{transition:opacity .15s ease}
+  .nx-n.tx .nx-ch,.nx-n.tx .nx-nl,.nx-n.tx .nx-sm{opacity:0}
+  .nx-n.ti .nx-ch,.nx-n.ti .nx-nl,.nx-n.ti .nx-sm{animation:nxTabIn .15s ease both}
+  @keyframes nxTabIn{from{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sm{transition:none;animation:none}}
   .f .nx-ch span{color:var(--p2);border-color:rgba(28,22,15,.22)}
   .f .nx-ch .on{background:var(--pi);color:var(--pp);border-color:transparent}
   .nx-nl{list-style:none;margin-top:3px;min-width:0}
@@ -602,7 +607,12 @@
     background:linear-gradient(90deg,rgba(8,6,4,0),rgba(8,6,4,.5) 60px,rgba(8,6,4,.5) calc(100% - 60px),rgba(8,6,4,0));
     -webkit-mask-image:linear-gradient(rgba(0,0,0,0),#000 36px,#000 calc(100% - 36px),rgba(0,0,0,0))}
   #nx .week .hd{margin-bottom:6px;font-size:12.5px;letter-spacing:0;color:var(--g)}
-  #nx .week .hd::after,#nx .week .rot,#nx .week:has(.quote) .hd{display:none}
+  #nx .week .hd::after,#nx .week:has(.quote) .hd{display:none}
+  #nx .week .rot{margin-top:10px}
+  #nx .week .rot-ln{display:none}
+  #nx .week .rot-dots{justify-content:flex-start;gap:6px;height:6px;margin-top:0}
+  #nx .week .rot-dots b{display:block;width:6px;height:6px;background:rgba(255,255,255,.35)}
+  #nx .week .rot-dots b.on{width:6px;height:6px;background:var(--g)}
   #nx .week li{padding:4px 0;font-size:15px;border-bottom-color:rgba(255,255,255,.1)}
   #nx .week li span:first-child{font-size:15px}
   #nx .week li.quote{padding:0;font-size:17px;line-height:1.7;color:rgba(251,246,236,.9)}
@@ -631,6 +641,16 @@
   .nx-fx li:first-child{border-top:0}
   .nx-fx b{font-weight:500;overflow:hidden;text-overflow:ellipsis}
   .nx-fx li>span{font-size:13px;color:var(--i2)}
+  #nx .qr{display:flex;align-items:center;gap:6px;max-width:360px;margin:-4px 0 0;padding:0;border:0;border-radius:0;
+    background:none;box-shadow:none;font-size:14px;font-weight:500;line-height:1.4;color:var(--g)}
+  #nx .qr[hidden]{display:none}
+  #nx .qr svg{width:15px;height:15px;fill:none;stroke:currentColor}
+  #nx .qr.error{color:#FFA394}
+  #nx .qr bdi{font-weight:500}
+  #nx .nx-mr{display:flex;align-items:baseline;min-width:0;white-space:nowrap}
+  #nx .nx-mr:has(.qr:not([hidden])) #nx-mt{display:none}
+  #nx .nx-dk .qr{flex:0 1 auto;min-width:0;max-width:100%;margin:0;line-height:1.3}
+  html.qr-focus #nx .qr{background:var(--pp);color:var(--pi);border-radius:4px;box-shadow:0 0 0 4px var(--pp)}
   html.ss-swap #nx.s .week,html.ss-swap .nx-cv{right:auto;left:56px}
   html.ss-swap .nx-cv{align-items:flex-end}
   html.ss-swap #nx-pl,html.ss-swap .nx-fx{left:auto;right:56px}
@@ -855,7 +875,9 @@ function tickRadio(){
   el.hidden = !show;
   if(show){
     el.className = 'qr ' + st;
-    document.getElementById('qr-t').innerHTML = st === 'error' ? 'تعذّر تشغيل ' + esc(name) : 'يُتلى الآن: <b>' + esc(name) + '</b>';
+    document.getElementById('qr-t').innerHTML = NX   // «الجديد»: a quiet line under the clock or the standfirst (nxBoot)
+      ? (st === 'error' ? 'تعذّر تشغيل ' : 'يُتلى الآن · ') + '<bdi>' + esc(name) + '</bdi>'
+      : st === 'error' ? 'تعذّر تشغيل ' + esc(name) : 'يُتلى الآن: <b>' + esc(name) + '</b>';
   }
   QR_SEND();
 }
@@ -3444,6 +3466,12 @@ function homeQrRect(){
   if(!N || typeof N.qrRect !== 'function' || !el) return;
   let last = '';
   QR_SEND = () => {
+    if(NX){   // «الجديد»: #nx is scaled (nxLay), its box as seen
+      const b = el.getBoundingClientRect(), v = (el.hidden || !b.width ? [0, 0, 0, 0] : [b.left + scrollX, b.top + scrollY, b.width, b.height])
+        .concat(innerWidth).map(Math.round);
+      if(v.join() !== last){ last = v.join(); try{ N.qrRect(...v); }catch(e){} }
+      return;
+    }
     let x = 0, y = 0;
     for(let e = el; e; e = e.offsetParent){ x += e.offsetLeft; y += e.offsetTop; }
     const v = (el.offsetParent ? [x, y, el.offsetWidth, el.offsetHeight] : [0, 0, 0, 0]).concat(innerWidth).map(Math.round);
@@ -3716,9 +3744,12 @@ function nxDur(s){
   if(m || !h) a.push(nxCount(Math.max(1, m), 'دقيقة', 'دقيقتين', 'دقائق'));
   return a.join(' و');
 }
-const NX_LIST = CONFIG.panels.length ? CONFIG.panels : [CONFIG.panel];
-const NX_TABS = (L => L.length ? L : ['news'])(NX_LIST.filter(isNewsPanel));
+const NX_LIST = (L => L.length ? L : ['prayers', 'news', 'forecast', 'matches'])((CONFIG.panels.length ? CONFIG.panels : [CONFIG.panel]).filter(p => PANEL_IDS.includes(p)));
+const NX_TABS = NX_LIST.filter(isNewsPanel);
+const NX_ORDER = [...new Set(NX_LIST.map(p => isNewsPanel(p) ? 'news' : p))];   // the row's keys (data-k), in order
 const NX_MORE = NX_LIST.filter(p => ['verse', 'hadith', 'standings'].includes(p));
+const NX_FACT_IDS = ['prayer', 'match', 'weather', 'ramadan', 'hijri'];
+const NX_FACTS = (L => L.length ? L : NX_FACT_IDS.slice(0, 4))([...new Set(_list('facts'))].filter(f => NX_FACT_IDS.includes(f)).slice(0, 4));
 const NX_TAB_NAME = {news: CONFIG.newsName, world: 'العالم', tech: 'التقنية', local: 'مدينتك'};
 function nxPrayer(){
   if(!PRAYERS.length) return null;
@@ -3754,45 +3785,49 @@ function nxMatch(M, now){
           m: 'بعد ' + shortRemaining(d - now), bc: bc ? bcLine(bc) : ''};
 }
 function nxCards(P, W, M, now){
-  const out = [], N = (NEWS[NX_TAB] || []).slice(0, 3), k = (i, t) => `<div class="k">${DV_ICON[i]}${t}</div>`;
-  if(P) out.push(['prayers', 'nx-p', k('prayers', P.now ? 'حان الآن' : 'الصلاة القادمة')
-    + `<div class="pm"><b class="pn">${P.name}</b><span class="pt">${nxT12(P.x.h, P.x.mi)}<small>${P.x.h < 12 ? 'ص' : 'م'}</small></span></div>`
-    + `<div class="m">${P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left) + (P.iq < 0 ? '' : ' · الإقامة ' + nxT12(Math.floor(P.iq / 60) % 24, P.iq % 60))}</div>`
-    + `<ol class="nx-tl" style="--w:${P.w.toFixed(1)}%">` + PRAYERS.map((y, j) => `<li class="${j < P.i ? 'p' : j === P.i ? 'n' : ''}"><i></i>${prayerName(y)}<b>${nxT12(y.h, y.mi)}</b></li>`).join('') + '</ol>']);
-  if(N.length){
-    const x = N[0], b = (s, t) => `<${t}${bidiAttr(NX_TAB, s)}>${esc(s)}</${t}>`;
-    out.push(['news', 'nx-n', `<div class="nh">${k('news', '<span>الأخبار</span>')}<div class="nx-ch">`
-      + NX_TABS.map(t => `<span${t === NX_TAB ? ' class="on"' : ''}>${esc(NX_TAB_NAME[t])}</span>`).join('') + '</div></div><ol class="nx-nl">'
-      + N.map(y => `<li>${b(y.headline, 'b')}<span>${[y.source && '<em>' + newsSource(NX_TAB, y.source) + '</em>', Number.isFinite(y.t) && agoAr(now - y.t)].filter(Boolean).join(' · ')}</span></li>`).join('')
-      + `</ol><div class="nx-sm">${x.summary ? b(x.summary, 'p') : '<p class="m">لا يوجد ملخص</p>'}<div><u>OK</u>اقرأ الخبر كاملاً</div></div>`]);
-  }
-  if(W) out.push(['forecast', 'nx-wx', k('forecast', 'الطقس') + `<div class="nb">${ar(Math.round(W.t))}°</div><div class="sb">${esc(W.dust || WX_CODES[W.code] || '')}</div>`
-    + `<div class="m">${nxHiLo(W)}</div>`]);
-  if(M){ const x = nxMatch(M, now); out.push(['matches', 'nx-m', k('matches', M.done ? 'آخر نتيجة' : 'المباراة القادمة')
-    + `<div class="tm">${x.t}</div><div class="wh">${x.w}</div><div class="m">${x.m}</div>` + (x.bc ? `<div class="m bc">${x.bc}</div>` : '')]); }
-  NX_MORE.forEach(p => {
-    if(p === 'verse'){ const v = VERSES[riyadhDayNumber() % VERSES.length];
-      if(v) out.push([p, 'nx-q', k(p, PANEL_TITLE.verse) + `<p><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></p><div class="m">${esc(v.surah)} · ${ar(v.ayah)}</div>`]); }
-    if(p === 'hadith'){ const h = HADITH_DAY;
+  const N = (NEWS[NX_TAB] || []).slice(0, 3), k = (i, t) => `<div class="k">${DV_ICON[i]}${t}</div>`;
+  const card = {
+    prayers: () => P && ['prayers', 'nx-p', k('prayers', P.now ? 'حان الآن' : 'الصلاة القادمة')
+      + `<div class="pm"><b class="pn">${P.name}</b><span class="pt">${nxT12(P.x.h, P.x.mi)}<small>${P.x.h < 12 ? 'ص' : 'م'}</small></span></div>`
+      + `<div class="m">${P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left) + (P.iq < 0 ? '' : ' · الإقامة ' + nxT12(Math.floor(P.iq / 60) % 24, P.iq % 60))}</div>`
+      + `<ol class="nx-tl" style="--w:${P.w.toFixed(1)}%">` + PRAYERS.map((y, j) => `<li class="${j < P.i ? 'p' : j === P.i ? 'n' : ''}"><i></i>${prayerName(y)}<b>${nxT12(y.h, y.mi)}</b></li>`).join('') + '</ol>'],
+    news: () => {
+      if(!N.length) return null;
+      const x = N[0], b = (s, t) => `<${t}${bidiAttr(NX_TAB, s)}>${esc(s)}</${t}>`;
+      return ['news', 'nx-n', `<div class="nh">${k('news', '<span>الأخبار</span>')}<div class="nx-ch">`
+        + NX_TABS.map(t => `<span${t === NX_TAB ? ' class="on"' : ''}>${esc(NX_TAB_NAME[t])}</span>`).join('') + '</div></div><ol class="nx-nl">'
+        + N.map(y => `<li>${b(y.headline, 'b')}<span>${[y.source && '<em>' + newsSource(NX_TAB, y.source) + '</em>', Number.isFinite(y.t) && agoAr(now - y.t)].filter(Boolean).join(' · ')}</span></li>`).join('')
+        + `</ol><div class="nx-sm">${x.summary ? b(x.summary, 'p') : '<p class="m">لا يوجد ملخص</p>'}<div><u>OK</u>اقرأ الخبر كاملاً</div></div>`];
+    },
+    forecast: () => W && ['forecast', 'nx-wx', k('forecast', 'الطقس') + `<div class="nb">${ar(Math.round(W.t))}°</div><div class="sb">${esc(W.dust || WX_CODES[W.code] || '')}</div>`
+      + `<div class="m">${nxHiLo(W)}</div>`],
+    matches: () => { if(!M) return null; const x = nxMatch(M, now); return ['matches', 'nx-m', k('matches', M.done ? 'آخر نتيجة' : 'المباراة القادمة')
+      + `<div class="tm">${x.t}</div><div class="wh">${x.w}</div><div class="m">${x.m}</div>` + (x.bc ? `<div class="m bc">${x.bc}</div>` : '')]; },
+    verse: () => { const v = VERSES[riyadhDayNumber() % VERSES.length];
+      return v && ['verse', 'nx-q', k('verse', PANEL_TITLE.verse) + `<p><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></p><div class="m">${esc(v.surah)} · ${ar(v.ayah)}</div>`]; },
+    hadith: () => { const h = HADITH_DAY;
       if(h && h.day !== riyadhDayNumber()) loadHadith();
-      if(h && h.matn) out.push([p, 'nx-q h', k(p, PANEL_TITLE.hadith) + `<p><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</p><div class="m">صحيح البخاري، رقم ${ar(h.n)}</div>`]); }
-    if(p === 'standings' && STANDINGS.length){ const f = standFollowed(), n = v => ar(Number.isFinite(v) ? Math.round(v) : 0);
-      out.push([p, 'nx-s', k(p, esc(PANEL_TITLE.standings)) + '<ol>' + pickStandings(STANDINGS, f, 5).map(x =>
-        `<li${f(x) ? ' class="y"' : ''}><span>${n(x.rank)}. ${esc(standAr(x.name))}</span><b>${n(x.pts)}</b></li>`).join('') + '</ol>']); }
-  });
+      return h && h.matn ? ['hadith', 'nx-q h', k('hadith', PANEL_TITLE.hadith) + `<p><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</p><div class="m">صحيح البخاري، رقم ${ar(h.n)}</div>`] : null; },
+    standings: () => { if(!STANDINGS.length) return null; const f = standFollowed(), n = v => ar(Number.isFinite(v) ? Math.round(v) : 0);
+      return ['standings', 'nx-s', k('standings', esc(PANEL_TITLE.standings)) + '<ol>' + pickStandings(STANDINGS, f, 5).map(x =>
+        `<li${f(x) ? ' class="y"' : ''}><span>${n(x.rank)}. ${esc(standAr(x.name))}</span><b>${n(x.pts)}</b></li>`).join('') + '</ol>']; }
+  };
+  const out = NX_ORDER.map(key => card[key] && card[key]()).filter(Boolean);
   if(!out.some(c => c[0] === NX_K) && out.length) NX_K = out[0][0];
   return out.map(([key, cls, h]) => `<article class="nx-c ${cls}${NX_F && key === NX_K ? ' f' + (key === 'news' ? ' w' : '') : ''}" data-k="${key}">${h}</article>`).join('');
 }
 function nxDraw(){
   NX_T = 0;
   const now = Date.now(), P = nxPrayer(), W = NX_WX && Number.isFinite(NX_WX.t) ? NX_WX : null, M = pickMatch(now), R = nxRam();
-  if(NXS){   // the facts, each only with its data
-    const f = [], x = M && nxMatch(M, now);
-    if(P) f.push([P.name + ' ' + fmt12(P.x.h, P.x.mi), P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left)]);
-    if(x) f.push([x.t, x.w]);
-    if(W) f.push([`${nxDeg(W.t)} ${esc(W.dust || WX_CODES[W.code] || '')}`, esc(CONFIG.city) + (nxHiLo(W) && ' · ' + nxHiLo(W))]);
-    if(R) f.push([esc(R[0]), esc(R[1])]);
-    nxSet('nx-fx', f.map(([b, s]) => `<li><b>${b}</b><span>${s}</span></li>`).join(''));
+  if(NXS){   // the facts picked (NX_FACTS), in their order, each only with its data
+    const x = M && nxMatch(M, now), ymd = {day: 'numeric', month: 'long', year: 'numeric'}, fact = {
+      prayer: () => P && [P.name + ' ' + fmt12(P.x.h, P.x.mi), P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left)],
+      match: () => x && [x.t, x.w],
+      weather: () => W && [`${nxDeg(W.t)} ${esc(W.dust || WX_CODES[W.code] || '')}`, esc(CONFIG.city) + (nxHiLo(W) && ' · ' + nxHiLo(W))],
+      ramadan: () => R && [esc(R[0]), esc(R[1])],
+      hijri: () => { const h = nxFmt(ymd, HIJRI).replace(/\s*هـ$/, ''); return h && [esc(h), esc(nxFmt(ymd))]; }   // «13 جمادى الأولى 1448»
+    };
+    nxSet('nx-fx', NX_FACTS.map(k => fact[k]()).filter(Boolean).map(([b, s]) => `<li><b>${b}</b><span>${s}</span></li>`).join(''));
     return;
   }
   const wd = nxFmt({weekday: 'long'}), ram = R ? esc(R[0] + (R[1] ? ' ' + R[1] : '')) : '';
@@ -3860,7 +3895,38 @@ function nxCredit(b){
 function nxTab(){
   let s = null;
   try{ s = JSON.parse(localStorage.getItem('sauditv-card-pos') || 'null'); }catch(e){}
-  NX_TAB = s && NX_TABS.includes(s.panel) ? s.panel : NX_TABS.includes(NX_TAB) ? NX_TAB : NX_TABS[0];
+  NX_TAB = s && NX_TABS.includes(s.panel) ? s.panel : NX_TABS.includes(NX_TAB) ? NX_TAB : NX_TABS[0] || '';
+}
+let NX_ROT = 0, NX_ROT_HOLD = false, NX_ROT_FADE = 0;
+const nxRotStill = () => CARD_STILL || CONFIG.lowPower;
+function nxRotArm(){
+  clearInterval(NX_ROT); NX_ROT = 0;
+  if(!NX_ROT_HOLD && NX_TABS.length > 1) NX_ROT = setInterval(nxRotStep, CONFIG.rotateMs);
+}
+function nxRotStep(){
+  if(NX_ROT_HOLD || NX_ROT_FADE || (NX_F && NX_K === 'news')) return;
+  const n = NX_TABS.length, j = NX_TABS.indexOf(NX_TAB), has = t => (NEWS[t] || []).length > 0;
+  if(NX_TABS.filter(has).length < 2) return;
+  for(let k = 1; k < n; k++){ const t = NX_TABS[(j + k + n) % n]; if(has(t)){ nxRotTo(t); return; } }
+}
+function nxRotTo(t){
+  const c = nxEl('nx-rail') && nxEl('nx-rail').querySelector('.nx-n');
+  if(!c || nxRotStill()){ NX_TAB = t; nxDraw(); return; }
+  c.classList.add('tx');
+  NX_ROT_FADE = setTimeout(() => {
+    NX_ROT_FADE = 0; NX_TAB = t; nxDraw();
+    const e = nxEl('nx-rail').querySelector('.nx-n');
+    if(e){ e.classList.remove('tx'); e.classList.add('ti'); }
+  }, 150);
+}
+function nxRotHold(on){
+  NX_ROT_HOLD = !!on;
+  if(on && NX_ROT_FADE){   // a fade under way stays on its tab
+    clearTimeout(NX_ROT_FADE); NX_ROT_FADE = 0;
+    const e = nxEl('nx-rail').querySelector('.nx-n');
+    if(e) e.classList.remove('tx');
+  }
+  nxRotArm();
 }
 function nxClock(){
   const p = riyadhParts(), key = p.h + ':' + p.mi;
@@ -3885,6 +3951,11 @@ function nxBoot(){
     nxEl('vpn').insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>'
       + '<path class="ok" d="m8.8 12 2.2 2.2 4.4-4.4"/><path class="wa" d="M12 8v4.2m0 3.3h.01"/><path class="no" d="m9.6 9.6 4.8 4.8m0-4.8-4.8 4.8"/></svg>');
   }
+  const qr = nxEl('qr');
+  if(qr){
+    if(NXS) nx.querySelector('.nx-cv').appendChild(qr);
+    else { const mt = nxEl('nx-mt'), mr = document.createElement('div'); mr.className = 'nx-mr'; mt.replaceWith(mr); mr.append(mt, qr); }
+    qr.querySelector('svg').innerHTML = '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'; }
   ['tickPrayer', 'tickRamadan', 'loadWeather', 'loadNews', 'loadLocalNews', 'loadStandings', 'renderMatches', 'hadithDrawn', 'tapeRender']
     .forEach(n => { const o = window[n]; window[n] = function(){ const r = o.apply(this, arguments); Promise.resolve(r).then(nxSoon, nxSoon); return r; }; });
   const tc = tickClock, sb = showBackground;
@@ -3900,19 +3971,21 @@ function nxHome(){
   Object.entries(CONFIG.homeRoom).forEach(([k, v]) => { if(Number.isFinite(v) && v >= 0) root.style.setProperty(k, v + 'px'); });
   CONFIG.panel = 'none'; CONFIG.panels = [];   // the classic card is not drawn
   nxBoot(); nxTab();
-  window.sauditvCurrentPanel = () => NX_K === 'news' ? NX_TAB : NX_K || 'prayers';
+  window.sauditvCurrentPanel = () => NX_K === 'news' ? NX_TAB : NX_K || NX_LIST[0];
   window.sauditvDetailList = () => [...nxEl('nx-rail').children].flatMap(e => e.dataset.k === 'news' ? NX_TABS : [e.dataset.k]).join(',');
-  window.sauditvSetFocused = on => { NX_F = !!on; nxFocus(); };
+  window.sauditvSetFocused = on => { NX_F = !!on; nxFocus(); nxRotArm(); };
   window.sauditvStep = d => {   // ◀ (+1) the next card to the left, ▶ (-1) back; no wrapping
     const cs = [...nxEl('nx-rail').children], i = cs.findIndex(e => e.dataset.k === NX_K);
     const c = cs[Math.max(0, Math.min(cs.length - 1, i + (Number(d) < 0 ? -1 : 1)))];
     if(c){ NX_K = c.dataset.k; nxFocus(); }
+    nxRotArm();
   };
-  window.sauditvHold = on => { if(!on){ nxTab(); nxSoon(); } };   // back from the detail window: the tab last read
+  window.sauditvHold = on => { if(!on){ nxTab(); nxSoon(); } nxRotHold(on); };
   window.sauditvPoint = (x, y) => {   // the mouse over the row (the launcher's view): the card under it
     const c = document.elementFromPoint(x, y), e = c && c.closest('.nx-c');
-    if(e && e.dataset.k !== NX_K){ NX_K = e.dataset.k; nxFocus(); }
+    if(e && e.dataset.k !== NX_K){ NX_K = e.dataset.k; nxFocus(); nxRotArm(); }
   };
+  nxRotArm();
   window.sauditvPillsEnd = px => { nxEl('nx').style.setProperty('--pe', Math.max(40, px / (devicePixelRatio || 1) / NX_Z + 14) + 'px'); nxSoon(); };
   document.title = 'سعودي TV';
   applyBackground(true);

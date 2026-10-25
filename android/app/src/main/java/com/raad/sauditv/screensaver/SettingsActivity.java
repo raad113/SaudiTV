@@ -141,6 +141,7 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onPause() {
         stopPreview();   // the preview only plays while these settings are in front
+        if (athan != null) athan.stopPreview();   // and the athan voice's (AthanSettings.pickVoice)
         super.onPause();
     }
 
@@ -204,8 +205,13 @@ public class SettingsActivity extends Activity {
         row("الدوري في الترتيب", leagueLabel(prefs.league()) + (prefs.leagueAuto() ? " (تلقائي)" : ""),
             R.drawable.ic_trophy, new Runnable() { public void run() { pickTableLeague(); } });
 
-        header("بجانب الساعة");
-        row("المحتوى", prefs.panelTitle(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
+        header("شاشة التوقف");
+        row("البطاقات", prefs.panelTitle(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
+        // «مدة كل بطاقة»: each card's seconds (SaverOptions.ROTATE_SECS), the screensaver's and the home screen's, both looks
+        row("مدة كل بطاقة", rotateLabel(prefs.rotateSec()), R.drawable.ic_screensaver, new Runnable() { public void run() { pickRotate(); } });
+        // «سطور شاشة التوقف»: «الجديد»'s screensaver lines bottom left (SaverOptions.FACTS), only in that look
+        if (Look.NEW.equals(prefs.look()))
+            row("سطور شاشة التوقف", factsLabel(), R.drawable.ic_category, new Runnable() { public void run() { pickFacts(); } });
 
         header("الشاشة الرئيسية (سعودي TV)");
         // «شكل الواجهة»: the home screen and the screensaver in «الكلاسيكي» or «الجديد» (Look), each with its picture
@@ -253,17 +259,16 @@ public class SettingsActivity extends Activity {
         // «مصادر الصور»: the background photos' sources, ticked like a news page's (Prefs.PHOTO_SOURCES, the page's #photos=)
         row("مصادر الصور", photoSourcesLabel(), R.drawable.ic_screensaver, new Runnable() { public void run() { pickPhotoSources(); } });
         row("شكل الأرقام", numeralsLabel(), R.drawable.ic_language, new Runnable() { public void run() { pickNumerals(); } });
-        // «توفير الطاقة» (off by default): the ticker tape of the home screen and the screensaver at 30 frames a second
-        // instead of 60 (Prefs.lowPower, the page's #lowpower=1); a home screen in front reloads its page (changed)
-        row("توفير الطاقة", lowPowerLabel(), R.drawable.ic_eco, new Runnable() { public void run() {
-            prefs.setLowPower(!prefs.lowPower()); changed(); render(); } });
-        updateRow = row("تحديث التطبيق", appUpdateLabel(), R.drawable.ic_sync, new Runnable() { public void run() { appUpdateNow(); } });
+        // «معدل الإطارات» (30 by default): the ticker tape of the home screen and the screensaver at 30 or 60 frames a
+        // second (Prefs.fps; 30 is the page's #lowpower=1); a home screen in front reloads its page (changed)
+        row("معدل الإطارات", fpsLabel(prefs.fps()), R.drawable.ic_eco, new Runnable() { public void run() { pickFps(); } });
+        // «تحديث التطبيق»: both apps from the GitHub releases, and the page from the repository too (one row, one toast)
+        updateRow = row("تحديث التطبيق", appUpdateLabel(), R.drawable.ic_sync, new Runnable() { public void run() { updateAllNow(); } });
         row("التحديث التلقائي للصفحة", prefs.autoUpdate() ? "يعمل · كل " + num(6) + " ساعات" : "متوقف", R.drawable.ic_sync, new Runnable() { public void run() {
             prefs.setAutoUpdate(!prefs.autoUpdate()); render(); } });
-        row("تحقق من التحديث الآن", null, R.drawable.ic_sync, new Runnable() { public void run() { updateNow(); } });
         row("وقت تشغيل شاشة التوقف", "يفتح إعدادات التلفاز (قد تظهر بالإنجليزية)", R.drawable.ic_screensaver, new Runnable() { public void run() { openDreamSettings(); } });
         // the first-run setup (SetupActivity) again: the city, the cards, the radio, the team
-        row("معالج الإعداد", "المدينة وشاشة التوقف والإذاعة والفريق خطوة بخطوة", R.drawable.ic_settings, new Runnable() { public void run() {
+        row("معالج الإعداد", "شكل الواجهة والمدينة وشاشة التوقف والإذاعة والفريق خطوة بخطوة", R.drawable.ic_settings, new Runnable() { public void run() {
             setupOpened = true;
             startActivity(new Intent(SettingsActivity.this, SetupActivity.class)); } });
 
@@ -441,7 +446,7 @@ public class SettingsActivity extends Activity {
             s = s.trim();
             if (ids.contains(s) && !order.contains(s)) order.add(s);
         }
-        orderedPicker((home ? "بطاقة على الشاشة الرئيسية" : "بجانب الساعة") + " (تتناوب بترتيب الأرقام)", ids, order,
+        orderedPicker((home ? "بطاقة على الشاشة الرئيسية" : "بطاقات شاشة التوقف") + " (تتناوب بترتيب الأرقام)", ids, order,
             prefs::panelTitle, false, null, () -> {
                 String v = order.isEmpty() ? "none" : Prefs.join(order, ",");
                 if (home) prefs.setHomePanel(v); else prefs.setPanel(v);
@@ -452,6 +457,40 @@ public class SettingsActivity extends Activity {
     /** a row's name in an ordered picker */
     interface Title { String of(String id); }
 
+    /** «مدة كل بطاقة»'s value: «١٥ ثانية» */
+    private String rotateLabel(int sec) { return num(sec) + " ثانية"; }
+
+    /** «مدة كل بطاقة»: 10, 15 (the default), 20, 30 or 60 seconds; a home screen in front reloads its page (changed) */
+    private void pickRotate() {
+        final int[] values = SaverOptions.ROTATE_SECS;
+        String[] labels = new String[values.length];
+        int sel = 0;
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = rotateLabel(values[i]) + (values[i] == SaverOptions.DEFAULT_ROTATE ? " (الافتراضي)" : "");
+            if (values[i] == prefs.rotateSec()) sel = i;
+        }
+        dialog().setTitle("مدة كل بطاقة")
+            .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setRotateSec(values[i]); d.dismiss(); changed(); render(); })
+            .show();
+    }
+
+    /** «سطور شاشة التوقف»'s value: the lines in order («الصلاة القادمة، الطقس») */
+    private String factsLabel() {
+        List<String> names = new ArrayList<>();
+        for (String id : prefs.saverFacts()) names.add(SaverOptions.factLabel(id));
+        return Prefs.join(names, "، ");
+    }
+
+    /** «سطور شاشة التوقف»: ticked and ordered as the cards are, one at least, four at most («أربعة على الأكثر»);
+     *  «إعادة الافتراضي» = the page's four (the next prayer, the match, the weather, Ramadan) */
+    private void pickFacts() {
+        final List<String> ids = new ArrayList<>(), order = new ArrayList<>(prefs.saverFacts());
+        for (String[] f : SaverOptions.FACTS) ids.add(f[0]);
+        orderedPicker("سطور شاشة التوقف", ids, order, SaverOptions::factLabel, true, SaverOptions.MAX_FACTS,
+            () -> { prefs.setSaverFacts(null); changed(); render(); },
+            () -> { prefs.setSaverFacts(order); changed(); render(); });
+    }
+
     /**
      * A list to tick and order (the cards, the ticker's items): OK ticks, ◀ ▶ move a ticked row, the ticked ones first
      * in their order (numbered); «تم» runs done with `order` as it is then. atLeastOne: the last ticked row stays
@@ -459,6 +498,12 @@ public class SettingsActivity extends Activity {
      */
     private void orderedPicker(String title, final List<String> ids, final List<String> order, final Title name,
                                final boolean atLeastOne, final Runnable reset, final Runnable done) {
+        orderedPicker(title, ids, order, name, atLeastOne, 0, reset, done);
+    }
+
+    /** the same, at most `max` ticked (0: no limit): one more is refused with «أربعة على الأكثر» (four) or «max على الأكثر» */
+    private void orderedPicker(String title, final List<String> ids, final List<String> order, final Title name,
+                               final boolean atLeastOne, final int max, final Runnable reset, final Runnable done) {
         final List<String> rows = new ArrayList<>();   // the list, top to bottom: order, then the unticked ones
         final CharSequence[] labels = new CharSequence[ids.size()];
         final boolean[] on = new boolean[ids.size()];
@@ -468,6 +513,7 @@ public class SettingsActivity extends Activity {
             .setMultiChoiceItems(labels, on, (d, i, checked) -> {
                 String id = rows.get(i);
                 if (!checked && atLeastOne && order.size() == 1 && order.contains(id)) toast("يبقى عنصر واحد على الأقل");
+                else if (checked && max > 0 && order.size() >= max && !order.contains(id)) toast(max == 4 ? "أربعة على الأكثر" : num(max) + " على الأكثر");
                 else { order.remove(id); if (checked) order.add(id); }
                 showPanelRows((AlertDialog) d, ids, order, rows, labels, on, id, 0, name);
             })
@@ -716,10 +762,23 @@ public class SettingsActivity extends Activity {
         return Prefs.join(names, "، ");
     }
 
-    /** «توفير الطاقة»'s value: on, the lighter ticker; off, what it would do */
-    private String lowPowerLabel() {
-        return prefs.lowPower() ? "يعمل · شريط الأسعار أخف (" + num(30) + " إطارًا في الثانية)"
-            : "متوقف · شريط الأسعار أخف عند التشغيل (" + num(30) + " إطارًا في الثانية بدل " + num(60) + ")";
+    /** «معدل الإطارات»'s value: «٣٠ إطارًا في الثانية (أخف)» or «٦٠ إطارًا في الثانية (أنعم)» */
+    private String fpsLabel(int fps) {
+        return num(fps) + " إطارًا في الثانية " + (fps == Prefs.FPS_HIGH ? "(أنعم)" : "(أخف)");
+    }
+
+    /** «معدل الإطارات»: 30 (lighter, the default) or 60 (smoother) */
+    private void pickFps() {
+        final int[] values = {Prefs.FPS_LOW, Prefs.FPS_HIGH};
+        String[] labels = new String[values.length];
+        int sel = 0;
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = fpsLabel(values[i]);
+            if (values[i] == prefs.fps()) sel = i;
+        }
+        dialog().setTitle("معدل الإطارات")
+            .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setFps(values[i]); d.dismiss(); changed(); render(); })
+            .show();
     }
 
     /** a home screen in front (behind a dialog) shows the new settings now, as after saver.sh */
@@ -727,12 +786,12 @@ public class SettingsActivity extends Activity {
         sendBroadcast(new Intent(SaverReceiver.CHANGED).setPackage("com.raad.sauditv.home"));
     }
 
-    private void updateNow() {
-        toast("جارٍ التحقق…");
-        new Thread(() -> {
-            final String msg = Updater.check(getApplicationContext(), true);
-            runOnUiThread(() -> toast(msg));
-        }).start();
+    /** «تحديث التطبيق»'s row: the page from the repository now (Updater, quietly: its answer only in the log), and the
+     *  apps' check with its one toast and its offer (appUpdateNow) */
+    private void updateAllNow() {
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> android.util.Log.i("SaudiTV-Update", "page: " + Updater.check(app, true))).start();
+        appUpdateNow();
     }
 
     // ---------- «تحديث التطبيق»: both apps from the GitHub releases (AppUpdate checks, AppInstaller installs) ----------

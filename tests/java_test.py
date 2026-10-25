@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver"
 CLASSES = ["CountryChange.java", "Leagues.java", "PanelMigrate.java", "PhotoSize.java", "PlaceGuess.java", "RadioStations.java",
-           "RadioWhen.java", "SetupState.java", "Tape.java", "Look.java",
+           "RadioWhen.java", "SetupState.java", "Tape.java", "Look.java", "SaverOptions.java",
            "PrayerTimes.java", "AthanPlan.java", "AthanVoices.java", "AladhanTimes.java"]   # plain Java only (no android.*)
 HOME = ROOT / "android/launcher/src/main/java/com/raad/sauditv/home"
 HOME_CLASSES = ["RadioChip.java", "HomeLook.java"]   # the launcher's, plain Java too

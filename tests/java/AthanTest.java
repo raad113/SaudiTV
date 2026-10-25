@@ -108,8 +108,11 @@ public class AthanTest {
         check("plan: the day's athans are the page's (" + name + ")", same, Arrays.toString(day));
     }
 
+    /** every prayer the full athan and no reminder, then the modes given (the defaults apart: checked in values) */
     static AthanPlan.Settings settings(String... modes) {
         AthanPlan.Settings s = new AthanPlan.Settings();
+        Arrays.fill(s.modes, "full");
+        s.reminder = 0;
         for (int i = 0; i < modes.length; i++) s.modes[i] = modes[i];
         return s;
     }
@@ -306,14 +309,15 @@ public class AthanTest {
             && "الفجر".equals(AthanPlan.name(0, true)), "");
         check("values: the time as the page's fmt12", "12:00 ص".equals(AthanPlan.time12(0)) && "1:05 م".equals(AthanPlan.time12(13 * 60 + 5))
             && "11:37 ص".equals(AthanPlan.time12(11 * 60 + 37)) && "12:30 م".equals(AthanPlan.time12(12 * 60 + 30)), AthanPlan.time12(0));
-        check("values: modes full|short|off; unknown -> full (the default)", "short".equals(AthanPlan.mode("short"))
-            && "full".equals(AthanPlan.mode(null)) && "full".equals(AthanPlan.mode("loud")) && !AthanPlan.validMode("loud"), "");
+        check("values: modes full|short|off; unknown -> short (the default)", "short".equals(AthanPlan.mode("short"))
+            && "full".equals(AthanPlan.mode("full")) && "off".equals(AthanPlan.mode("off"))
+            && "short".equals(AthanPlan.mode(null)) && "short".equals(AthanPlan.mode("loud")) && !AthanPlan.validMode("loud"), "");
         check("values: athan volume 10 … 100", AthanPlan.volume("40") == 40 && AthanPlan.volume("100%") == 100 && AthanPlan.volume("5") == -1
             && AthanPlan.volume("x") == -1 && AthanPlan.clampVolume(250) == 100, "");
         check("values: reminders 0 5 10 15 20 30, anything else off", AthanPlan.reminder(10) == 10 && AthanPlan.reminder(7) == 0, "");
-        check("values: every prayer on, the full athan, no reminder, by default", new AthanPlan.Settings().any()
-            && Arrays.equals(new AthanPlan.Settings().modes, new String[] {"full", "full", "full", "full", "full"})
-            && new AthanPlan.Settings().reminder == 0, "");
+        check("values: every prayer on, a short alert, a reminder 5 min before, by default", new AthanPlan.Settings().any()
+            && Arrays.equals(new AthanPlan.Settings().modes, new String[] {"short", "short", "short", "short", "short"})
+            && new AthanPlan.Settings().reminder == 5 && AthanPlan.reminder(0) == 0, "");
         boolean down = true;
         for (long ms = 0; ms < AthanPlan.SHORT_PLAY_MS; ms += 250) down &= AthanPlan.shortFade(ms + 250) <= AthanPlan.shortFade(ms);
         check("short alert: 5 to 10 s of the opening, fading out at the end", AthanPlan.SHORT_PLAY_MS >= 5000 && AthanPlan.SHORT_PLAY_MS <= 10000
@@ -322,7 +326,11 @@ public class AthanTest {
         // ---- the voices and the bundled recordings
         check("voices: Malmö (Fajr, unconfirmed) only for Fajr, never a default", "wikimedia".equals(AthanVoices.of("malmo", false))
             && "malmo".equals(AthanVoices.of("malmo", true)) && !AthanVoices.find(AthanVoices.FAJR_DEFAULT).fajrOnly
-            && !AthanVoices.find(AthanVoices.DEFAULT).fajrOnly && AthanVoices.offered(false).size() == AthanVoices.BUNDLED.length - 1, "");
+            && !AthanVoices.find(AthanVoices.DEFAULT).fajrOnly, "");
+        check("voices: Maldives (Fajr) only for Fajr; the Fajr list has all " + AthanVoices.BUNDLED.length + ", the others all but the 2 Fajr-only",
+            "wikimedia".equals(AthanVoices.of("maldives", false)) && "maldives".equals(AthanVoices.of("maldives", true))
+            && AthanVoices.offered(true).size() == AthanVoices.BUNDLED.length && AthanVoices.offered(false).size() == AthanVoices.BUNDLED.length - 2
+            && "makkah".equals(AthanVoices.of("makkah", false)) && "أذان من المسجد الحرام".equals(AthanVoices.label("makkah", false)), "");
         check("voices: custom and unknown choices", "custom".equals(AthanVoices.of("custom", false)) && "wikimedia".equals(AthanVoices.of(null, true))
             && "صوت من عندي".equals(AthanVoices.label("custom", true)), "");
         String credits = new String(Files.readAllBytes(new File(root, "assets/athan/CREDITS.txt").toPath()), StandardCharsets.UTF_8);
@@ -337,11 +345,11 @@ public class AthanTest {
             if (!f.isFile() || !v.file.endsWith(".ogg")) bad.add(v.file + " missing");
             if (at < 0 || !entry.contains(v.source) || !entry.contains(v.licence.replace(" 1.0", "")) || !entry.contains(v.author))
                 bad.add(name + " not credited as " + v.licence + " " + v.source);
-            if (!v.licence.startsWith("CC0") && !v.licence.equals("CC BY 3.0")) bad.add(name + ": licence " + v.licence);
+            if (!v.licence.startsWith("CC0") && !v.licence.equals("CC BY 3.0") && !v.licence.equals("CC BY 4.0")) bad.add(name + ": licence " + v.licence);
         }
         check("recordings: each bundled voice is in assets/athan and credited (author, licence, source) in CREDITS.txt; CC0 or CC BY only",
             bad.isEmpty(), bad);
-        check("recordings: 6 MB at most in all (" + total / 1024 + " KB)", total > 0 && total <= 6L * 1024 * 1024, total);
+        check("recordings: 12 MB at most in all (" + total / 1024 + " KB)", total > 0 && total <= 12L * 1024 * 1024, total);
 
         System.out.println(failed == 0 ? "\nall athan tests passed" : "\n" + failed + " failed");
         System.exit(failed == 0 ? 0 : 1);

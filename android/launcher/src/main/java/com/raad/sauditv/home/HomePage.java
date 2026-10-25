@@ -226,7 +226,8 @@ final class HomePage {
         place(qr, 0, 0, 0, 0, 0);
     }
 
-    /** The page's URL: the screensaver's settings, the home card's panels (rotating 30 s), home mode and its room. */
+    /** The page's URL: the screensaver's settings, the home card's panels (each the settings' «مدة كل بطاقة»), home
+     *  mode and its room. */
     private String readUrl() {
         String frag = "", panel = "none", shape = null, focus = null;
         try (Cursor c = activity.getContentResolver().query(CONFIG, null, null, null, null)) {
@@ -243,7 +244,9 @@ final class HomePage {
         circles = "circle".equals(shape);
         apple = "apple".equals(focus);
         newLook = HomeLook.isNew(frag);
-        // a comma list ("prayers,forecast,matches") = one card that shows each in turn, 30 s each
+        // a comma list ("prayers,forecast,matches") = one card that shows each in turn, «مدة كل بطاقة» each (the
+        // fragment's &rotate=; an older settings app without it: 30 s, as before)
+        int sec = HomeLook.rotateSec(frag);
         String[] panels = panel.replace(" ", "").split(",");
         panel = panels[0].isEmpty() ? "none" : panels[0];
         Numerals.fromFragment(frag);   // «شكل الأرقام» for the launcher's own text too
@@ -251,7 +254,7 @@ final class HomePage {
         fragment = frag;
         firstPanel = panel;
         panelList = "none".equals(panel) ? "" : String.join(",", panels);
-        String rotate = panels.length > 1 ? "&panels=" + String.join(",", panels) + "&rotate=30" : "";
+        String rotate = (panels.length > 1 ? "&panels=" + String.join(",", panels) : "") + "&rotate=" + sec;
         return "file:///android_asset/web/tv.html#" + frag + "&panel=" + panel + rotate
                 + "&home=1&pillsh=" + PILLS_H_DP + "&dockh=" + dockH() + "&dockb=" + dockB()
                 + "&radiopush=1";   // «يُتلى الآن» is told when the radio changes (radioChanged): no asking every 3 s

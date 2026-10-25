@@ -59,10 +59,14 @@ final class Prefs {
      * Once, the first time this build reads the settings. An older build's settings (any at all) keep what that build
      * showed: the Saudi news («أخبار السعودية») and the Roshn table, whatever country or teams are picked later. A new
      * install has none: its news follow the city's country, its table the first followed club's league; its card beside
-     * the clock is «آية اليوم» and «حديث اليوم» (PanelMigrate.FRESH); its «شكل الواجهة» is «الجديد» (Look.FRESH; saved
-     * settings without one stay «الكلاسيكي»); and its place is guessed once (PlaceDetect).
+     * the clock is «آية اليوم» and «حديث اليوم» (PanelMigrate.FRESH); its «شكل الواجهة» is «الجديد» (Look.FRESH, the
+     * setup's look step offers it first; saved settings without one stay «الكلاسيكي»); and its place is guessed once
+     * (PlaceDetect).
      * The first-run setup (SetupActivity) shows on a new install only: setupDone false there, true for any settings
      * saved before, including those whose first read was already done (SetupState.initial).
+     * lookChosen is not written here: none saved is false, so a TV set up before this build gets the home screen's
+     * one-time look chooser (SetupState.lookPending), a new install its setup's look step (finishing or skipping it
+     * sets lookChosen).
      */
     private void migrate() {
         if (sp.contains("geo")) {
@@ -261,7 +265,7 @@ final class Prefs {
     // ---------- the home screen's app tiles (the launcher reads them from ConfigProvider: tile_shape, focus_style):
     // «شكل التطبيقات», banners with rounded corners (the default) or round app icons; «شكل التحديد», the focused
     // tile's look: Google TV's white ring (the default) or Apple TV's lift and shadow. Value, Arabic label.
-    static final String[][] TILE_SHAPES = {{"rounded", "زوايا دائرية"}, {"circle", "دوائر"}};
+    static final String[][] TILE_SHAPES = {{"rounded", "مستطيلات"}, {"circle", "دوائر"}};
     static final String[][] FOCUS_STYLES = {{"google", "Google TV"}, {"apple", "Apple TV"}};
 
     String tileShape() { return pick(TILE_SHAPES, sp.getString("tileShape", null)); }
@@ -271,7 +275,13 @@ final class Prefs {
 
     /** «شكل الواجهة» of the home screen and the screensaver (Look): «الكلاسيكي» unless «الجديد» was set (a new install's) */
     String look() { return Look.of(sp.getString("look", null)); }
-    void setLook(String v) { sp.edit().putString("look", Look.of(v)).apply(); }
+    /** a look picked anywhere (the setup, the settings, ADB): chosen, the home screen asks no more (SetupState.lookPending) */
+    void setLook(String v) { sp.edit().putString("look", Look.of(v)).putBoolean(SetupState.LOOK_CHOSEN, true).apply(); }
+    /** a look was chosen, or the setup or its look-only screen ended keeping the one set (SetupState.LOOK_CHOSEN) */
+    boolean lookChosen() { return sp.getBoolean(SetupState.LOOK_CHOSEN, false); }
+    void setLookChosen(boolean v) { sp.edit().putBoolean(SetupState.LOOK_CHOSEN, v).apply(); }
+    /** the home screen's one-time «شكل الواجهة» chooser is due (ConfigProvider /setup's look_pending) */
+    boolean lookPending() { return SetupState.lookPending(setupDone(), lookChosen()); }
 
     /** v when it is one of the table's values, else its first (the default) */
     static String pick(String[][] table, String v) {
@@ -528,10 +538,14 @@ final class Prefs {
     }
     void setAutoUpdate(boolean v) { sp.edit().putBoolean("autoUpdate", v).apply(); }
 
-    /** «توفير الطاقة» (off by default): the ticker tape on the home screen and the screensaver drawn 30 times a second
-     *  instead of 60 (the page's #lowpower=1, tapeStepped); the settings screen or `optimize/saver.sh lowpower on|off` */
-    boolean lowPower() { return sp.getBoolean("lowPower", false); }
-    void setLowPower(boolean v) { sp.edit().putBoolean("lowPower", v).apply(); }
+    /** «معدل الإطارات»: the ticker tape on the home screen and the screensaver at 30 frames a second (the default, for
+     *  everyone: the older «توفير الطاقة» boolean "lowPower" is not read) or 60; the settings screen or
+     *  `optimize/saver.sh fps 30|60` */
+    static final int FPS_LOW = 30, FPS_HIGH = 60;
+    int fps() { return sp.getInt("fps", FPS_LOW) == FPS_HIGH ? FPS_HIGH : FPS_LOW; }
+    void setFps(int v) { sp.edit().putInt("fps", v == FPS_HIGH ? FPS_HIGH : FPS_LOW).apply(); }
+    /** 30 frames a second: the page's #lowpower=1 (its ticker in 30 steps a second) */
+    boolean lowPower() { return fps() == FPS_LOW; }
 
     SharedPreferences raw() { return sp; }
 
@@ -574,10 +588,14 @@ final class Prefs {
             // the followed teams' Arabic names, same order (the page maps Saudi clubs to ESPN by name)
             + "&teamnames=" + join(teamNames(), ",")
             + panelParams(panel())
+            // «مدة كل بطاقة»: each card's seconds on the screensaver and (HomePage reads it here) the home screen, both looks
+            + "&rotate=" + rotateSec()
+            // «سطور شاشة التوقف» («الجديد»'s screensaver): only when not the page's own four
+            + SaverOptions.factsParam(saverFacts())
             + "&numerals=" + numerals()
             + Look.param(look())   // «شكل الواجهة»: &look=new for «الجديد», nothing for «الكلاسيكي»
             + (tapeAuto() ? "" : "&tape=" + Uri.encode(join(tape(), ",")))   // the ticker's chosen items
-            + (lowPower() ? "&lowpower=1" : "")   // «توفير الطاقة»: the ticker at 30 frames a second
+            + (lowPower() ? "&lowpower=1" : "")   // «معدل الإطارات» 30: the ticker at 30 frames a second
             // «مصادر الصور» when picked (else the page's defaults: saudi,ours); always while SAUDI_PHOTOS is off, so
             // a Saudi list the page kept from before is never shown (ours by default)
             + (sp.contains("photoSources") || !SAUDI_PHOTOS ? "&photos=" + join(photoSources(), ",") : "")
@@ -591,14 +609,26 @@ final class Prefs {
         return b.toString();
     }
 
-    /** "a,b,c" becomes a rotating card (&panel=a&panels=a,b,c&rotate=30); one value stays &panel=v. */
+    /** "a,b,c" becomes a rotating card (&panel=a&panels=a,b,c; its seconds are fragment()'s &rotate=, rotateSec);
+     *  one value stays &panel=v. */
     static String panelParams(String v) {
         if (v == null || !v.contains(",")) return "&panel=" + v;
         List<String> parts = new ArrayList<>();
         for (String s : v.split(",")) { s = s.trim(); if (!s.isEmpty()) parts.add(s); }
         if (parts.isEmpty()) return "&panel=none";
         if (parts.size() == 1) return "&panel=" + parts.get(0);
-        return "&panel=" + parts.get(0) + "&panels=" + join(parts, ",") + "&rotate=30";
+        return "&panel=" + parts.get(0) + "&panels=" + join(parts, ",");
+    }
+
+    /** «مدة كل بطاقة»: seconds each card stays (SaverOptions.ROTATE_SECS, 15 by default); the settings or saver.sh rotate */
+    int rotateSec() { return SaverOptions.rotate(sp.getInt("rotateSec", SaverOptions.DEFAULT_ROTATE)); }
+    void setRotateSec(int v) { sp.edit().putInt("rotateSec", SaverOptions.rotate(v)).apply(); }
+
+    /** «سطور شاشة التوقف»: the new look's screensaver facts in order (SaverOptions; none saved: the default four) */
+    List<String> saverFacts() { return SaverOptions.facts(sp.getString("saverFacts", null)); }
+    void setSaverFacts(List<String> v) {
+        if (v == null || v.isEmpty() || v.equals(SaverOptions.DEFAULT_FACTS)) sp.edit().remove("saverFacts").apply();
+        else sp.edit().putString("saverFacts", join(v, ",")).apply();
     }
 
     /** The card on the launcher's home screen: one of PANELS, off ("none") until the user picks one; a saved choice

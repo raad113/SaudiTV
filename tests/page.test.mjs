@@ -27,9 +27,11 @@ const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: p
 
 // feeds: {url regex source: RSS text} answered instead of the network; init: a script run before the page's own
 // route: (url, route) => a promise when it answers that request itself (else the usual answers below)
-async function open(file, hash, { width = 1920, height = 1080, seed = true, at = FIXED, feeds = {}, init = null, route = null } = {}) {
+// timers: true installs Playwright's fake timers at `at` (time still flows; p.clock.runFor jumps ahead)
+async function open(file, hash, { width = 1920, height = 1080, seed = true, at = FIXED, feeds = {}, init = null, route = null, timers = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height } });
-  if (at) await ctx.clock.setFixedTime(at);
+  if (at && timers) await ctx.clock.install({ time: at });
+  else if (at) await ctx.clock.setFixedTime(at);
   await ctx.route(/^https?:/, r => {
     const u = r.request().url(), i = u.indexOf('/main/'), rel = i > 0 ? u.slice(i + 6) : '';
     const own = route && route(u, r);
@@ -1143,7 +1145,7 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
   for (const [w, h] of [[1920, 1080], [1280, 720], [960, 540]]) {
     const { dockh, dockb } = room(w, h);
     for (const focus of [0, 1]) {   // the next prayer focused (as the row starts), then the news (wider, its summary)
-      const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&panels=prayers,news,world,tech,verse,hadith&rotate=30&dockh=${dockh}&dockb=${dockb}`, { width: w, height: h });
+      const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&panels=prayers,news,world,tech,forecast,matches,verse,hadith&rotate=30&dockh=${dockh}&dockb=${dockb}`, { width: w, height: h });
       // the cards as seen: a card shown (not hidden by nxFocus) and at least partly on the screen must be wholly on it
       const seen = () => [...document.querySelectorAll('#nx-rail > .nx-c')].map(c => { const b = c.getBoundingClientRect();
         return { k: c.dataset.k, l: Math.round(b.left), r: Math.round(b.right), shown: getComputedStyle(c).visibility !== 'hidden' }; })
@@ -1245,7 +1247,7 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
   // opens and the row's panels for the detail window, the news tab last read there, the mouse over a card
   {
     const init = () => { window.__rects = []; window.SaudiTVNative = { cardRect: (...a) => window.__rects.push(a), qrRect: () => {} }; };
-    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&panels=prayers,news,world,hadith&rotate=30&dockh=200&dockb=88`, { init });
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&panels=prayers,news,world,forecast,matches,hadith&rotate=30&dockh=200&dockb=88`, { init });
     const r = await p.evaluate(() => {
       const out = { rect: window.__rects[window.__rects.length - 1] };
       window.sauditvSetFocused(true);
@@ -1288,6 +1290,87 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
     await ctx.close();
   }
 
+  // the «اليوم» row in the order of the home screen's cards (#panels): each card ticked at its place, the news pages one
+  // news card (its tabs in the list's order) at the place of the first of them, nothing not ticked (the next prayer, the
+  // weather, the match neither); the launcher's bridge (◀ ▶, OK, the detail window's list, cardRect) in the same order;
+  // nothing ticked (#panel=none): the concept's row. SHOTS=1: optimize/run/shots/nx-home-order.png (960 x 540)
+  {
+    const init = () => { window.__rects = []; window.SaudiTVNative = { cardRect: (...a) => window.__rects.push(a), qrRect: () => {} }; };
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=hadith&panels=hadith,world,forecast,news,prayers,tech,matches&rotate=15&dockh=100&dockb=44`,
+      { init, width: 960, height: 540 });
+    await p.waitForFunction(() => !!HADITH_DAY, null, { timeout: 40000 }).catch(() => errors.push('no hadith'));
+    await p.evaluate(() => { nxDraw(); });
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(() => {
+      const keys = () => [...document.querySelectorAll('#nx-rail > *')].map(c => c.dataset.k).join();
+      const out = { keys: keys(), chips: [...document.querySelectorAll('.nx-ch span')].map(x => x.textContent + (x.className ? '*' : '')).join(),
+                    list: window.sauditvDetailList(), rect: window.__rects[window.__rects.length - 1], steps: [] };
+      window.sauditvSetFocused(true);
+      out.steps.push(window.sauditvCurrentPanel());
+      for (let i = 0; i < 5; i++){ window.sauditvStep(1); out.steps.push(window.sauditvCurrentPanel()); }
+      return out;
+    });
+    if (process.env.SHOTS) {
+      await p.evaluate(() => { window.sauditvSetFocused(false); for (let i = 0; i < 9; i++) window.sauditvStep(-1); });
+      await p.waitForTimeout(300);
+      await p.screenshot({ path: path.join(ROOT, 'optimize/run/shots/nx-home-order.png') });
+    }
+    check('new look: the row follows the home screen\'s card order, the news pages one card at the first one\'s place (its tabs in the list\'s order)',
+      !errors.length && r.keys === 'hadith,news,forecast,prayers,matches' && r.chips === 'العالم*,السعودية,التقنية',
+      JSON.stringify(r) + errors.join('; '));
+    check('new look: the launcher\'s bridge in the same order (◀ ▶ card to card, OK\'s panel, the detail window\'s list, the row\'s box)',
+      r.steps.join() === 'hadith,world,forecast,prayers,matches,matches' && r.list === 'hadith,world,news,tech,forecast,prayers,matches'
+      && r.rect && r.rect[3] > 0, JSON.stringify(r));
+    await ctx.close();
+    for (const [hash, want, tag] of [['&panel=verse&panels=verse,news', 'verse,news', 'only the ticked cards: no prayer, weather or match card'],
+                                     ['&panel=forecast', 'forecast', 'one card ticked: that card alone'],
+                                     ['&panel=none', 'prayers,news,forecast,matches', 'nothing ticked: the next prayer, the news, the weather, the match']]) {
+      const o = await nxOpen(NXH + hash);
+      const k = await o.p.evaluate(() => [...document.querySelectorAll('#nx-rail > *')].map(c => c.dataset.k).join());
+      check(`new look: the row's cards (${tag})`, !o.errors.length && k === want, k + o.errors.join('; '));
+      await o.ctx.close();
+    }
+  }
+
+  // the news card's tabs in turn every CONFIG.rotateMs (#rotate=5: 5 s), in the order shown, past a tab with no news,
+  // the tab marker and the headlines together; held while the detail window is open (on from the tab last read there)
+  // and while the news card is focused; none with fewer than two tabs to show
+  {
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&panels=prayers,news,world,tech,hadith&rotate=5`, { timers: true });
+    const st = () => p.evaluate(() => { const on = document.querySelector('.nx-ch .on');
+      return { tab: NX_TAB, on: on && on.textContent, onShown: !!on && !on.hidden && on.getBoundingClientRect().width > 0,
+               head: (document.querySelector('.nx-nl b') || {}).textContent, timers: NX_ROT ? 1 : 0 }; });
+    const run = async ms => { await p.clock.runFor(ms); await p.waitForTimeout(50); };
+    await p.evaluate(() => { NEWS.world = []; nxDraw(); });
+    const a = await st();
+    await run(5300);
+    const b = await st();   // world has no news: on to tech
+    await run(5300);
+    const c = await st();   // and round to the country's again
+    await p.evaluate(() => window.sauditvHold(true));
+    await run(16000);
+    const d = await st();   // held behind the detail window
+    await p.evaluate(() => { localStorage.setItem('sauditv-card-pos', JSON.stringify({ panel: 'tech', at: Date.now() })); window.sauditvHold(false); });
+    await run(100);
+    const e = await st();   // back: the tab last read
+    await run(5300);
+    const f = await st();   // then on from it
+    await p.evaluate(() => { window.sauditvSetFocused(true); window.sauditvStep(1); });
+    await run(16000);
+    const g = await st();   // the news card focused: no switch
+    await p.evaluate(() => { window.sauditvStep(1); NEWS.tech = []; nxDraw(); });
+    await run(16000);
+    const h = await st();   // one tab with news: no switch
+    const all = { a, b, c, d, e, f, g, h };
+    check('new look: the news card\'s tabs rotate every rotateMs in the order shown, past a tab with no news, the marker and the headlines together',
+      !errors.length && a.tab === 'news' && a.on === 'السعودية' && b.tab === 'tech' && b.on === 'التقنية' && b.head.startsWith('آبل')
+      && c.tab === 'news' && c.head.startsWith('انطلاق') && [a, b, c].every(x => x.onShown) && a.timers === 1, JSON.stringify(all) + errors.join('; '));
+    check('new look: the tabs\' rotation held while the detail window is open (sauditvHold(true)), on from the tab last read after it',
+      d.tab === 'news' && d.timers === 0 && e.tab === 'tech' && e.on === 'التقنية' && f.tab === 'news' && f.timers === 1, JSON.stringify(all));
+    check('new look: no tab switch while the news card is focused, nor with only one tab to show', g.tab === 'news' && h.tab === 'news', JSON.stringify(all));
+    await ctx.close();
+  }
+
   // a switch of look: the launcher gives the page a new address (the settings fragment's look=new or not) and reloads it
   {
     const { p, ctx, errors } = await open('tv.html', 'city=الرياض&home=1&panel=prayers', { at: AT });
@@ -1309,6 +1392,58 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
     const d = await open('tv.html', 'city=الرياض&look=bogus', { at: AT });
     check('switching looks: an unknown #look is «الكلاسيكي»', await d.p.evaluate(() => CONFIG.look === 'classic' && !document.getElementById('nx')), '');
     await d.ctx.close();
+    await ctx.close();
+  }
+
+  // «يُتلى الآن · <reciter>» on the home screen in «الجديد» (#radiopush=1: told by sauditvRadioChanged): nxBoot moves #qr
+  // into the standfirst's block in its meta line's place (the meta hidden while it plays, back when it stops); gold, 14 px,
+  // the name in a <bdi> and whole (no «…»: a reciter, the Saudi radio), within the block; the block, the «اليوم» row where
+  // they were, clear of the dateline even with a two-line standfirst; its box (as seen, #nx scaled) to the launcher
+  // (qrRect), 0 x 0 once off. SHOTS_QR=1: optimize/run/shots/nx-home-quran.png (960 x 540)
+  for (const [w, h] of [[960, 540], [1920, 1080]]) {
+    const { dockh, dockb } = room(w, h);
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&radiopush=1&dockh=${dockh}&dockb=${dockb}`, { width: w, height: h,
+      init: "window.__radio = ''; window.SaudiTVRadio = {state: () => window.__radio}; window.__rects = [];"
+        + "window.SaudiTVNative = {cardRect: () => {}, qrRect: (...a) => window.__rects.push(a)};" });
+    await p.waitForTimeout(700);
+    const box = () => {
+      const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
+      const el = document.getElementById('qr'), cs = getComputedStyle(el), q = s => document.querySelector(s);
+      return { hidden: el.hidden || cs.display === 'none', text: el.textContent, bdi: (el.querySelector('bdi') || {}).textContent,
+               inDeck: !!el.closest('.nx-dk'), meta: R(q('#nx-mt')), metaShown: getComputedStyle(q('#nx-mt')).display !== 'none' && !!q('#nx-mt').textContent,
+               whole: q('#qr-t').scrollWidth <= q('#qr-t').clientWidth, afterMeta: q('#nx-mt').nextElementSibling === el, color: cs.color,
+               size: parseFloat(cs.fontSize) * Math.min(innerWidth / 960, innerHeight / 540), box: R(el), deck: R(q('.nx-dk')),
+               dl: R(q('#nx-dl')), today: R(q('.nx-rh')), rail: R(q('#nx-rail')), rect: window.__rects[window.__rects.length - 1] };
+    };
+    const off = await p.evaluate(box), tag = `new look home ${w}x${h}: «يُتلى الآن · ماهر المعيقلي»`;
+    await p.evaluate(() => { window.__radio = 'playing|ماهر المعيقلي'; window.sauditvRadioChanged(); });
+    await p.waitForTimeout(300);
+    const on = await p.evaluate(box);
+    const k = Math.min(w / 960, h / 540);
+    check(`${tag} in the meta line's place (the meta hidden), whole, gold, 14 px, within its block; the block and the «اليوم» row unmoved, clear of the dateline`,
+      !errors.length && off.hidden && !on.hidden && on.text === 'يُتلى الآن · ماهر المعيقلي' && on.bdi === 'ماهر المعيقلي' && on.inDeck && on.afterMeta
+      && on.color === 'rgb(235, 203, 139)' && Math.abs(on.size - 14 * k) < .5 && on.box.l >= on.deck.l - 1 && on.box.r <= on.deck.r + 1
+      && on.today.t === off.today.t && on.rail.t === off.rail.t && on.deck.t >= on.dl.b && on.box.b <= on.today.t
+      && Math.abs(on.deck.t - off.deck.t) < .5 && off.metaShown && !on.metaShown && on.whole
+      && Math.abs((on.box.t + on.box.b) - (off.meta.t + off.meta.b)) < 2 * k,
+      JSON.stringify({ off, on }) + errors.join('; '));
+    check(`${tag}: its box as seen sent to the launcher (qrRect)`, !!on.rect && on.rect[4] === w
+      && [on.box.l, on.box.t, on.box.w, on.box.h].every((v, i) => Math.abs(v - on.rect[i]) <= 1), JSON.stringify(on));
+    if (w === 960 && process.env.SHOTS_QR) await p.screenshot({ path: path.join(ROOT, 'optimize/run/shots/nx-home-quran.png') });
+    const two = await p.evaluate(() => { document.getElementById('nx-st').textContent = 'وزارة الموارد البشرية تعلن عن حزمة جديدة من البرامج لدعم توظيف الشباب في القطاع الخاص في جميع المناطق'; });
+    const t2 = await p.evaluate(box);
+    check(`${tag}: a two-line standfirst still clear of the dateline`, t2.deck.t >= t2.dl.b && t2.today.t === off.today.t, JSON.stringify(t2) + two);
+    await p.evaluate(() => { window.__radio = 'playing|إذاعة القرآن الكريم من السعودية'; window.sauditvRadioChanged(); });
+    await p.waitForTimeout(300);
+    const sa = await p.evaluate(box);
+    check(`new look home ${w}x${h}: «يُتلى الآن · إذاعة القرآن الكريم من السعودية» whole (no «…»), in the meta's place`,
+      !sa.hidden && sa.text === 'يُتلى الآن · إذاعة القرآن الكريم من السعودية' && sa.whole && !sa.metaShown && sa.box.l >= sa.deck.l - 1, JSON.stringify(sa));
+    for (const st of ['', 'paused|ماهر المعيقلي']) {
+      await p.evaluate(s => { window.__radio = s; window.sauditvRadioChanged(); }, st);
+      await p.waitForTimeout(300);
+      const r = await p.evaluate(box);
+      check(`${tag}: hidden for «${st || 'off'}», the meta back, a 0 x 0 box to the launcher`, r.hidden && r.metaShown && r.rect && r.rect.slice(0, 4).join() === '0,0,0,0', JSON.stringify(r));
+    }
     await ctx.close();
   }
 
@@ -1362,6 +1497,107 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
     const shift = await p.evaluate(() => { pixelShift(); return document.querySelector('.stage').style.transform; });
     check(`${tag}: pixelShift still moves it all (the stage)`, /^translate\(-?\d+px, ?-?\d+px\)$/.test(shift), shift);
     await ctx.close();
+  }
+
+  // «يُتلى الآن · <reciter>» on the screensaver in «الجديد»: nxBoot moves #qr under the clock (inside .nx-cv); a quiet
+  // gold line in the dates' small text size, the name in a <bdi>; hidden while off or paused; at 960 x 540 clear of the
+  // facts and of the tallest cards, in both corners (the hourly swap). SHOTS=1: optimize/run/shots/nx-saver-quran.png
+  {
+    const radio = st => `window.SaudiTVRadio = {state: () => window.__radio}; window.__radio = ${JSON.stringify(st)};`;
+    const line = () => {
+      const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width }; };
+      const el = document.getElementById('qr'), cs = getComputedStyle(el), ck = document.getElementById('nx-ck');
+      return { hidden: el.hidden || cs.display === 'none', text: el.textContent, bdi: (el.querySelector('bdi') || {}).textContent,
+               inCover: !!el.closest('.nx-cv'), afterClock: ck.nextElementSibling === el, color: cs.color, size: cs.fontSize,
+               dtSize: getComputedStyle(document.querySelector('.nx-dt span')).fontSize, box: R(el), cover: R(document.querySelector('.nx-cv')),
+               card: R(document.querySelector('#nx .week')), facts: R(document.querySelector('.nx-fx')), W: innerWidth, H: innerHeight };
+    };
+    for (const panel of ['verse', 'prayers', 'hadith', 'news', 'standings']) {
+      const { p, ctx, errors } = await nxOpen(`city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&teams=136013&look=new&panel=${panel}`,
+        { width: 960, height: 540, init: radio('playing|ماهر المعيقلي') });
+      if (panel === 'hadith') await p.waitForFunction(() => !!HADITH_DAY, null, { timeout: 40000 }).catch(() => {});
+      for (const swap of [false, true]) {
+        await p.evaluate(s => { window.sauditvSaver.swap(s); renderPanel(false); }, swap);
+        await p.waitForTimeout(1600);
+        const r = await p.evaluate(line), tag = `new look screensaver 960x540, card ${panel}${swap ? ', swapped' : ''}: «يُتلى الآن · ماهر المعيقلي»`;
+        check(`${tag} under the clock, gold, the dates' small size, clear of the facts and the card`,
+          !errors.length && !r.hidden && r.text === 'يُتلى الآن · ماهر المعيقلي' && r.bdi === 'ماهر المعيقلي' && r.inCover && r.afterClock
+          && r.color === 'rgb(235, 203, 139)' && r.size === r.dtSize && r.box.w > 0 && r.box.l >= 0 && r.box.r <= r.W && r.box.b <= r.H
+          && apart(r.cover, r.facts) && apart(r.cover, r.card) && apart(r.box, r.facts), JSON.stringify(r) + errors.join('; '));
+      }
+      if (panel === 'verse') {
+        await p.evaluate(() => window.sauditvSaver.swap(false));
+        await p.waitForTimeout(1600);
+        if (process.env.SHOTS) await p.screenshot({ path: path.join(ROOT, 'optimize/run/shots/nx-saver-quran.png') });
+        for (const st of ['', 'paused|ماهر المعيقلي', 'loading|ماهر المعيقلي']) {
+          await p.evaluate(s => { window.__radio = s; tickRadio(); }, st);
+          const r = await p.evaluate(line);
+          check(`new look screensaver: «يُتلى الآن» hidden for «${st || 'off'}»`, r.hidden, JSON.stringify(r));
+        }
+        await p.evaluate(() => { window.__radio = 'playing|<b>x</b>'; tickRadio(); });
+        check('new look screensaver: the station\'s name is text, never markup',
+          await p.evaluate(() => !document.querySelector('#qr bdi b') && document.getElementById('qr').textContent === 'يُتلى الآن · <b>x</b>'));
+      }
+      await ctx.close();
+    }
+    // the classic screensaver: the reciter's name in its chip; hidden while off or paused
+    const { p, ctx, errors } = await open('tv.html', 'city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh', { init: radio('playing|ماهر المعيقلي') });
+    await p.waitForTimeout(700);
+    const shown = () => { const el = document.getElementById('qr'); return { hidden: el.hidden || getComputedStyle(el).display === 'none', text: el.textContent }; };
+    let c = await p.evaluate(shown);
+    check('classic screensaver: «يُتلى الآن: ماهر المعيقلي»', !errors.length && !c.hidden && c.text === 'يُتلى الآن: ماهر المعيقلي', JSON.stringify(c) + errors.join('; '));
+    for (const st of ['', 'paused|ماهر المعيقلي']) {
+      await p.evaluate(s => { window.__radio = s; tickRadio(); }, st);
+      c = await p.evaluate(shown);
+      check(`classic screensaver: «يُتلى الآن» hidden for «${st || 'off'}»`, c.hidden, JSON.stringify(c));
+    }
+    await ctx.close();
+  }
+
+  // the screensaver's rotating card in «الجديد»: its quiet dots (one per card picked, 6 px, 6 apart, the current one gold,
+  // from the card's right under its content, on its plate within its 420), no progress line, none for a single card; the
+  // facts picked by #facts= (in that order, at most four, unknown ids left out; hijri: the Hijri date, the Gregorian
+  // under it). SHOTS=1: optimize/run/shots/nx-saver-dots.png (960 x 540)
+  {
+    const SAVER = 'city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&teams=136013&look=new';
+    const { p, ctx, errors } = await nxOpen(`${SAVER}&panel=prayers&panels=prayers,verse,forecast&rotate=15&facts=hijri,weather,prayer,match,ramadan`,
+      { width: 960, height: 540 });
+    await p.evaluate(() => window.sauditvSaver.swap(false));
+    await p.waitForTimeout(1800);
+    const dots = () => {
+      const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height }; };
+      const card = document.querySelector('#nx .week'), rot = document.getElementById('rot'), ds = [...document.querySelectorAll('#rot-dots b')];
+      const text = [...card.querySelectorAll('#week-list *')].filter(e => !e.children.length && e.textContent.trim() && getComputedStyle(e).display !== 'none').map(R);
+      return { shown: !rot.hidden && getComputedStyle(rot).display !== 'none', line: getComputedStyle(document.querySelector('#rot .rot-ln')).display,
+               card: R(card), n: ds.length, on: ds.findIndex(b => b.classList.contains('on')), boxes: ds.map(R),
+               colors: ds.map(b => getComputedStyle(b).backgroundColor), textBottom: Math.max(...text.map(x => x.b)),
+               max: 420 * Math.min(innerWidth / 960, innerHeight / 540), panel: CONFIG.panel, list: CONFIG.panels.join(),
+               facts: [...document.querySelectorAll('.nx-fx li')].map(li => [li.querySelector('b').textContent, li.querySelector('span').textContent]) };
+    };
+    const d = await p.evaluate(dots);
+    if (process.env.SHOTS) await p.screenshot({ path: path.join(ROOT, 'optimize/run/shots/nx-saver-dots.png') });
+    const gap = d.boxes.length > 1 ? d.boxes[0].l - d.boxes[1].r : 0;
+    check('new look screensaver: one quiet dot per card picked, the current one gold, 6 px and 6 apart, no progress line',
+      !errors.length && d.shown && d.line === 'none' && d.n === 3 && d.on === d.list.split(',').indexOf(d.panel)
+      && d.boxes.every(b => Math.abs(b.w - 6) < .5 && Math.abs(b.h - 6) < .5) && Math.abs(gap - 6) < .5
+      && d.colors.filter((c, i) => i !== d.on).every(c => c === 'rgba(255, 255, 255, 0.35)') && d.colors[d.on] === 'rgb(235, 203, 139)',
+      JSON.stringify(d) + errors.join('; '));
+    check('new look screensaver: the dots from the card\'s right, under its content, within its plate (420) and clear of its text',
+      Math.abs(d.boxes[0].r - d.card.r) < 1 && d.boxes.every(b => b.t >= d.textBottom - .5 && b.b <= d.card.b + .5 && b.l >= d.card.l - .5)
+      && d.card.w <= d.max + 1, JSON.stringify(d));
+    check('new look screensaver: #facts= picks the facts in its order, at most four (hijri: «13 جمادى الأولى 1448», the Gregorian under it)',
+      d.facts.length === 4 && d.facts[0][0] === '13 جمادى الأولى 1448' && /2026/.test(d.facts[0][1]) && d.facts[1][0].includes('31°')
+      && d.facts[2][0].startsWith('المغرب') && d.facts[3][0].includes('×'), JSON.stringify(d.facts));
+    await ctx.close();
+    for (const [facts, want, tag] of [['ramadan,bogus,prayer,ramadan', ['رمضان', 'المغرب'], 'unknown and repeated ids left out'],
+                                      ['', ['المغرب', '', '', 'رمضان'], 'none given: the next prayer, the match, the weather, Ramadan']]) {
+      const o = await nxOpen(`${SAVER}&panel=verse` + (facts ? '&facts=' + facts : ''));
+      const r = await o.p.evaluate(() => ({ facts: [...document.querySelectorAll('.nx-fx li b')].map(b => b.textContent),
+        rot: document.getElementById('rot').hidden }));
+      check(`new look screensaver: the facts (${tag}); a single card has no dots`, !o.errors.length && r.rot && r.facts.length === want.length
+        && want.every((w, i) => r.facts[i].startsWith(w)), JSON.stringify(r) + o.errors.join('; '));
+      await o.ctx.close();
+    }
   }
 
   // the home screen's photo credit in «الجديد»: on the «الأسواق» line at its left, the ticker after it; clear of the
@@ -1440,6 +1676,77 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
         !errors.length && r.rows > 0 && r.c.w <= r.max + 1 && r.c.r <= r.W && r.c.l >= 0 && !r.out.length && !r.cut.length && !r.covered.length
         && r.plate === '-1' && clear, JSON.stringify(r) + errors.join('; '));
       await ctx.close();
+    }
+  }
+
+  // the screensaver's card in «الجديد» goes through exactly the cards picked in «المحتوى» (#panels), in their order,
+  // every rotateMs (#rotate=15, «مدة كل بطاقة»'s default) as the classic screensaver's card does: at 960 x 540, each one in turn shown whole on its plate
+  // (within its 420, nothing cut or over it), clear of the facts, the place and the clock
+  {
+    const LIST = ['prayers', 'verse', 'hadith', 'forecast', 'matches', 'standings', 'news'];
+    const SEC = 15;   // «مدة كل بطاقة» (the settings' rotateSec, its default): the page's #rotate
+    const TITLE = { prayers: 'مواقيت اليوم', forecast: 'الأيام القادمة · الرياض', matches: 'مباريات فرقك', standings: 'ترتيب دوري روشن', news: 'أخبار السعودية' };
+    const DATA = () => {   // every card with its data; each switch of the rotation logged ([time, panel])
+      const now = Date.now(), ev = { idEvent: 'x1', strHomeTeam: 'Al-Hilal', strAwayTeam: 'Al-Nassr', strTimestamp: new Date(now + 5.6 * 36e5).toISOString().slice(0, 19), idHomeTeam: '136013' };
+      NEWS.news = [1, 2, 3].map(h => ({ headline: 'خبر رقم ' + h + ' من أخبار اليوم', source: 'واس', t: now - h * 36e5, link: '' }));
+      FORECAST = [0, 1, 2, 3, 4].map(i => ({ date: new Date(now + i * 864e5).toISOString().slice(0, 10), code: 2, hi: 37 - i, lo: 24 - i }));
+      STANDINGS = ['Al Hilal', 'Al Nassr', 'Al Ittihad', 'Al Ahli', 'Al Qadsiah', 'Al Shabab'].map((name, i) => ({ rank: i + 1, name, gp: 12, pts: 30 - 2 * i, espnId: String(i) }));
+      MATCHES = { '136013': ev }; NEXT_LIST = { '136013': [ev] };
+      renderMatches(); tickPrayer(); tickRamadan();
+      if (NX) { NX_WX = { t: 31, code: 0, hum: 12, hi: 33, lo: 19 }; nxDraw(); }
+      renderPanel(false);
+      window.__swaps = [];
+      const sw = swapPanel;
+      window.swapPanel = P => { window.__swaps.push([Date.now(), P]); return sw(P); };
+    };
+    const state = () => {
+      const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width }; };
+      const card = document.querySelector('.week'), hd = document.getElementById('week-hd'), c = R(card), cs = getComputedStyle(card);
+      const leaves = [...card.querySelectorAll('*')].filter(e => !e.children.length && e.textContent.trim() && getComputedStyle(e).display !== 'none');
+      const q = card.querySelector('#week-list .quote');
+      return { panel: CONFIG.panel, nx: !!card.closest('#nx'), c, max: 420 * Math.min(innerWidth / 960, innerHeight / 540), W: innerWidth, rows: leaves.length,
+               shown: cs.display !== 'none' && cs.visibility === 'visible' && +cs.opacity === 1 && +getComputedStyle(document.getElementById('week-list')).opacity === 1,
+               title: getComputedStyle(hd).display !== 'none' ? hd.textContent : '', quote: q ? (q.classList.contains('hadith') ? 'hadith' : q.textContent.slice(0, 1)) : '',
+               out: leaves.filter(e => { const b = R(e); return b.l < c.l - 1 || b.r > c.r + 1 || b.t < c.t - 1 || b.b > c.b + 1; }).map(e => e.textContent.slice(0, 20)),
+               cut: leaves.filter(e => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).textOverflow !== 'ellipsis').map(e => e.textContent.slice(0, 20)),
+               covered: leaves.filter(e => { const b = R(e), x = document.elementFromPoint((b.l + b.r) / 2, (b.t + b.b) / 2); return !x || !(e.contains(x) || x.contains(e)); })
+                 .map(e => e.textContent.slice(0, 20)),
+               others: ['#nx-pl', '.nx-cv', '.nx-fx'].map(s => document.querySelector(s)).filter(Boolean).map(R),
+               facts: document.querySelectorAll('.nx-fx li').length };
+    };
+    const runs = {};
+    for (const look of ['new', 'classic']) {
+      const hash = `city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&teams=136013&panel=${LIST[0]}&panels=${LIST.join(',')}&rotate=${SEC}` + (look === 'new' ? '&look=new' : '');
+      const { p, ctx, errors } = await open('tv.html', hash, { width: 960, height: 540, at: AT, timers: true });
+      await p.waitForFunction(() => !!HADITH_DAY, null, { timeout: 40000 }).catch(() => errors.push('no hadith'));
+      await p.evaluate(DATA);
+      await p.evaluate(() => window.sauditvSaver.swap(false));
+      for (let i = 0; i < 40 && !(await p.evaluate(() => window.__swaps.length)); i++) await p.clock.runFor(1000);   // the rotation's first switch
+      const t0 = await p.evaluate(() => window.__swaps[0][0]), seen = [];
+      for (let k = 0; k < LIST.length; k++) {   // halfway through each card's turn (time also flows while the rows slide in)
+        await p.clock.runFor(Math.max(0, t0 + SEC * 500 + k * SEC * 1000 - await p.evaluate(() => Date.now())));
+        if (look === 'new') await p.waitForTimeout(1800);   // its rows' slide-in (weekIn) over
+        seen.push(await p.evaluate(state));
+      }
+      runs[look] = { errors, seen, swaps: await p.evaluate(() => window.__swaps), rotateMs: await p.evaluate(() => CONFIG.rotateMs) };
+      await ctx.close();
+    }
+    const want = LIST.slice(1).concat(LIST[0]), N = runs.new, C = runs.classic;
+    const gaps = r => r.swaps.slice(1).map((s, i) => s[0] - r.swaps[i][0]);   // (time flows: a few ms either way)
+    const everySec = r => gaps(r).length === LIST.length - 1 && gaps(r).every(g => Math.abs(g - SEC * 1000) < 250);
+    const brief = r => ({ errors: r.errors, seen: r.seen.map(s => [s.panel, s.title || s.quote, s.shown]), swaps: r.swaps.map(s => s[1]), gaps: gaps(r) });
+    check(`new look screensaver, ${LIST.length} cards picked: its card shows each in turn, in their order, every ${SEC} s (#rotate), as the classic one does`,
+      !N.errors.length && !C.errors.length && N.rotateMs === SEC * 1000 && C.rotateMs === SEC * 1000
+      && N.seen.map(s => s.panel).join() === want.join() && N.swaps.map(s => s[1]).join() === want.join()
+      && C.seen.map(s => s.panel).join() === want.join() && C.swaps.map(s => s[1]).join() === want.join()
+      && everySec(N) && everySec(C),
+      JSON.stringify({ new: brief(N), classic: brief(C) }));
+    for (const s of N.seen) {
+      const clear = s.others.length === 3 && s.others.every(o => o.w === 0 || s.c.r <= o.l + 1 || o.r <= s.c.l + 1 || s.c.b <= o.t + 1 || o.b <= s.c.t + 1);
+      const right = TITLE[s.panel] ? s.title === TITLE[s.panel] && !s.quote : s.quote === (s.panel === 'verse' ? '﴿' : 'hadith');
+      check(`new look screensaver, the rotation's ${s.panel} card: shown whole on its plate within its ${Math.round(s.max)} px, its own content, clear of the facts, the place and the clock`,
+        s.nx && s.shown && right && s.rows > 0 && s.c.w <= s.max + 1 && s.c.l >= 0 && s.c.r <= s.W && !s.out.length && !s.cut.length && !s.covered.length
+        && clear && s.facts >= 3, JSON.stringify(s));
     }
   }
 

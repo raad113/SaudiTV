@@ -11,7 +11,8 @@ import java.util.List;
  * (CountryChange: news, league, clubs; never on a reload or a re-pick in the same country), the Quran radio's
  * stations and volume (RadioStations), where it plays (RadioWhen) and the home screen's chip (RadioChip, the launcher's),
  * the ticker's items (Tape), older builds' saved cards without the gone TV shows card (PanelMigrate) and the size the
- * photos are kept at for the screen (PhotoSize).
+ * photos are kept at for the screen (PhotoSize), the screensaver's facts and each card's seconds (SaverOptions, and the
+ * launcher's HomeLook.rotateSec).
  */
 public class LogicTest {
     static int failed = 0;
@@ -181,6 +182,28 @@ public class LogicTest {
             SetupState.initial(true, true) && SetupState.initial(true, false), "");
         check("setup: the pref is setupDone", SetupState.DONE.equals("setupDone"), SetupState.DONE);
 
+        // ---- «شكل الواجهة» asked once (SetupState.lookPending; lookChosen is never written by Prefs.migrate, so a
+        // missing one is false; Prefs.setLook, from the setup, the settings or ADB, sets it)
+        check("look chooser: a new install (setup not done, no lookChosen) -> not pending (the setup's own look step asks)",
+            !SetupState.lookPending(SetupState.initial(false, false), false), "");
+        check("look chooser: an older install updated (setup done, no lookChosen saved) -> pending once",
+            SetupState.lookPending(SetupState.initial(false, true), false) && SetupState.lookPending(SetupState.initial(true, true), false), "");
+        check("look chooser: lookChosen set (picked in the setup or the settings, the setup ended, Back on the chooser) -> not pending",
+            !SetupState.lookPending(true, true), "");
+        check("look chooser: a look set by ADB (Prefs.setLook sets lookChosen) -> not pending, even before the setup is done",
+            !SetupState.lookPending(true, true) && !SetupState.lookPending(false, true), "");
+        check("look chooser: the pref is lookChosen", SetupState.LOOK_CHOSEN.equals("lookChosen"), SetupState.LOOK_CHOSEN);
+        check("look chooser: the home screen opens the setup while done is 0, else the look chooser while look_pending is 1",
+            com.raad.sauditv.home.HomeLook.ask(0, 0) == com.raad.sauditv.home.HomeLook.ASK_SETUP
+            && com.raad.sauditv.home.HomeLook.ask(0, -1) == com.raad.sauditv.home.HomeLook.ASK_SETUP
+            && com.raad.sauditv.home.HomeLook.ask(1, 1) == com.raad.sauditv.home.HomeLook.ASK_LOOK
+            && com.raad.sauditv.home.HomeLook.ask(1, 0) == com.raad.sauditv.home.HomeLook.ASK_NONE, "");
+        check("look chooser: an older app (no look_pending column: -1) -> never the look chooser; the setup already asked "
+            + "this start (done passed as -1) -> the look chooser when due",
+            com.raad.sauditv.home.HomeLook.ask(1, -1) == com.raad.sauditv.home.HomeLook.ASK_NONE
+            && com.raad.sauditv.home.HomeLook.ask(-1, -1) == com.raad.sauditv.home.HomeLook.ASK_NONE
+            && com.raad.sauditv.home.HomeLook.ask(-1, 1) == com.raad.sauditv.home.HomeLook.ASK_LOOK, "");
+
         // ---- «شكل الواجهة» (Look; the launcher's HomeLook): «الكلاسيكي» unless set, «الجديد» on a new install
         check("look: none saved (an older build's settings) or anything unknown is «الكلاسيكي»", Look.of(null).equals(Look.CLASSIC)
             && Look.of("").equals(Look.CLASSIC) && Look.of("modern").equals(Look.CLASSIC) && Look.of("new").equals(Look.NEW), "");
@@ -334,6 +357,40 @@ public class LogicTest {
         check("online photos: a kept file's name is the address's SHA-1",
             PhotoSize.cacheName("abc").equals("a9993e364706816aba3e25717850c26c9cd0d89d.jpg")
                 && !PhotoSize.cacheName(th).equals(PhotoSize.cacheName(PhotoSize.commonsWidth(th, 1280, 720))), PhotoSize.cacheName("abc"));
+
+        // ---- «سطور شاشة التوقف» (SaverOptions.parseFacts, the page's #facts=): ids in order, each once, at most four;
+        // "" the default four, sent as nothing (the page's own); unknown ids or five refused
+        List<String> fx = SaverOptions.parseFacts("hijri, weather,prayer");
+        check("facts: ids kept in their order (hijri, weather, prayer); sent as &facts=hijri,weather,prayer",
+            fx != null && String.join(",", fx).equals("hijri,weather,prayer")
+            && SaverOptions.factsParam(fx).equals("&facts=hijri,weather,prayer"), fx);
+        check("facts: a repeated id counted once; upper case read",
+            String.join(",", SaverOptions.parseFacts("RAMADAN,prayer,ramadan")).equals("ramadan,prayer"), SaverOptions.parseFacts("RAMADAN,prayer,ramadan"));
+        check("facts: \"\" and default = prayer,match,weather,ramadan, sent as nothing (the page's default)",
+            String.join(",", SaverOptions.parseFacts("")).equals("prayer,match,weather,ramadan")
+            && SaverOptions.parseFacts("default").equals(SaverOptions.DEFAULT_FACTS)
+            && SaverOptions.factsParam(SaverOptions.parseFacts("")).isEmpty(), SaverOptions.parseFacts(""));
+        check("facts: an unknown id, five ids, or none at all refused (null)",
+            SaverOptions.parseFacts("prayer,clock") == null && SaverOptions.parseFacts("prayer,match,weather,ramadan,hijri") == null
+            && SaverOptions.parseFacts(",,") == null && SaverOptions.parseFacts(null) == null, "");
+        check("facts: a stored bad or missing value shows the default four",
+            SaverOptions.facts(null).equals(SaverOptions.DEFAULT_FACTS) && SaverOptions.facts("x,y").equals(SaverOptions.DEFAULT_FACTS)
+            && String.join(",", SaverOptions.facts("hijri")).equals("hijri"), "");
+        check("facts: each has its Arabic label («التاريخ الهجري»)", SaverOptions.factLabel("hijri").equals("التاريخ الهجري")
+            && SaverOptions.FACTS.length == 5 && SaverOptions.MAX_FACTS == 4, "");
+        // ---- «مدة كل بطاقة» (SaverOptions.parseRotate, the page's #rotate=; the launcher's HomeLook.rotateSec)
+        check("rotate: 10, 15, 20, 30, 60 (\"15s\" too); 15 by default",
+            SaverOptions.parseRotate("10") == 10 && SaverOptions.parseRotate(" 15s") == 15 && SaverOptions.parseRotate("60") == 60
+            && SaverOptions.DEFAULT_ROTATE == 15 && SaverOptions.rotate(0) == 15 && SaverOptions.rotate(20) == 20, "");
+        check("rotate: anything else refused (-1), a stored odd value read as 15",
+            SaverOptions.parseRotate("45") == -1 && SaverOptions.parseRotate("abc") == -1 && SaverOptions.parseRotate(null) == -1
+            && SaverOptions.parseRotate("5") == -1 && SaverOptions.rotate(45) == 15, "");
+        check("home screen: the card's seconds from the settings fragment (&rotate=15); an older app's without it: 30 as before",
+            com.raad.sauditv.home.HomeLook.rotateSec("city=x&rotate=15&look=new") == 15
+            && com.raad.sauditv.home.HomeLook.rotateSec("rotate=60") == 60
+            && com.raad.sauditv.home.HomeLook.rotateSec("city=x&panel=prayers") == 30
+            && com.raad.sauditv.home.HomeLook.rotateSec("xrotate=15") == 30 && com.raad.sauditv.home.HomeLook.rotateSec(null) == 30
+            && com.raad.sauditv.home.HomeLook.rotateSec("rotate=1") == 30, "");
 
         System.out.println(failed == 0 ? "\nall logic tests passed" : "\n" + failed + " failed");
         System.exit(failed == 0 ? 0 : 1);

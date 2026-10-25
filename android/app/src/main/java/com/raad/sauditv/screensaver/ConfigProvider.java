@@ -21,7 +21,10 @@ import android.net.Uri;
  * RadioWhen says, and resumes a pause), the same signature permission (writePermission in the manifest).
  * content://com.raad.sauditv.screensaver.config/setup: done (1/0), the first-run setup finished or skipped
  * (Prefs.setupDone); the home screen opens SetupActivity once per start while it is 0. An older app without this
- * answers the settings' columns, no "done": the home screen then opens nothing.
+ * answers the settings' columns, no "done": the home screen then opens nothing. look_pending (1/0): the setup is done
+ * but «شكل الواجهة» was never chosen (a TV set up before this build: Prefs.lookPending, SetupState.lookPending); the
+ * home screen, in front, then opens SetupActivity in its look-only mode (SetupActivity.LOOK_ONLY) once. An older app
+ * has no look_pending column: the home screen takes that as not pending.
  */
 public class ConfigProvider extends ContentProvider {
     @Override public boolean onCreate() { return true; }
@@ -37,8 +40,8 @@ public class ConfigProvider extends ContentProvider {
         }
         Prefs p = new Prefs(getContext());
         if ("/setup".equals(uri.getPath())) {
-            MatrixCursor c = new MatrixCursor(new String[] {"done"});
-            c.addRow(new Object[] {p.setupDone() ? 1 : 0});
+            MatrixCursor c = new MatrixCursor(new String[] {"done", "look_pending"});
+            c.addRow(new Object[] {p.setupDone() ? 1 : 0, p.lookPending() ? 1 : 0});
             return c;
         }
         if ("/radio".equals(uri.getPath())) {
