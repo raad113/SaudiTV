@@ -40,6 +40,14 @@
 #   optimize/saver.sh update                       download the latest screen now; says where from and which page shows
 #   optimize/saver.sh app-check                    is there a newer release of both apps? (checks only; installing is
 #                                                  the TV settings' «تحديث التطبيق»)
+#   optimize/saver.sh radio on|off                 «إذاعة القرآن الكريم» (off by default): plays while the home screen
+#                                                  or the screensaver is in front, stops for any other app
+#   optimize/saver.sh radio-station saudi|cairo|63|https://…   its station: an id of radio-stations, or any address
+#   optimize/saver.sh radio-volume 50              its volume in percent, 10 to 100 (apart from the TV's own volume)
+#   optimize/saver.sh radio-stations [filter]      the stations: id and name (mp3quran.net's list, read on the TV)
+#   optimize/saver.sh radio-test [id]              each address of the two Quran radios (or of one station), read for
+#                                                  3 s from the TV (through its VPN)
+#   optimize/saver.sh radio-hold on|off            the athan's hook: the radio stops (up to 15 min), then plays again
 # Only ADB can change these (com.raad.sauditv.screensaver/.SaverReceiver needs the shell's DUMP).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -107,5 +115,23 @@ case "${1:-}" in
     [ $# -ge 3 ] || { echo "usage: optimize/saver.sh sources $2 id,id (\"\" = the defaults)"; exit 1; }
     send SET "--es src_$2 $(quote "$3")" ;;
   find-team) shift; "$PY" -I optimize/find-team.py "$@" ;;   # Arabic or English name
-  *) sed -n '2,42p' "$0"; exit 1 ;;
+  radio)
+    case "${2:-}" in on|true) v=on ;; off|false) v=off ;; *) echo "usage: optimize/saver.sh radio on|off"; exit 1 ;; esac
+    send SET "--es radio $v" ;;
+  radio-station)
+    [ -n "${2:-}" ] || { echo "usage: optimize/saver.sh radio-station saudi|cairo|<id>|https://… (optimize/saver.sh radio-stations)"; exit 1; }
+    send SET "--es radio_station $(quote "$2")" ;;
+  radio-volume)
+    case "${2:-}" in
+      [0-9]|[0-9][0-9]|100) [ "$2" -ge 10 ] || { echo "usage: optimize/saver.sh radio-volume 10…100"; exit 1; } ;;
+      *) echo "usage: optimize/saver.sh radio-volume 10…100"; exit 1 ;;
+    esac
+    send SET "--es radio_volume $2" ;;
+  radio-stations)
+    if [ $# -ge 2 ]; then send RADIO_STATIONS "--es filter $(quote "$2")"; else send RADIO_STATIONS; fi ;;
+  radio-test)
+    if [ $# -ge 2 ]; then send RADIO_TEST "--es station $(quote "$2")"; else send RADIO_TEST; fi ;;
+  radio-hold)
+    case "${2:-}" in on) send PAUSE_FOR_ATHAN ;; off) send RESUME_AFTER_ATHAN ;; *) echo "usage: optimize/saver.sh radio-hold on|off"; exit 1 ;; esac ;;
+  *) sed -n '2,50p' "$0"; exit 1 ;;
 esac

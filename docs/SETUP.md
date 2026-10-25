@@ -113,6 +113,18 @@ LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
   - الإصدار القديم بخطوات يدوية (لو احتجته): ارفع `VERSION`، ابنِ، ادفع للـ `main` (الصفحة)، وبعدين:
   `gh release create v9036 android/out/saudi-tv-screensaver.apk android/out/saudi-tv-home.apk --title v9036 --notes "…"`.
 
+### ١٠. إذاعة القرآن الكريم
+- إعدادات سعودي TV ← «إذاعة القرآن الكريم» (متوقفة افتراضياً): تشغيل وإيقاف، «المحطة» (إذاعة القرآن الكريم من السعودية
+  ومن القاهرة أول، ثم قرّاء mp3quran.net، مع بحث و«رابط من عندي»)، «مستوى صوت الإذاعة» (١٠ إلى ١٠٠٪، غير صوت التلفاز)،
+  و«معاينة الإذاعة». وفي الإعدادات السريعة للواجهة زر «إذاعة القرآن».
+- تشتغل ما دامت الواجهة أو شاشة التوقف قدامك، وتوقف لما يفتح أي تطبيق ثاني (يوتيوب، نتفليكس…) أو تنطفي الشاشة، وترجع
+  لما ترجع للواجهة. تحت الساعة «يُتلى الآن: …».
+- من ADB: `optimize/saver.sh radio on|off`، `radio-station saudi|cairo|<رقم>|https://…`، `radio-volume 50`،
+  `radio-stations [بحث]`، و `radio-test` (يجرّب روابط الإذاعتين من التلفاز نفسه، يعني من خلال الـ VPN).
+- **تغيير الدولة:** اختيار مدينة في دولة ثانية من الإعدادات يجيب أخبار الدولة (لو لها قائمة أخبار، وإلا تبقى أخبارك
+  ويقولها صف «دولة الأخبار»)، ودوريها الأول في الترتيب، وأول ثلاثة أندية في جدوله. مرة وحدة وقت التغيير، وتقدر تغيّرها بعدين.
+  `optimize/saver.sh` ما يسوي كذا: كل قيمة بأمرها.
+
 ---
 
 ## English
@@ -239,7 +251,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 ### 10. The tools
 | | |
 |---|---|
-| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `minrating`, `autoupdate`, `update`, `app-check` |
+| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `minrating`, `autoupdate`, `update`, `app-check`, `radio`, `radio-station`, `radio-volume`, `radio-stations`, `radio-test`, `radio-hold` |
 | `optimize/dock.sh` | the favourites row: `show`, `apps`, `set`, `reset` |
 | `optimize/check-home.sh` | opens an app, presses Home, says whether our home screen came back |
 | `optimize/start-saver.sh` · `shot.sh` | start the screensaver now · screenshots without navigating |
@@ -247,5 +259,27 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 | `tools/release.sh` | a new release of both apps: version, build, `update.json`, tests, tag, GitHub release |
 | `optimize/run.sh` | the step-by-step setup with measurements before and after; `status` |
 | `optimize/keep.sh` · `reset.sh` · `restore.sh` | protected features back on · back to stock · the stock home only |
+
+### 11. The Quran radio («إذاعة القرآن الكريم»)
+- سعودي TV's settings > «إذاعة القرآن الكريم» (off by default): on/off, «المحطة» (the Quran radios from Saudi Arabia and
+  from Cairo first, then mp3quran.net's reciters; a search, and «رابط من عندي» for any http(s) stream), «مستوى صوت
+  الإذاعة» (10–100 %, apart from the TV's volume) and «معاينة الإذاعة». The home screen's quick settings have a
+  «إذاعة القرآن» tile.
+- The screensaver app plays it natively (`RadioService`, Android's MediaPlayer: MP3/AAC over HTTP or ICY, and HLS), so a
+  page reload never cuts it, while the home screen (or its full-screen card) or the screensaver is in front. Another app
+  taking the audio focus (YouTube, Netflix, any player) stops it; it plays again when our home screen or screensaver is
+  back in front. Screen off: stopped. A failing stream: the station's next address, then «تعذّر التشغيل» and retries
+  after 5, 15, 30, 60, 120, then every 300 s. «يُتلى الآن: …» under the clock while it plays (dimmed and moved with the
+  clock on the screensaver).
+- Over ADB: `optimize/saver.sh radio on|off`, `radio-station saudi|cairo|<id>|https://…`, `radio-volume 50`,
+  `radio-stations [filter]`, `radio-test [id]` (reads each address from the TV itself, so through its VPN).
+- **The athan's hook** (for the athan, not built yet): in the screensaver app, `RadioService.hold(context, true)` before
+  the athan and `hold(context, false)` after it; from the home app (same signing key), the broadcasts
+  `com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN` / `RESUME_AFTER_ATHAN` to `com.raad.sauditv.screensaver/.RadioReceiver`;
+  from ADB, `optimize/saver.sh radio-hold on|off`. A hold ends by itself after 15 minutes.
+- **A change of country:** picking a city of another country in the settings (its list, or «اكتب اسم مدينتك») brings that
+  country's news (when it has a news list; else the news stay and «دولة الأخبار» says so), its top league in the table
+  and the top 3 clubs of that table (else a list of October 2026). Once, at the change, never on a reload or a re-pick in
+  the same country (older builds' settings count as Saudi Arabia); `optimize/saver.sh` sets each value itself.
 
 What was learned on real TCL sets, and what must stay on: [OPTIMIZE.md](OPTIMIZE.md).

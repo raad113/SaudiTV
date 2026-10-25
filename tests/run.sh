@@ -6,4 +6,6 @@ cd "$(dirname "$0")/.."
 python3 tests/check.py
 python3 tests/upload_test.py
 python3 tests/find_tv_test.py
+python3 tests/saver_sh_test.py   # optimize/saver.sh's radio commands, with a stand-in for the TV
+python3 tests/java_test.py       # the settings app's plain-Java logic (a JDK: Android Studio's jbr)
 node tests/page.test.mjs

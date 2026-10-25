@@ -475,6 +475,96 @@ for (const [panel, title] of [['world', 'أخبار العالم'], ['hadith', '
   await ctx.close();
 }
 
+// ---- the ticker's rates are sanity-checked (mkFxQuote): Yahoo's SAR=X closes near 3.63 for days while its price is
+// 3.752, and the tape showed «الدولار/الريال +3.22%». Pegged currencies: the previous close is the last bar near the
+// peg, a price off the peg is no price (open.er-api.com instead), a change over 1 % is dropped; any other rate, over 10 %
+{
+  const { p, ctx } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728');
+  const r = await p.evaluate(() => {
+    const day = 86400, t0 = 1792364400;   // daily bars, then today's price at the last bar's day
+    const chart = (price, closes, prevClose) => ({
+      meta: {regularMarketPrice: price, chartPreviousClose: prevClose, regularMarketTime: t0 + (closes.length - 1) * day + 3600,
+             exchangeTimezoneName: 'Europe/London', gmtoffset: 0},
+      timestamp: closes.map((_, i) => t0 + i * day), indicators: {quote: [{close: closes}]}});
+    const pct = q => q ? mkIndexPct(q) : 'none';
+    return {
+      // SAR=X as Yahoo answered on 2026-10-24: every earlier bar about 3 % low, chartPreviousClose too
+      sarBogus: pct(mkFxQuote(chart(3.7521, [3.6363, 3.6467, 3.6520, 3.6283, 3.6352, 3.7521], 3.6363), 'SAR=X')),
+      sarPrice: (mkFxQuote(chart(3.7521, [3.6363, 3.6467, 3.6520, 3.6283, 3.6352, 3.7521], 3.6363), 'SAR=X') || {}).price,
+      // AED=X with sane bars: its small real change stays
+      aed: pct(mkFxQuote(chart(3.6726, [3.6715, 3.6715, 3.6715, 3.6715, 3.6715, 3.6726], 3.6715), 'AED=X')),
+      // QAR=X: one bad bar right before today: the last good one counts
+      qar: pct(mkFxQuote(chart(3.64, [3.6447, 3.6447, 3.5137, 3.6447, 3.5084, 3.64], 3.6447), 'QAR=X')),
+      // a price off the peg (3.63 for the riyal): no price, open.er-api.com instead
+      sarOff: mkFxQuote(chart(3.63, [3.75, 3.75, 3.63], 3.75), 'SAR=X'),
+      // a floating rate: +2 % is a day, +15 % a bad bar
+      egp: pct(mkFxQuote(chart(49.47, [48.5, 48.5, 49.47], 48.5), 'EGP=X')),
+      egpBad: pct(mkFxQuote(chart(55.8, [48.5, 48.5, 55.8], 48.5), 'EGP=X')),
+      eur: pct(mkFxQuote(chart(1.0920, [1.0870, 1.0890, 1.0920], 1.0870), 'EURUSD=X')),
+      // an index is not a rate: a big move stays (mkIndexQuote as before)
+      idx: pct(mkIndexQuote(chart(12000, [10000, 10500, 12000], 10000))),
+      shown: mkTapeHtml(3.7521, mkIndexPct(mkFxQuote(chart(3.7521, [3.6363, 3.6467, 3.7521], 3.6363), 'SAR=X')), 'fx'),
+      pegs: Object.keys(FX_PEG).sort().join(','),
+      saItem: TAPE.find(t => t.sym === 'SAR=X'),
+    };
+  });
+  check('pegged rate: Yahoo\'s bogus SAR=X bars give no daily change (was +3.22 %), the price stays',
+    r.sarBogus === null && r.sarPrice === 3.7521 && r.shown.value.includes('3.7521') && r.shown.change === '', JSON.stringify(r));
+  check('pegged rate: AED=X\'s real small change stays (+0.03 %)', typeof r.aed === 'number' && Math.abs(r.aed - 0.03) < 0.01, r.aed);
+  check('pegged rate: QAR=X skips a bad bar, against the last close near the peg', typeof r.qar === 'number' && Math.abs(r.qar - -0.13) < 0.01, r.qar);
+  check('pegged rate: a price off the peg is no price (open.er-api.com\'s rate instead; the Saudi item has er:SAR)',
+    r.sarOff === null && r.saItem && r.saItem.er === 'SAR', JSON.stringify([r.sarOff, r.saItem]));
+  check('other rates: +2 % a day stays, +15 % is dropped; EUR/USD as before; an index keeps a big move',
+    Math.abs(r.egp - 2) < 0.01 && r.egpBad === null && Math.abs(r.eur - 0.28) < 0.01 && Math.abs(r.idx - 14.29) < 0.01, JSON.stringify(r));
+  check('pegs listed: the Gulf currencies and the Jordanian dinar at least',
+    ['AED', 'BHD', 'JOD', 'OMR', 'QAR', 'SAR'].every(c => r.pegs.split(',').includes(c)), r.pegs);
+  await ctx.close();
+}
+
+// ---- «يُتلى الآن» (tickRadio): the app's Quran radio chip under the clock, from window.SaudiTVRadio.state()
+{
+  const radio = st => `window.SaudiTVRadio = {state: () => window.__radio}; window.__radio = ${JSON.stringify(st)};`;
+  const chip = () => {
+    const el = document.getElementById('qr'), b = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    return { hidden: el.hidden || cs.display === 'none', text: el.textContent, cls: el.className, opacity: +cs.opacity,
+             inStage: !!el.closest('.stage'), on: b.width > 0 && b.left >= 0 && b.right <= innerWidth && b.bottom <= innerHeight };
+  };
+  let { p, ctx, errors } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728', { init: radio('playing|إذاعة القرآن الكريم من السعودية') });
+  await p.waitForTimeout(700);
+  let c = await p.evaluate(chip);
+  check('radio chip, screensaver: «يُتلى الآن: <station>» on screen, in the stage (moves with pixelShift), dimmed .78',
+    !errors.length && !c.hidden && c.text === 'يُتلى الآن: إذاعة القرآن الكريم من السعودية' && c.on && c.inStage && Math.abs(c.opacity - 0.78) < 0.01,
+    JSON.stringify(c) + errors.join('; '));
+  await p.evaluate(() => { window.__radio = 'error|إذاعة القرآن الكريم من القاهرة'; tickRadio(); });
+  c = await p.evaluate(chip);
+  check('radio chip: the error state («تعذّر تشغيل …»)', !c.hidden && c.cls.includes('error') && c.text === 'تعذّر تشغيل إذاعة القرآن الكريم من القاهرة', JSON.stringify(c));
+  for (const st of ['', 'loading|إذاعة', 'paused|إذاعة']) {
+    await p.evaluate(s => { window.__radio = s; tickRadio(); }, st);
+    c = await p.evaluate(chip);
+    check(`radio chip: hidden for «${st || 'off'}»`, c.hidden, JSON.stringify(c));
+  }
+  await p.evaluate(() => { window.__radio = 'playing|<b>x</b>'; tickRadio(); });
+  check('radio chip: the station\'s name is text, never markup', await p.evaluate(() => !document.querySelector('#qr-t b b')
+    && document.getElementById('qr-t').textContent === 'يُتلى الآن: <b>x</b>'));
+  await ctx.close();
+  ({ p, ctx, errors } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728&home=1', { init: radio('playing|ماهر المعيقلي') }));
+  await p.waitForTimeout(700);
+  c = await p.evaluate(chip);
+  check('radio chip, home screen: shown under the clock, full opacity', !errors.length && !c.hidden && c.on && c.opacity === 1
+    && c.text === 'يُتلى الآن: ماهر المعيقلي', JSON.stringify(c));
+  await ctx.close();
+  ({ p, ctx } = await open('tv.html', 'panel=prayers&widget=1', { init: radio('playing|ماهر المعيقلي') }));
+  await p.waitForTimeout(700);
+  c = await p.evaluate(chip);
+  check('radio chip: never in card-only mode', c.hidden, JSON.stringify(c));
+  await ctx.close();
+  ({ p, ctx } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728'));
+  await p.waitForTimeout(700);
+  c = await p.evaluate(chip);
+  check('radio chip: hidden in a browser (no SaudiTVRadio)', c.hidden, JSON.stringify(c));
+  await ctx.close();
+}
+
 await browser.close();
 console.log(failed ? `\n${failed} failed` : '\nall page tests passed');
 process.exit(failed ? 1 : 0);

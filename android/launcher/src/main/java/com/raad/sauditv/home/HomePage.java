@@ -151,6 +151,7 @@ final class HomePage {
         if (web == null) return;
         parent.removeView(web);
         web.removeJavascriptInterface("SaudiTVNative");
+        web.removeJavascriptInterface("SaudiTVRadio");
         web.destroy();
         web = null;
         url = null;
@@ -261,6 +262,12 @@ final class HomePage {
             final WebView from = web;
             activity.runOnUiThread(() -> { if (web == from && !activity.isDestroyed()) placeCard(l, t, w, h, vw); });
         }
+    }
+
+    /** The page's window.SaudiTVRadio: the «يُتلى الآن» chip's state from the screensaver app (RadioLink.chip), asked
+     *  every 3 s on the WebView's bridge thread (a content query, never the main thread). */
+    private final class RadioState {
+        @JavascriptInterface public String state() { return RadioLink.chip(activity); }
     }
 
     /** the page asks GitHub for its fonts; answer from the APK (also used by DetailActivity) */
@@ -379,6 +386,7 @@ final class HomePage {
         s.setAllowUniversalAccessFromFileURLs(true);
         s.setCacheMode(WebSettings.LOAD_NO_CACHE);   // photos come from photo(), data must be fresh
         web.addJavascriptInterface(new Native(), "SaudiTVNative");
+        web.addJavascriptInterface(new RadioState(), "SaudiTVRadio");
         parent.addView(web, 0, new FrameLayout.LayoutParams(-1, -1));
         url = u;
         web.loadUrl(u);

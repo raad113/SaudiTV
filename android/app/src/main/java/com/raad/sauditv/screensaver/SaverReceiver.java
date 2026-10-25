@@ -26,9 +26,18 @@ import java.util.List;
  *       [--es genres Drama,Comedy] [--es langs English] [--es autoupdate true|false] [--es numerals latn|arab]
  *       [--es src_news aawsat,okaz] [--es src_tech …] [--es src_local …] [--es src_world …]   ("" = the page's defaults)
  *       [--es tile_shape rounded|circle] [--es focus_style google|apple]   (the home screen's app tiles)
+ *       [--es radio on|off] [--es radio_station saudi|cairo|63|https://…] [--es radio_volume 10…100]
+ *       («إذاعة القرآن الكريم»: RadioService; a station id from RADIO_STATIONS, or any http(s) address)
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.UPDATE
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.APP_CHECK
  *       (checks the GitHub release for a newer version of both apps; installing is the settings screen's)
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.RADIO_STATIONS
+ *       [--es filter ماهر]   (the radio's stations: id and name; reads mp3quran.net's list when the kept one is old)
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.RADIO_TEST
+ *       [--es station cairo]   (each address of the pinned stations, or of one station, read for 3 s from the TV)
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.RESUME_AFTER_ATHAN
+ *       (the athan's hook, RadioService.hold: the radio stops, then plays again)
  *
  * The answer is in the "data" of am's output. Unknown values are refused with a message, nothing half-saved.
  */
@@ -42,7 +51,11 @@ public class SaverReceiver extends BroadcastReceiver {
         String action = String.valueOf(i.getAction());
         switch (action) {
             case "com.raad.sauditv.screensaver.GET":
-                setResultData(describe(c, p) + "\npage: " + (p.usesDownloadedPage(c) ? "downloaded" : "bundled in the APK")
+                setResultData(describe(c, p) + "\nradio_now: " + RadioService.state()
+                    + (RadioService.error().isEmpty() ? "" : " (" + RadioService.error() + ")")
+                    + (RadioService.holders().isEmpty() ? "" : ", in front: " + RadioService.holders())
+                    + (RadioService.held(c) ? ", held (athan)" : "")
+                    + "\npage: " + (p.usesDownloadedPage(c) ? "downloaded" : "bundled in the APK")
                     + "\nvpn app: " + (VpnStatus.appInstalled(c) ? "yes (badge shown)" : "none (no VPN badge)"));
                 return;
             case "com.raad.sauditv.screensaver.COUNTRIES": {
@@ -113,6 +126,48 @@ public class SaverReceiver extends BroadcastReceiver {
             }
             case "com.raad.sauditv.screensaver.SET":
                 setResultData(set(c, p, i));
+                return;
+            case "com.raad.sauditv.screensaver.RADIO_STATIONS": {
+                final PendingResult pending = goAsync();   // may read mp3quran.net's list: off the main thread
+                final Context app = c.getApplicationContext();
+                final String filter = i.getStringExtra("filter");
+                new Thread(() -> {
+                    StringBuilder b = new StringBuilder();
+                    for (RadioStations.Station s : RadioStations.search(Radio.stations(app, true), filter))
+                        b.append(s.id).append(' ').append(s.name).append('\n');
+                    b.append(RadioStations.CUSTOM).append(" (optimize/saver.sh radio-station https://…)");
+                    pending.setResultData(b.toString());
+                    pending.finish();
+                }, "radio-list").start();
+                return;
+            }
+            case "com.raad.sauditv.screensaver.RADIO_TEST": {
+                final PendingResult pending = goAsync();
+                final Context app = c.getApplicationContext();
+                final String one = i.getStringExtra("station");
+                new Thread(() -> {
+                    List<RadioStations.Station> test = new ArrayList<>();
+                    if (one == null || one.isEmpty()) test.addAll(Arrays.asList(RadioStations.PINNED));
+                    else {
+                        RadioStations.Station s = RadioStations.find(Radio.stations(app, true), one);
+                        if (s != null) test.add(s);
+                    }
+                    StringBuilder b = new StringBuilder();
+                    for (RadioStations.Station s : test)
+                        for (String u : s.urls)
+                            b.append(s.id).append(' ').append(u.replaceAll("\\?.*", "?…")).append(": ").append(Radio.probe(u)).append('\n');
+                    pending.setResultData(test.isEmpty() ? "error: no station " + one : b.toString().trim());
+                    pending.finish();
+                }, "radio-test").start();
+                return;
+            }
+            case RadioService.ACTION_PAUSE_FOR_ATHAN:
+                RadioService.hold(c, true);
+                setResultData("radio held (athan), for up to " + RadioService.HOLD_MAX_MS / 60000 + " min");
+                return;
+            case RadioService.ACTION_RESUME_AFTER_ATHAN:
+                RadioService.hold(c, false);
+                setResultData("radio released");
                 return;
             default:
                 setResultData("error: unknown action " + action);
@@ -234,6 +289,33 @@ public class SaverReceiver extends BroadcastReceiver {
         List<String> langs = codes(i.getStringExtra("langs"), Prefs.LANGS);
         if (genres != null && genres.contains(null)) return "error: genres are " + names(Prefs.GENRES);
         if (langs != null && langs.contains(null)) return "error: langs are " + names(Prefs.LANGS);
+        // «إذاعة القرآن الكريم»
+        String radio = i.getStringExtra("radio");
+        if (radio != null) {
+            radio = radio.trim().toLowerCase(java.util.Locale.ROOT);
+            if (radio.equals("true")) radio = "on";
+            if (radio.equals("false")) radio = "off";
+            if (!radio.equals("on") && !radio.equals("off")) return "error: radio is on or off";
+        }
+        String[] station = null;   // id, name, address
+        String st = i.getStringExtra("radio_station");
+        if (st != null) {
+            st = st.trim();
+            if (RadioStations.validUrl(st)) {   // «رابط من عندي»: named by its host, as the settings name it
+                String host = android.net.Uri.parse(st).getHost();
+                station = new String[] {RadioStations.CUSTOM, host == null ? st : host, st};
+            }
+            else {
+                RadioStations.Station s = RadioStations.find(Radio.kept(c), st);
+                if (s == null) return "error: radio_station is saudi, cairo, an id of optimize/saver.sh radio-stations, or an http(s) address";
+                station = new String[] {s.id, s.name, s.urls[0]};
+            }
+        }
+        String vol = i.getStringExtra("radio_volume");
+        int volume = vol == null ? -1 : RadioStations.volume(vol);
+        if (vol != null && volume < 0)
+            return "error: radio_volume is a percent from " + RadioStations.VOLUME_MIN + " to " + RadioStations.VOLUME_MAX
+                + " (rounded to steps of " + RadioStations.VOLUME_STEP + ")";
 
         if (cc != null && city == null) p.setCountry(cc);
         if (city != null) p.setCity(city[0], city[1], city[2], cityCc, cityTz);
@@ -253,6 +335,9 @@ public class SaverReceiver extends BroadcastReceiver {
         if (shape != null) p.setTileShape(shape);
         if (focus != null) p.setFocusStyle(focus);
         for (java.util.Map.Entry<String, List<String>> e : sources.entrySet()) p.setSources(e.getKey(), e.getValue());
+        if (station != null) p.setRadioStation(station[0], station[1], station[2]);
+        if (volume > 0) p.setRadioVolume(volume);
+        if (radio != null) p.setRadioOn(radio.equals("on"));
         // a home screen already in front shows the new settings now, not at its next resume
         c.sendBroadcast(new Intent(CHANGED).setPackage("com.raad.sauditv.home"));
         return "saved\n" + describe(c, p);
@@ -276,6 +361,10 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\nautoupdate: " + p.autoUpdate()
             + "\nnumerals: " + p.numerals()
             + "\ntile_shape: " + p.tileShape() + "\nfocus_style: " + p.focusStyle()
+            + "\nradio: " + (p.radioOn() ? "on" : "off")
+            + "\nradio_station: " + p.radioStation() + " " + p.radioName()
+                + (RadioStations.CUSTOM.equals(p.radioStation()) ? " " + p.radioUrl() : "")
+            + "\nradio_volume: " + p.radioVolume()
             + sourcesLine(p);
     }
 

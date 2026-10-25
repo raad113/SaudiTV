@@ -10,7 +10,8 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
-    <!-- the launcher (same signing key) reads the settings for its home-screen card -->
+    <!-- the launcher (same signing key) reads the settings for its home-screen card, binds the radio (RadioService)
+         and turns it on or off (ConfigProvider /radio) -->
     <permission
         android:name="com.raad.sauditv.screensaver.READ_CONFIG"
         android:protectionLevel="signature" />
@@ -37,12 +38,15 @@
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <!-- usesCleartextTraffic: «إذاعة القرآن الكريم» streams are often http:// (Radiojar sends its https:// address on to
+         an http:// node; Shoutcast servers, «رابط من عندي»); everything else this app reads is https:// -->
     <application
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/banner"
         android:supportsRtl="true"
         android:allowBackup="false"
+        android:usesCleartextTraffic="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
         <!-- opening the app shows its settings -->
@@ -74,6 +78,28 @@
             </intent-filter>
             <meta-data android:name="android.service.dream" android:resource="@xml/dream" />
         </service>
+
+        <!-- «إذاعة القرآن الكريم»: bound while one of our screens is in front (the home screen: same key, READ_CONFIG) -->
+        <service
+            android:name=".RadioService"
+            android:exported="true"
+            android:permission="com.raad.sauditv.screensaver.READ_CONFIG">
+            <intent-filter>
+                <action android:name="com.raad.sauditv.screensaver.RADIO" />
+                <data android:scheme="sauditv-radio" />
+            </intent-filter>
+        </service>
+
+        <!-- the athan's hook into the radio, for our other app (same key): RadioService's PAUSE_FOR_ATHAN / RESUME_AFTER_ATHAN -->
+        <receiver
+            android:name=".RadioReceiver"
+            android:exported="true"
+            android:permission="com.raad.sauditv.screensaver.READ_CONFIG">
+            <intent-filter>
+                <action android:name="com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN" />
+                <action android:name="com.raad.sauditv.screensaver.RESUME_AFTER_ATHAN" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".UpdateJob"
@@ -110,6 +136,10 @@
                 <action android:name="com.raad.sauditv.screensaver.LEAGUES" />
                 <action android:name="com.raad.sauditv.screensaver.UPDATE" />
                 <action android:name="com.raad.sauditv.screensaver.APP_CHECK" />
+                <action android:name="com.raad.sauditv.screensaver.RADIO_STATIONS" />
+                <action android:name="com.raad.sauditv.screensaver.RADIO_TEST" />
+                <action android:name="com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN" />
+                <action android:name="com.raad.sauditv.screensaver.RESUME_AFTER_ATHAN" />
             </intent-filter>
         </receiver>
 
@@ -117,6 +147,7 @@
             android:name=".ConfigProvider"
             android:authorities="com.raad.sauditv.screensaver.config"
             android:exported="true"
-            android:readPermission="com.raad.sauditv.screensaver.READ_CONFIG" />
+            android:readPermission="com.raad.sauditv.screensaver.READ_CONFIG"
+            android:writePermission="com.raad.sauditv.screensaver.READ_CONFIG" />
     </application>
 </manifest>

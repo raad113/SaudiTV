@@ -173,6 +173,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        RadioLink.front(this, "home");   // «إذاعة القرآن الكريم» plays while our screens are in front
         IntentFilter tf = new IntentFilter(Intent.ACTION_TIME_TICK);
         tf.addAction(Intent.ACTION_TIME_CHANGED);
         tf.addAction(Intent.ACTION_TIMEZONE_CHANGED);
@@ -198,6 +199,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        RadioLink.back("home");
         unregisterReceiver(tick);
         unregisterReceiver(configChanged);
         unregisterReceiver(updateState);

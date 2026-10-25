@@ -154,9 +154,31 @@ final class Prefs {
         String before = newsCountry();
         SharedPreferences.Editor e = sp.edit();
         if (Geo.country(app, cc) != null) e.putString("newsCountry", cc.toUpperCase(java.util.Locale.ROOT)); else e.remove("newsCountry");
+        e.remove("newsMissing");   // the user's own pick: no note about a change of country any more
         e.apply();
         if (!newsCountry().equals(before)) sp.edit().remove("src_news").apply();
     }
+    /** a change of country (CountryChange) to a country without a news list of its own: the news country set
+     *  explicitly (it stays), and that country remembered for the row's note; null: no note */
+    void setNewsKept(String news, String missing) {
+        SharedPreferences.Editor e = sp.edit();
+        if (Geo.country(app, news) != null) e.putString("newsCountry", news.toUpperCase(java.util.Locale.ROOT));
+        if (missing == null) e.remove("newsMissing"); else e.putString("newsMissing", missing);
+        e.apply();
+    }
+    /** the news of country cc with its default sources (a change of country to cc, CountryChange) */
+    void setNewsOf(String cc) {
+        sp.edit().putString("newsCountry", cc.toUpperCase(java.util.Locale.ROOT)).remove("src_news").remove("newsMissing").apply();
+    }
+    /** the country a change of country left without its own news («لا توجد قائمة أخبار خاصة بـ…»), "" for none */
+    String newsMissing() { return sp.getString("newsMissing", ""); }
+    /** Saudi Arabia's list or an Arab country's own outlets (Prefs.COUNTRY_NEWS): a country's own news list */
+    static boolean hasNewsList(String cc) {
+        if (cc == null || cc.isEmpty() || "SA".equalsIgnoreCase(cc)) return true;
+        for (String[][] c : COUNTRY_NEWS) if (c[0][0].equalsIgnoreCase(cc)) return true;
+        return false;
+    }
+
     /** «السعودية», «مصر» … */
     String newsCountryName() {
         Geo.Country c = Geo.country(app, newsCountry());
@@ -394,6 +416,20 @@ final class Prefs {
 
     String minRating() { return sp.getString("minRating", "7"); }
     void setMinRating(String v) { sp.edit().putString("minRating", v).apply(); }
+
+    // ---------- «إذاعة القرآن الكريم» (RadioService plays it while our home screen or screensaver is in front; off by
+    // default): the station (RadioStations ids: saudi, cairo, an mp3quran.net id, custom), its name and address as
+    // picked (so it plays without the list), and its volume in percent (10 … 100, apart from the TV's own volume)
+    boolean radioOn() { return sp.getBoolean("radioOn", false); }
+    void setRadioOn(boolean on) { sp.edit().putBoolean("radioOn", on).apply(); }
+    String radioStation() { return sp.getString("radioStation", RadioStations.SAUDI); }
+    String radioName() { return sp.getString("radioName", RadioStations.PINNED[0].name); }
+    String radioUrl() { return sp.getString("radioUrl", RadioStations.PINNED[0].urls[0]); }
+    void setRadioStation(String id, String name, String url) {
+        sp.edit().putString("radioStation", id).putString("radioName", name).putString("radioUrl", url).apply();
+    }
+    int radioVolume() { return RadioStations.clampVolume(sp.getInt("radioVolume", RadioStations.VOLUME_DEFAULT)); }
+    void setRadioVolume(int v) { sp.edit().putInt("radioVolume", RadioStations.clampVolume(v)).apply(); }
 
     // on by default: the page comes from this project's own repository (Updater), so page fixes reach the TV
     // without a reinstall; the settings screen or `optimize/saver.sh autoupdate off` turn it off

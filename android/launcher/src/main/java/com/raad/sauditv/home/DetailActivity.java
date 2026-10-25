@@ -185,6 +185,7 @@ public class DetailActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        RadioLink.front(this, "detail");   // «إذاعة القرآن الكريم» plays while our screens are in front
         if (web != null) { web.onResume(); web.resumeTimers(); }
         if (article != null) { article.onResume(); article.requestFocus(); }
         else if (web != null) web.requestFocus();
@@ -193,6 +194,7 @@ public class DetailActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        RadioLink.back("detail");
         if (article != null) article.onPause();
         if (web != null) { web.onPause(); web.pauseTimers(); }
     }

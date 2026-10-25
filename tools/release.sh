@@ -3,7 +3,7 @@
 #   1. raises VERSION (one more, or --version N),
 #   2. builds the page and both APKs, signed with the project's release key (~/.sauditv/, never a debug key),
 #   3. writes update.json: versionCode, versionName, the Arabic notes, and each APK's URL, sha256 and size,
-#   4. runs the tests (tests/run.sh's four) and the old-name and private-files checks,
+#   4. runs the tests (tests/run.sh's six) and the old-name and private-files checks,
 #   5. commits VERSION, update.json and dist/, tags v<N>, pushes, and creates the GitHub release with
 #      saudi-tv-screensaver.apk, saudi-tv-home.apk and update.json; then checks what GitHub serves.
 #
@@ -165,6 +165,8 @@ failed=0
 "$PYTHON" tests/check.py || failed=1
 "$PYTHON" tests/upload_test.py || failed=1
 "$PYTHON" tests/find_tv_test.py || failed=1
+"$PYTHON" tests/saver_sh_test.py || failed=1
+"$PYTHON" tests/java_test.py || failed=1
 node tests/page.test.mjs || failed=1
 if [ "$failed" = 1 ]; then
   [ "${ALLOW_TEST_FAILURES:-}" = 1 ] || die "tests failed (ALLOW_TEST_FAILURES=1 goes on anyway, only for failures unrelated to this release)"

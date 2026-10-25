@@ -371,6 +371,21 @@
     font-size:clamp(12px,1.02vw,20px);font-weight:300;letter-spacing:.3em;color:#D8CDB6;
   }
   .subline .dot{width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.9}
+  /* «يُتلى الآن: <station>» under the clock while the app's Quran radio plays (tickRadio): a small glass chip, the
+     card's dark tint and thin gold edge, as the launcher's pills and the VPN mark are glass. On the screensaver it is
+     part of the stage: dimmed like the clock's line (.78) and moved with it (pixelShift, the hourly swap), against
+     burn-in. «تعذّر تشغيل …» (every address failed, the app tries again later) in a muted red. */
+  .qr{display:inline-flex;align-items:center;gap:.5em;margin-top:1.6vh;max-width:min(40vw,640px);min-width:0;
+    padding:.36em 1em .42em;border-radius:999px;background:rgba(4,14,9,.60);border:1px solid rgba(220,184,111,.22);
+    box-shadow:0 2px 12px rgba(0,0,0,.28);font-size:clamp(12px,.95vw,18px);font-weight:400;line-height:1.3;
+    color:#D8CDB6;white-space:nowrap}
+  .qr[hidden]{display:none}
+  .qr svg{flex:none;width:1.05em;height:1.05em;fill:var(--gold)}
+  .qr span{min-width:0;overflow:hidden;text-overflow:ellipsis;padding-bottom:.2em;margin-bottom:-.2em}
+  .qr b{font-weight:500;color:#F3EBD8}
+  .qr.error{color:#DFA597;border-color:rgba(238,139,112,.32)}
+  .qr.error svg{fill:#DFA597}
+  html.widget .qr,html.detail .qr,html.ticker .qr{display:none}
 
   .bottom{
     display:grid;grid-template-columns:1fr .9fr 1.3fr;
@@ -492,7 +507,7 @@
      night dimmer stays on top of all of it. */
   html:not(.widget):not(.detail):not(.home):not(.ticker) .clock .d{opacity:.7}
   html:not(.widget):not(.detail):not(.home):not(.ticker) .clock .sep{opacity:.63}
-  html:not(.widget):not(.detail):not(.home):not(.ticker) :is(.clock .ampm,.clock .vpn,.dates,.markets,.subline,.bottom){opacity:.78}
+  html:not(.widget):not(.detail):not(.home):not(.ticker) :is(.clock .ampm,.clock .vpn,.dates,.markets,.subline,.bottom,.qr){opacity:.78}
   html:not(.widget):not(.detail):not(.home):not(.ticker) .week{background:rgba(4,14,9,.48)}
   html:not(.widget):not(.detail):not(.home):not(.ticker) :is(.week .hd,.week li.src){color:rgba(214,175,107,.8)}
   html:not(.widget):not(.detail):not(.home):not(.ticker) .week li:not(:where(.past,.empty)){color:rgba(246,238,220,.8)}
@@ -639,6 +654,8 @@
         <span class="vpn" id="vpn" hidden><span class="vpn-r"><i class="vpn-f" id="vpn-flag"></i><b></b></span></span><span class="ampm" id="ck-ap">—</span><span class="d" id="ck-h">--</span><span class="sep">:</span><span class="d" id="ck-m">--</span>
       </div>
       <div class="subline"><span class="dot"></span><span id="clock-sub">بتوقيت الرياض</span></div>
+      <!-- the app's Quran radio while it plays (tickRadio, window.SaudiTVRadio); hidden in a browser -->
+      <div class="qr" id="qr" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.24 6.15C2.51 6.43 2 7.17 2 8v12c0 1.1.89 2 2 2h16c1.11 0 2-.9 2-2V8c0-1.11-.89-2-2-2H8.3l8.26-3.34L15.88 1 3.24 6.15zM7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-8h-2v-2h-2v2H4V8h16v4z"/></svg><span id="qr-t"></span></div>
     </div>
 
     <div class="week">
@@ -862,6 +879,26 @@ function flagEmojiOk(){
   return FLAG_OK;
 }
 if(!CONFIG.ticker){ setInterval(tickVpn, 3000); setTimeout(tickVpn, 300); }   // no badge on the ticker page
+
+// «يُتلى الآن» under the clock while the app's Quran radio plays. The app's SaudiTVRadio.state() (its RadioService):
+// "playing|<station>", "loading|…", "error|…", "paused|…", or '' while off; asked every 3 s (the radio plays natively,
+// a reload of this page never stops it). Shown while it plays; «تعذّر تشغيل …» once every address of the station
+// failed (the app tries again later); hidden while it loads, pauses or is off, and in a browser (no SaudiTVRadio).
+function tickRadio(){
+  const el = document.getElementById('qr'), R = window.SaudiTVRadio;
+  if(!el || !R || !R.state || CONFIG.widget || CONFIG.detail || CONFIG.ticker) return;
+  let s = '';
+  try{ s = String(R.state() || ''); }catch(_){ return; }
+  if(s === tickRadio.last) return;   // the page touched only when it changes (one repaint)
+  tickRadio.last = s;
+  const i = s.indexOf('|'), st = i < 0 ? s : s.slice(0, i), name = i < 0 ? '' : s.slice(i + 1);
+  const show = (st === 'playing' || st === 'error') && !!name;
+  el.hidden = !show;
+  if(!show) return;
+  el.className = 'qr ' + st;
+  document.getElementById('qr-t').innerHTML = st === 'error' ? 'تعذّر تشغيل ' + esc(name) : 'يُتلى الآن: <b>' + esc(name) + '</b>';
+}
+if(!CONFIG.ticker && !CONFIG.widget && !CONFIG.detail){ setInterval(tickRadio, 3000); setTimeout(tickRadio, 500); }
 
 function tickClock(){
   const p = riyadhParts();
@@ -1555,7 +1592,7 @@ const TAPE_SA = [
   {name:'داو جونز',       sym:'^DJI',     fmt:'index'},
   {name:'الذهب',          sym:'GC=F',     fmt:'usd'},
   {name:'برنت',           sym:'BZ=F',     fmt:'usd'},
-  {name:'الدولار/الريال', sym:'SAR=X',    fmt:'fx'},
+  {name:'الدولار/الريال', sym:'SAR=X',    fmt:'fx', er:'SAR'},   // er: when Yahoo's price is off the peg (mkFxQuote)
   {name:'بيتكوين',        cg:'bitcoin',   fmt:'usd'},
   {name:'إيثريوم',        cg:'ethereum',  fmt:'usd'},
 ];
@@ -1651,23 +1688,46 @@ function mkDay(t, tz, off){
 // Yahoo v8 chart (interval=1d) -> {price, prev, ...}; prev is the previous trading day's close or null.
 // When the last daily bar is the same trading day as regularMarketPrice, the close before it; with a single bar,
 // chartPreviousClose (the close just before the first bar). When the last bar is an earlier day, its close.
-function mkIndexQuote(res){
+// ok: a test each close must pass to count (mkFxQuote: near the peg); the others are skipped as if missing.
+function mkIndexQuote(res, ok){
   const m = (res && res.meta) || {}, price = m.regularMarketPrice;
   if(typeof price !== 'number' || !(price > 0)) return null;
+  const good = x => typeof x === 'number' && x > 0 && (!ok || ok(x));
   const ts = res.timestamp || [], cl = ((res.indicators && res.indicators.quote && res.indicators.quote[0]) || {}).close || [];
-  const bars = ts.map((t, i) => [t, cl[i]]).filter(b => typeof b[1] === 'number' && b[1] > 0);
+  const bars = ts.map((t, i) => [t, cl[i]]).filter(b => good(b[1]));
   const day = t => mkDay(t, m.exchangeTimezoneName, m.gmtoffset);
   const q = {price, prev:null, priceDay: m.regularMarketTime ? day(m.regularMarketTime) : null, prevDay:null};
   const last = bars[bars.length - 1];
   if(!last || !q.priceDay) return q;
   if(day(last[0]) === q.priceDay){
     if(bars.length >= 2){ q.prev = bars[bars.length - 2][1]; q.prevDay = day(bars[bars.length - 2][0]); }
-    else if(m.chartPreviousClose > 0){ q.prev = m.chartPreviousClose; q.prevDay = 'before ' + day(last[0]); }
+    else if(good(m.chartPreviousClose)){ q.prev = m.chartPreviousClose; q.prevDay = 'before ' + day(last[0]); }
   } else { q.prev = last[1]; q.prevDay = day(last[0]); }
   return q;
 }
 // the daily change in percent: against the previous trading day's close (null when unknown)
 const mkIndexPct = q => q && q.prev > 0 ? (q.price - q.prev) / q.prev * 100 : null;
+// The currencies held to the dollar: units per dollar (their central banks' pegs; HKD the middle of its 7.75-7.85
+// band). Yahoo's daily bars for some of them are far off while the live price is right: SAR=X closed near 3.63 for
+// days with the price at 3.752, and the tape showed «الدولار/الريال +3.22%», a move a peg never makes.
+const FX_PEG = {SAR:3.75, AED:3.6725, QAR:3.64, BHD:0.376, OMR:0.3845, JOD:0.709, DJF:177.721, ERN:15, BZD:2, BBD:2,
+  XCD:2.7, AWG:1.79, XCG:1.79, KYD:0.8333, HKD:7.8};
+const FX_PEG_BAND = 0.01;   // a pegged rate within 1 % of its peg is real; further off, a bad bar or a bad price
+const FX_PEG_MAX = 1;       // percent: a pegged currency's daily change over this is not shown
+const FX_MAX = 10;          // percent: any other rate's daily change over this is not shown (a bad bar, not a day)
+// 'SAR=X' -> 'SAR'; '' for anything else (EURUSD=X)
+const fxCur = sym => (/^([A-Z]{3})=X$/.exec(sym || '') || [])[1] || '';
+// a rate's quote with a sane daily change: pegged, the previous close is the last bar near the peg, a price off the
+// peg is none at all (null: open.er-api.com's rate instead, where the item has one) and a change over FX_PEG_MAX
+// percent is dropped; any other rate, a change over FX_MAX percent is dropped. The price stays, without its change.
+function mkFxQuote(res, sym){
+  const peg = FX_PEG[fxCur(sym)], near = peg ? x => Math.abs(x - peg) / peg <= FX_PEG_BAND : null;
+  const q = mkIndexQuote(res, near);
+  if(!q || (near && !near(q.price))) return null;
+  const pct = mkIndexPct(q);
+  if(pct != null && Math.abs(pct) > (peg ? FX_PEG_MAX : FX_MAX)){ q.prev = null; q.prevDay = null; }
+  return q;
+}
 // -> {value, change, dir}: HTML for the value and the change in percent ('' when unknown); dir 1 up, -1 down,
 // 0 unchanged (as shown: under 0.005 % is ٠٫٠٠٪, grey, no arrow). fmt: see TAPE.
 function mkTapeHtml(price, pct, fmt){
@@ -1731,7 +1791,10 @@ async function loadTape(){
         h = mkTapeHtml(c.usd, c.usd_24h_change ?? c.usd_24hr_change, t.fmt);
       } else {
         let q = null;
-        try{ q = mkIndexQuote((await yahooChart(t.sym)).chart.result[0]); }catch(e){ if(!t.er) throw e; }
+        try{
+          const res = (await yahooChart(t.sym)).chart.result[0];
+          q = t.fmt === 'fx' ? mkFxQuote(res, t.sym) : mkIndexQuote(res);   // a rate: its change sanity-checked
+        }catch(e){ if(!t.er) throw e; }
         if(!q && t.er) h = mkTapeHtml(erRate(await (er || (er = erRates())), t.er), null, t.fmt);
         else h = mkTapeHtml(q && q.price, mkIndexPct(q), t.fmt);
       }
@@ -1763,8 +1826,11 @@ async function tapeTest(){
   const run = async ([kind, id, sym, e]) => {
     let m;
     try{
-      const q = mkIndexQuote((await yahooChart(sym)).chart.result[0]);
-      m = q ? `${q.price} day ${q.priceDay} chg ${(p => p == null ? '?' : p.toFixed(2))(mkIndexPct(q))}` : 'no price';
+      const res = (await yahooChart(sym)).chart.result[0], q = mkIndexQuote(res);
+      const pc = p => p == null ? '?' : p.toFixed(2);
+      m = q ? `${q.price} day ${q.priceDay} chg ${pc(mkIndexPct(q))}` : 'no price';
+      // a rate as the tape shows it (mkFxQuote): its change after the sanity checks, or none
+      if(kind === 'fx' || /=X$/.test(sym)){ const s = mkFxQuote(res, sym); m += ' | shown ' + (s ? `${s.price} chg ${pc(mkIndexPct(s))}` : 'none'); }
     }catch(x){ m = 'none'; }
     log(`${kind} ${id} ${sym} ${m}` + (e ? ' | er ' + (erRate(er, e) ?? 'none') : ''));
   };

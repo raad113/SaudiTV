@@ -21,6 +21,22 @@ public class MainActivity extends Activity {
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
 
+    // the preview is the screensaver in front: «إذاعة القرآن الكريم» plays here as on the dream
+    private RadioHolder radio;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (radio == null) radio = new RadioHolder(this, RadioService.SAVER);
+        radio.front();
+    }
+
+    @Override
+    protected void onPause() {
+        if (radio != null) radio.back();
+        super.onPause();
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         if (e.getAction() == KeyEvent.ACTION_UP) finish();

@@ -76,7 +76,7 @@ final class QuickPanel {
     private final FrameLayout slider;   // the sheet and its shadow, slid in from the right
     private final List<View> tiles = new ArrayList<>();
     private final TextView clock, vpnMark, vpnDot;
-    private TextView wifiSub, vpnSub, saudiSub;
+    private TextView wifiSub, vpnSub, saudiSub, radioSub;
     private boolean update;   // the screensaver app found a newer release: «تحديث متوفر» under «سعودي TV»
     private View before, lastTile;   // the focus before it opened; the tile that had it last
     private int homeFocus;
@@ -171,6 +171,9 @@ final class QuickPanel {
             else settings(new Intent().setClassName(MainActivity.SAVER_PKG, MainActivity.SAVER_PKG + ".SettingsActivity"));
         });
         saudiSub = sub(saudi);
+        // «إذاعة القرآن الكريم» on or off (the screensaver app's setting; it plays while the home screen is in front)
+        View radio = tile("إذاعة القرآن", R.drawable.ic_radio, this::toggleRadio);
+        radioSub = sub(radio);
         tile("كل الإعدادات", R.drawable.ic_settings, () -> settings());
 
         // two per row, the first on the right; rows share the sheet's height
@@ -287,6 +290,22 @@ final class QuickPanel {
         f.requestFocus();
     }
 
+    /** the radio tile: on turns it off, off turns it on; its second line says which, at once */
+    private void toggleRadio() {
+        String[] r = RadioLink.read(a);
+        if (r == null || !RadioLink.set(a, !"1".equals(r[0]))) { radioSub.setText("غير متاحة"); radioSub.setVisibility(View.VISIBLE); return; }
+        refreshRadio();
+    }
+
+    /** «تعمل» / «يُتلى الآن» / «متوقفة» under the radio tile (nothing when the screensaver app can't be reached) */
+    private void refreshRadio() {
+        String[] r = RadioLink.read(a);
+        if (r == null) { radioSub.setVisibility(View.GONE); return; }
+        boolean on = "1".equals(r[0]);
+        radioSub.setText(!on ? "متوقفة" : "playing".equals(r[1]) ? "يُتلى الآن" : "تعمل");
+        radioSub.setVisibility(View.VISIBLE);
+    }
+
     /** The time (as the page writes it: Arabic digits, ص / م) and the VPN mark: ✓ and the exit country's flag,
      *  ! (reported but nothing gets through) or ✕; the VPN tile says the same in words. */
     private void refresh() {
@@ -296,6 +315,7 @@ final class QuickPanel {
         if (!h24 && h == 0) h = 12;
         String t = MainActivity.arabicDigits(h + ":" + String.format(Locale.US, "%02d", now.get(Calendar.MINUTE)));
         clock.setText(h24 ? t : t + (now.get(Calendar.AM_PM) == Calendar.AM ? " ص" : " م"));
+        refreshRadio();
 
         // no VPN app on the TV at all: no VPN mark, no flag, nothing under the VPN tile (an app that is off: ✕)
         boolean app = VpnStatus.appInstalled(a);

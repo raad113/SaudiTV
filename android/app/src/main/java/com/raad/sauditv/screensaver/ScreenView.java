@@ -61,6 +61,7 @@ final class ScreenView {
         s.setCacheMode(WebSettings.LOAD_NO_CACHE);   // photos are cached by PhotoCache, data must be fresh
         if (android.os.Build.VERSION.SDK_INT >= 23) s.setOffscreenPreRaster(true);   // draw before it is shown
         w.addJavascriptInterface(new VpnStatus(c), "SaudiTVNative");   // VPN badge
+        w.addJavascriptInterface(new RadioBridge(), "SaudiTVRadio");   // the «يُتلى الآن» chip (RadioService's state)
         String url = new Prefs(c).dashboardUrl(c);
         if (test != null && test.matches("[a-z]+=[0-9.]+(&[a-z]+=[0-9.]+)*")) url += "&" + test;
         w.loadUrl(url);

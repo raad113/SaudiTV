@@ -2,17 +2,22 @@ package com.raad.sauditv.screensaver;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
 
 /**
- * Read-only: hands the launcher (same signing key, see READ_CONFIG in the manifest) what its home-screen
+ * Hands the launcher (same signing key, see READ_CONFIG in the manifest) what its home-screen
  * card needs: the page settings as a URL fragment, which card to show ("none" = off) and «شكل الأرقام» (numerals:
  * latn or arab, for the launcher's own text; the fragment carries it for the page), and the app tiles' look
  * (tile_shape: rounded or circle; focus_style: google or apple).
  * content://com.raad.sauditv.screensaver.config/update: the last app-update check, for the home screen's
  * «تحديث متوفر» pill: available (the newer versionCode, 0 = none), name (its versionName), installed (this app's).
+ * content://com.raad.sauditv.screensaver.config/radio: «إذاعة القرآن الكريم» for the home screen's chip and its
+ * quick-settings tile: on (1/0), state (RadioService.state(): idle, loading, playing, error, paused), name (the
+ * station's), error. The only write: update() of /radio with on = 1 or 0 (the quick-settings tile), the same
+ * signature permission (writePermission in the manifest).
  */
 public class ConfigProvider extends ContentProvider {
     @Override public boolean onCreate() { return true; }
@@ -27,6 +32,13 @@ public class ConfigProvider extends ContentProvider {
             return c;
         }
         Prefs p = new Prefs(getContext());
+        if ("/radio".equals(uri.getPath())) {
+            MatrixCursor c = new MatrixCursor(new String[] {"on", "state", "name", "error"});
+            String st = RadioService.state();
+            c.addRow(new Object[] {p.radioOn() ? 1 : 0, st, "idle".equals(st) ? p.radioName() : RadioService.stationName(),
+                RadioService.error()});
+            return c;
+        }
         MatrixCursor c = new MatrixCursor(new String[] {"fragment", "home_panel", "numerals", "tile_shape", "focus_style"});
         c.addRow(new Object[] {p.fragment(), p.homePanel(), p.numerals(), p.tileShape(), p.focusStyle()});
         return c;
@@ -35,5 +47,15 @@ public class ConfigProvider extends ContentProvider {
     @Override public String getType(Uri uri) { return null; }
     @Override public Uri insert(Uri uri, ContentValues v) { return null; }
     @Override public int delete(Uri uri, String s, String[] a) { return 0; }
-    @Override public int update(Uri uri, ContentValues v, String s, String[] a) { return 0; }
+
+    /** /radio, on = 1 or 0: the quick-settings tile turns the radio on or off (RadioService follows the setting) */
+    @Override
+    public int update(Uri uri, ContentValues v, String s, String[] a) {
+        if (!"/radio".equals(uri.getPath()) || v == null || !v.containsKey("on")) return 0;
+        Integer on = v.getAsInteger("on");
+        if (on == null) return 0;
+        new Prefs(getContext()).setRadioOn(on != 0);
+        getContext().sendBroadcast(new Intent(SaverReceiver.CHANGED).setPackage("com.raad.sauditv.home"));
+        return 1;
+    }
 }

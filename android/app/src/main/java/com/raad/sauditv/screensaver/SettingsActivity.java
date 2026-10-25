@@ -36,8 +36,24 @@ public class SettingsActivity extends Activity {
     private static final int DIALOG_THEME = android.R.style.Theme_Material_Dialog_Alert;
 
     private Prefs prefs;
+    private ScrollView scroll;
     private LinearLayout list;
+    // the row in focus (its key, rowKey) and the list's scroll: a render() puts both back, so choosing something in a
+    // dialog, a list or a screen opened from a row comes back to that same row, not to the first one; kept across a
+    // re-creation of this screen too (onSaveInstanceState)
+    private String focusKey;
+    private int focusIndex = -1, restoreScroll = -1;
+    private final List<View> rows = new ArrayList<>();
     private View updateRow;   // «تحديث التطبيق»
+    private View previewRow;   // «معاينة الإذاعة»
+    private RadioHolder preview;   // the radio's preview, playing while this screen is in front
+    private int countrySeq;   // the last change of country (its clubs arrive later)
+    private final Runnable previewTick = new Runnable() {
+        @Override public void run() {
+            setRowValue(previewRow, previewLabel());
+            if (preview != null && preview.isFront()) list.postDelayed(this, 1000);
+        }
+    };
     private String justUpdated;   // after this app updated itself: «تم التحديث إلى …» while this screen is open
     private AlertDialog progress;   // the update's progress (AppInstaller)
     private TextView progressText;
@@ -61,7 +77,12 @@ public class SettingsActivity extends Activity {
         super.onCreate(b);
         prefs = new Prefs(this);
         UpdateJob.schedule(this);
-        ScrollView scroll = new ScrollView(this);
+        if (b != null) {
+            focusKey = b.getString("focusKey");
+            focusIndex = b.getInt("focusIndex", -1);
+            restoreScroll = b.getInt("scrollY", -1);
+        }
+        scroll = new ScrollView(this);
         scroll.setBackground(new android.graphics.drawable.GradientDrawable(
             android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xFF0A2016, 0xFF04120C, 0xFF020806}));
         scroll.setVerticalScrollBarEnabled(false);
@@ -95,6 +116,20 @@ public class SettingsActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        stopPreview();   // the preview only plays while these settings are in front
+        super.onPause();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        out.putString("focusKey", focusKey);
+        out.putInt("focusIndex", focusIndex);
+        out.putInt("scrollY", scroll == null ? 0 : scroll.getScrollY());
+    }
+
+    @Override
     protected void onDestroy() {
         AppInstaller.clearListener(installListener);
         if (progress != null) progress.dismiss();
@@ -102,7 +137,12 @@ public class SettingsActivity extends Activity {
     }
 
     private void render() {
+        final int y = restoreScroll >= 0 ? restoreScroll : scroll.getScrollY();
+        restoreScroll = -1;
+        final String want = focusKey;
+        final int wantIndex = focusIndex;
         list.removeAllViews();
+        rows.clear();
         TextView title = new TextView(this);
         title.setText("سعودي TV");
         title.setTextColor(0xFFF6EFE0);
@@ -117,8 +157,8 @@ public class SettingsActivity extends Activity {
         sub.setPadding(0, 0, 0, dp(18));
         list.addView(sub);
 
-        row("معاينة الشاشة", "شاهد الشاشة الآن", R.drawable.ic_play, new Runnable() { public void run() {
-            startActivity(new Intent(SettingsActivity.this, MainActivity.class)); } }).requestFocus();
+        View first = row("معاينة الشاشة", "شاهد الشاشة الآن", R.drawable.ic_play, new Runnable() { public void run() {
+            startActivity(new Intent(SettingsActivity.this, MainActivity.class)); } });
 
         header("الموقع");
         row("المدينة", cityLabel(), R.drawable.ic_place, new Runnable() { public void run() { pickCountry(); } });
@@ -147,17 +187,26 @@ public class SettingsActivity extends Activity {
         row("شكل التحديد", "‏" + Prefs.label(Prefs.FOCUS_STYLES, prefs.focusStyle()), R.drawable.ic_eye,
             new Runnable() { public void run() { pickTileLook(false); } });
 
+        // «إذاعة القرآن الكريم» (RadioService): on or off, the station, its volume, and a preview here
+        header("إذاعة القرآن الكريم");
+        row("إذاعة القرآن الكريم", prefs.radioOn() ? "تعمل على الشاشة الرئيسية وشاشة التوقف" : "متوقفة", R.drawable.ic_radio,
+            new Runnable() { public void run() { prefs.setRadioOn(!prefs.radioOn()); changed(); render(); } });
+        row("المحطة", stationLabel(), R.drawable.ic_radio, new Runnable() { public void run() { pickStation(); } });
+        row("مستوى صوت الإذاعة", percent(prefs.radioVolume()), R.drawable.ic_volume,
+            new Runnable() { public void run() { pickVolume(); } });
+        previewRow = row("معاينة الإذاعة", previewLabel(), R.drawable.ic_play, new Runnable() { public void run() { togglePreview(); } });
+
         // each news page on a card: its sources (Prefs.NEWS_SOURCES), ticked in a list like the cards'
         boolean anyNews = false;
         for (String page : Prefs.NEWS_PAGES) anyNews |= hasPanel(prefs.panel(), page) || hasPanel(prefs.homePanel(), page);
         if (anyNews) {
             header("مصادر الأخبار");
             if (hasPanel(prefs.panel(), "news") || hasPanel(prefs.homePanel(), "news"))
-                row("دولة الأخبار", newsCountryLabel() + (prefs.newsCountryAuto() ? " (تلقائي)" : ""), R.drawable.ic_language,
+                row("دولة الأخبار", newsCountryLabel() + (prefs.newsCountryAuto() ? " (تلقائي)" : "") + newsMissingNote(), R.drawable.ic_language,
                     new Runnable() { public void run() { pickNewsCountry(); } });
             for (final String page : Prefs.NEWS_PAGES) {
                 if (!hasPanel(prefs.panel(), page) && !hasPanel(prefs.homePanel(), page)) continue;
-                row(prefs.panelTitle(page), sourcesLabel(page), R.drawable.ic_category, new Runnable() { public void run() { pickSources(page); } });
+                row("src_" + page, prefs.panelTitle(page), sourcesLabel(page), R.drawable.ic_category, new Runnable() { public void run() { pickSources(page); } });
             }
         }
 
@@ -179,6 +228,31 @@ public class SettingsActivity extends Activity {
             prefs.setAutoUpdate(!prefs.autoUpdate()); render(); } });
         row("تحقق من التحديث الآن", null, R.drawable.ic_sync, new Runnable() { public void run() { updateNow(); } });
         row("وقت تشغيل شاشة التوقف", "يفتح إعدادات التلفاز (قد تظهر بالإنجليزية)", R.drawable.ic_screensaver, new Runnable() { public void run() { openDreamSettings(); } });
+
+        // the row that had the focus before (by its key; gone: the one now at its place), at the same scroll
+        View back = null;
+        if (want != null) for (View r : rows) if (want.equals(r.getTag())) back = r;
+        if (back == null && wantIndex >= 0 && !rows.isEmpty()) back = rows.get(Math.min(wantIndex, rows.size() - 1));
+        if (back == null) { first.requestFocus(); return; }
+        final View target = back;
+        scroll.scrollTo(0, y);
+        target.requestFocus();
+        // after the new rows' layout: the same scroll, then just enough to show the row whole
+        scroll.post(() -> {
+            scroll.scrollTo(0, y);
+            if (!target.hasFocus()) target.requestFocus();
+            android.graphics.Rect r = new android.graphics.Rect();
+            target.getDrawingRect(r);
+            scroll.offsetDescendantRectToMyCoords(target, r);
+            int top = scroll.getScrollY(), bottom = top + scroll.getHeight();
+            if (r.top < top) scroll.scrollTo(0, r.top - dp(12));
+            else if (r.bottom > bottom) scroll.scrollTo(0, r.bottom - scroll.getHeight() + dp(12));
+        });
+    }
+
+    /** a row's key for render(): its label without a count or a note in brackets («الفرق المتابعة (3/10)») */
+    private static String rowKey(String label) {
+        return label.replaceAll("\\s*\\(.*$", "").trim();
     }
 
     // ---------- pickers ----------
@@ -368,9 +442,56 @@ public class SettingsActivity extends Activity {
     }
 
     private void savePlace(String name, String lat, String lon, String cc, String tz) {
+        String before = prefs.country(), news = prefs.newsCountry();
         prefs.setCity(name, lat, lon, cc, tz);
+        // another country than before (never a re-pick in the same one): its news and its football (CountryChange)
+        CountryChange.Plan plan = CountryChange.plan(before, cc, news, Prefs.hasNewsList(cc));
+        if (plan != null) applyCountry(plan);
         changed();
         render();
+    }
+
+    /** a change of country: the news now, the table's league now, its top 3 clubs once the table is read */
+    private void applyCountry(final CountryChange.Plan plan) {
+        if (plan.newsMissing == null) prefs.setNewsOf(plan.news); else prefs.setNewsKept(plan.news, plan.newsMissing);
+        final String newsPart = plan.newsMissing == null ? "أخبار " + prefs.newsCountryName()
+            : "بقيت أخبار " + prefs.newsCountryName();
+        final Leagues.League l = plan.league;
+        if (l == null) { toast(newsPart + " · لا يوجد دوري لهذه الدولة، بقيت الفرق كما هي"); return; }
+        prefs.setLeague(l.id);
+        final int seq = ++countrySeq;
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            List<String[]> table = null;
+            try { table = TopClubs.table(l); }
+            catch (Exception e) { android.util.Log.w("SaudiTV-Settings", "table " + l.id + ": " + e); }
+            List<String[]> clubs = CountryChange.clubs(l.id, table);
+            final List<String> names = new ArrayList<>();
+            if (seq == countrySeq && !clubs.isEmpty()) {
+                List<String> v = new ArrayList<>();
+                for (String[] c : clubs) {
+                    String ar = clubName(app, c[1], false).replace("|", " ").replace(";", " ");
+                    v.add(c[0] + "|" + ar);
+                    names.add(ar);
+                }
+                prefs.setList("teams", v);
+            }
+            runOnUiThread(() -> {
+                if (seq != countrySeq) return;
+                changed();
+                if (isFinishing()) return;
+                render();
+                toast(newsPart + " · " + l.ar + " · " + (names.isEmpty() ? "بقيت الفرق كما هي" : Prefs.join(names, "، ")));
+            });
+        }, "country").start();
+    }
+
+    /** «دولة الأخبار»'s note after a change to a country without a news list of its own */
+    private String newsMissingNote() {
+        String m = prefs.newsMissing();
+        if (m.isEmpty()) return "";
+        Geo.Country c = Geo.country(this, m);
+        return " · لا توجد قائمة أخبار خاصة ب" + (c == null ? m : c.shortAr);
     }
 
     private String cityLabel() {
@@ -495,10 +616,8 @@ public class SettingsActivity extends Activity {
         }
         new AlertDialog.Builder(this, DIALOG_THEME).setTitle(r.name)
             .setSingleChoiceItems(names, sel, (d, i) -> {
-                prefs.setCity(r.cities[i][0], r.cities[i][1], r.cities[i][2], "SA", Prefs.TZ);   // a Saudi city: Riyadh time
                 d.dismiss();
-                changed();
-                render();
+                savePlace(r.cities[i][0], r.cities[i][1], r.cities[i][2], "SA", Prefs.TZ);   // a Saudi city: Riyadh time
             }).show();
     }
 
@@ -519,7 +638,7 @@ public class SettingsActivity extends Activity {
                     rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
                 }
                 new AlertDialog.Builder(this, DIALOG_THEME).setTitle("اختر المكان")
-                    .setItems(rows, (d, i) -> { prefs.setCity(names[i], lats[i], lons[i], "SA", Prefs.TZ); changed(); render(); }).show();
+                    .setItems(rows, (d, i) -> savePlace(names[i], lats[i], lons[i], "SA", Prefs.TZ)).show();
             }));
     }
 
@@ -557,12 +676,16 @@ public class SettingsActivity extends Activity {
         labels[0] = "منتخبات";
         for (int i = 0; i < groups.size(); i++) labels[i + 1] = groups.get(i).ar;
         labels[labels.length - 1] = "بحث عن أي فريق أو منتخب…";
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("إضافة فريق")
-            .setItems(labels, (d, i) -> {
+        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("إضافة فريق")
+            .setItems(labels, (x, i) -> {
                 if (i == 0) espnTeams(Leagues.NATIONAL, "منتخبات", true);
                 else if (i == labels.length - 1) searchTeam(slot);
                 else pickLeagueOf(slot, groups.get(i - 1));
-            }).show();
+            }).create();
+        d.show();
+        String cc = prefs.country();
+        if (!cc.isEmpty() && !groups.isEmpty() && (groups.get(0).cc.equals(cc) || groups.get(0).cc.startsWith(cc + "-")))
+            d.getListView().setSelection(1);   // the country's own clubs in front, as its leagues are first
     }
 
     private void pickLeagueOf(final int slot, final Leagues.Group g) {
@@ -579,10 +702,12 @@ public class SettingsActivity extends Activity {
 
     /** a club's (or a national team's) name: the bundled Arabic one (teams-ar.json; a country's for a national team),
      *  else ESPN's English one */
-    private String clubName(String en, boolean national) {
-        String k = Arabic.known(this, en);
+    private String clubName(String en, boolean national) { return clubName(this, en, national); }
+
+    private static String clubName(android.content.Context c, String en, boolean national) {
+        String k = Arabic.known(c, en);
         if (k != null) return k;
-        if (national) { String c = Geo.arabicOf(this, en); if (c != null) return c; }
+        if (national) { String n = Geo.arabicOf(c, en); if (n != null) return n; }
         return en;
     }
 
@@ -1156,6 +1281,128 @@ public class SettingsActivity extends Activity {
         }
     }
 
+    // ---------- «إذاعة القرآن الكريم»: the station (mp3quran.net's list, read off the main thread), its volume, a preview
+
+    private String stationLabel() {
+        return RadioStations.CUSTOM.equals(prefs.radioStation()) ? "رابط من عندي: ⁨" + prefs.radioName() + "⁩" : prefs.radioName();
+    }
+
+    private String percent(int v) { return num(v) + Prefs.percent(this); }
+
+    private void pickStation() {
+        final android.content.Context app = getApplicationContext();
+        loadThen(() -> Radio.stations(app, true), l -> showStations(l, l, null));
+    }
+
+    /** the stations (all, or those a search found); first a search and «رابط من عندي», the current station in front */
+    private void showStations(final List<RadioStations.Station> all, final List<RadioStations.Station> found, final String query) {
+        if (all == null || found == null) { toast("تعذّر تحميل المحطات"); return; }
+        final int head = 2;
+        String[] labels = new String[found.size() + head];
+        labels[0] = query == null ? "بحث في المحطات…" : "بحث آخر…";
+        labels[1] = "رابط من عندي…";
+        int sel = -1;
+        for (int i = 0; i < found.size(); i++) {
+            labels[i + head] = found.get(i).name;
+            if (found.get(i).id.equals(prefs.radioStation())) sel = i + head;
+        }
+        if (found.isEmpty() && query != null) toast("لا توجد نتائج");
+        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME)
+            .setTitle(query == null ? "المحطة" : "«⁨" + query + "⁩»")
+            .setItems(labels, (x, i) -> {
+                if (i == 0) ask("اسم المحطة أو القارئ", q -> loadThen(() -> RadioStations.search(all, q), r -> showStations(all, r, q)));
+                else if (i == 1) askStreamUrl();
+                else {
+                    RadioStations.Station st = found.get(i - head);
+                    prefs.setRadioStation(st.id, st.name, st.urls[0]);
+                    changed();
+                    render();
+                }
+            }).create();
+        d.show();
+        if (sel >= 0) d.getListView().setSelection(sel);
+    }
+
+    /** «رابط من عندي»: any http(s) stream (MP3, AAC, HLS) */
+    private void askStreamUrl() {
+        final EditText in = new EditText(this);
+        in.setHint("https://…");
+        in.setSingleLine(true);
+        in.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        in.setTextDirection(View.TEXT_DIRECTION_LTR);
+        if (RadioStations.CUSTOM.equals(prefs.radioStation())) in.setText(prefs.radioUrl());
+        final AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("رابط البث").setView(in)
+            .setPositiveButton("حفظ", (x, w) -> {
+                String u = in.getText().toString().trim();
+                if (!RadioStations.validUrl(u)) { toast("رابط غير صالح: يبدأ بـ http:// أو https://"); return; }
+                String host = Uri.parse(u).getHost();
+                prefs.setRadioStation(RadioStations.CUSTOM, host == null ? u : host, u);
+                changed();
+                render();
+            })
+            .setNegativeButton("إلغاء", null).show();
+        in.setOnEditorActionListener((v, action, ev) -> {
+            d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            return true;
+        });
+        in.requestFocus();
+    }
+
+    /** the radio's own volume, 10 … 100 % (the TV's volume apart); plays at once at the new one */
+    private void pickVolume() {
+        final int n = (RadioStations.VOLUME_MAX - RadioStations.VOLUME_MIN) / RadioStations.VOLUME_STEP + 1;
+        String[] labels = new String[n];
+        int sel = 0;
+        for (int i = 0; i < n; i++) {
+            int v = RadioStations.VOLUME_MIN + i * RadioStations.VOLUME_STEP;
+            labels[i] = percent(v);
+            if (v == prefs.radioVolume()) sel = i;
+        }
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("مستوى صوت الإذاعة")
+            .setSingleChoiceItems(labels, sel, (d, i) -> {
+                prefs.setRadioVolume(RadioStations.VOLUME_MIN + i * RadioStations.VOLUME_STEP);
+                d.dismiss();
+                render();
+            }).show();
+    }
+
+    /** «معاينة الإذاعة»: the station plays here (even while the radio is off) until pressed again or this screen goes */
+    private void togglePreview() {
+        if (preview == null) preview = new RadioHolder(this, RadioService.PREVIEW);
+        if (preview.isFront()) stopPreview();
+        else {
+            preview.front();
+            list.removeCallbacks(previewTick);
+            list.postDelayed(previewTick, 300);
+        }
+        setRowValue(previewRow, previewLabel());
+    }
+
+    private void stopPreview() {
+        if (preview == null || !preview.isFront()) return;
+        preview.back();
+        list.removeCallbacks(previewTick);
+        setRowValue(previewRow, previewLabel());
+    }
+
+    private String previewLabel() {
+        if (preview == null || !preview.isFront()) return "استمع إلى المحطة هنا";
+        switch (RadioService.state()) {
+            case "playing": return "يُتلى الآن، اضغط للإيقاف";
+            case "error": return "تعذّر التشغيل، تُعاد المحاولة… (" + RadioService.error() + ")";
+            case "paused": return "متوقفة مؤقتاً";
+            default: return "جارٍ التشغيل…";
+        }
+    }
+
+    /** a row's second line only (render() would rebuild the list) */
+    private static void setRowValue(View row, String text) {
+        if (!(row instanceof android.view.ViewGroup)) return;
+        View texts = ((android.view.ViewGroup) row).getChildAt(1);
+        View val = texts instanceof android.view.ViewGroup ? ((android.view.ViewGroup) texts).getChildAt(1) : null;
+        if (val instanceof TextView) ((TextView) val).setText(text);
+    }
+
     // ---------- labels ----------
 
     /** Wikidata's Arabic name (or a transliteration) fetched off the UI thread. */
@@ -1229,7 +1476,15 @@ public class SettingsActivity extends Activity {
 
     /** A card row: icon, label and its current value on a second line, chevron; gold when focused. */
     private View row(String label, String value, int icon, final Runnable onClick) {
+        return row(rowKey(label), label, value, icon, onClick);
+    }
+
+    /** key: what render() finds the row by again (a label that changes, «أخبار مصر», needs one of its own) */
+    private View row(final String key, String label, String value, int icon, final Runnable onClick) {
         final LinearLayout card = new LinearLayout(this);
+        card.setTag(key);
+        final int index = rows.size();
+        rows.add(card);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
         card.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -1279,6 +1534,7 @@ public class SettingsActivity extends Activity {
 
         card.setOnClickListener(v -> onClick.run());
         card.setOnFocusChangeListener((v, has) -> {
+            if (has) { focusKey = key; focusIndex = index; }
             // No scaling: a scaled rounded card overlapped its neighbours and blurred the text.
             bg.setColor(has ? 0x33D6AF6B : 0x14FFFFFF);
             bg.setStroke(dp(2), has ? 0xFFD6AF6B : 0x1FD6AF6B);
