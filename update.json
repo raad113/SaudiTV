@@ -1,24 +1,24 @@
 {
-  "versionCode": 9038,
-  "versionName": "9038",
-  "tag": "v9038",
-  "notes": "إصلاح: بعد تحديث التطبيقين من التلفاز نفسه يرجع التلفاز دائماً إلى الواجهة الرئيسية الجديدة.",
+  "versionCode": 9039,
+  "versionName": "9039",
+  "tag": "v9039",
+  "notes": "جديد: «شكل الأرقام» في الإعدادات (0 1 2 3 أو ٠ ١ ٢ ٣) ويطبّق على الشاشة والواجهة والإعدادات. لكل صفحة أخبار قائمة مصادر تختارها، وتنعرض أخبارها مع بعض الأحدث أولاً. بطاقة جديدة «أخبار العالم». بطاقة جديدة «حديث اليوم» من صحيح البخاري فقط، و«آية اليوم» صارت للقرآن فقط. علامة VPN تختفي إذا ما فيه تطبيق VPN على التلفزيون.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9038,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9038/saudi-tv-screensaver.apk",
-      "sha256": "1925af5639f3ebe9643e99d0eae88bc8f4d5e04a8d79ff21ec17e8610e979072",
-      "size": 4991645
+      "versionCode": 9039,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9039/saudi-tv-screensaver.apk",
+      "sha256": "f19f0a538c20c947b11de5537edd53ef89a20d6dfee82bdd2412d5320e16926b",
+      "size": 4906267
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9038,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9038/saudi-tv-home.apk",
-      "sha256": "eccfdd1be2e7b88e97b116029be3b58e3f9b861e0c458205055ebc8884ef1b1e",
-      "size": 2690591
+      "versionCode": 9039,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9039/saudi-tv-home.apk",
+      "sha256": "cd910ea257d6e19b525fae8a97ecc605f74d217e6239b4e0b55ded18c84469ed",
+      "size": 2682167
     }
   ]
 }
