@@ -139,6 +139,29 @@ final class Prefs {
     static char decimal(Context c) { return "arab".equals(new Prefs(c).numerals()) ? '٫' : '.'; }
     static char percent(Context c) { return "arab".equals(new Prefs(c).numerals()) ? '٪' : '%'; }
 
+    // ---------- the home screen's app tiles (the launcher reads them from ConfigProvider: tile_shape, focus_style):
+    // «شكل التطبيقات», banners with rounded corners (the default) or round app icons; «شكل التحديد», the focused
+    // tile's look: Google TV's white ring (the default) or Apple TV's lift and shadow. Value, Arabic label.
+    static final String[][] TILE_SHAPES = {{"rounded", "زوايا دائرية"}, {"circle", "دوائر"}};
+    static final String[][] FOCUS_STYLES = {{"google", "Google TV"}, {"apple", "Apple TV"}};
+
+    String tileShape() { return pick(TILE_SHAPES, sp.getString("tileShape", null)); }
+    void setTileShape(String v) { sp.edit().putString("tileShape", pick(TILE_SHAPES, v)).apply(); }
+    String focusStyle() { return pick(FOCUS_STYLES, sp.getString("focusStyle", null)); }
+    void setFocusStyle(String v) { sp.edit().putString("focusStyle", pick(FOCUS_STYLES, v)).apply(); }
+
+    /** v when it is one of the table's values, else its first (the default) */
+    static String pick(String[][] table, String v) {
+        for (String[] x : table) if (x[0].equals(v)) return v;
+        return table[0][0];
+    }
+
+    /** the Arabic label of a table's value */
+    static String label(String[][] table, String v) {
+        for (String[] x : table) if (x[0].equals(v)) return x[1];
+        return table[0][1];
+    }
+
     // ---------- each news page's sources: id (the page's NEWS_SOURCES in src/template.html), label, on by default.
     // Sent as #src_<page>=id,id; a page without a pick reads its defaults. tests/check.py compares both lists.
     static final String[] NEWS_PAGES = {"news", "tech", "local", "world"};

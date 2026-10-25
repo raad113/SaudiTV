@@ -50,6 +50,8 @@ DOCK_APPS="${DOCK_APPS:-}"                  # favourites row, left to right (app
 MINRATING="${MINRATING:-}"                  # episodes card's lowest rating (0 6 6.5 7 7.5 8); empty: the app's (7)
 AUTOUPDATE="${AUTOUPDATE:-}"                # the page's auto-update: on / off; empty: the app's default (on)
 NUMERALS="${NUMERALS:-}"                    # «شكل الأرقام»: 0-9 (0 1 2 3) or arabic (٠ ١ ٢ ٣); empty: the app's (0-9)
+TILE_SHAPE="${TILE_SHAPE:-}"                # «شكل التطبيقات», the home screen's apps: rounded or circle; empty: the app's (rounded)
+FOCUS_STYLE="${FOCUS_STYLE:-}"              # «شكل التحديد», the focused app: google or apple; empty: the app's (google)
 EXTRA_OFF="${EXTRA_OFF:-}"                  # more packages to turn off, on top of optimize/extra/disable.txt
 EXTRA_REMOVE="${EXTRA_REMOVE:-}"            # more packages to remove for the TV's user (asked first), on top of
                                             #   optimize/extra/remove.txt
@@ -379,6 +381,14 @@ fi
 if [ -n "$NUMERALS" ]; then
   case "$NUMERALS" in arabic|arab|٠-٩) want_nu=arab ;; *) want_nu=latn ;; esac
   if grep -qxF "numerals: $want_nu" <<< "$show"; then ok "numbers: $NUMERALS"; else saver_set "numbers ($NUMERALS)" numerals "$NUMERALS"; fi
+fi
+if [ -n "$TILE_SHAPE" ]; then
+  case "$TILE_SHAPE" in circle|circles) want_ts=circle ;; *) want_ts=rounded ;; esac
+  if grep -qxF "tile_shape: $want_ts" <<< "$show"; then ok "app tiles: $want_ts"; else saver_set "app tiles ($TILE_SHAPE)" tiles "$TILE_SHAPE"; fi
+fi
+if [ -n "$FOCUS_STYLE" ]; then
+  case "$FOCUS_STYLE" in apple|apple-tv) want_fs=apple ;; *) want_fs=google ;; esac
+  if grep -qxF "focus_style: $want_fs" <<< "$show"; then ok "focused app: $want_fs"; else saver_set "focused app ($FOCUS_STYLE)" focus "$FOCUS_STYLE"; fi
 fi
 if [ $changed = yes ]; then runx optimize/saver.sh update | sed 's/^/   /'; fi
 

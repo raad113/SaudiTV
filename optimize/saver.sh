@@ -17,6 +17,10 @@
 #                                                  French Hindi German  ("" = all)
 #   optimize/saver.sh minrating 7.5                episodes card: lowest rating, one of 0 6 6.5 7 7.5 8
 #   optimize/saver.sh numerals 0-9|arabic          «شكل الأرقام»: 0 1 2 3 (the default) or ٠ ١ ٢ ٣, everywhere
+#   optimize/saver.sh tiles rounded|circle         «شكل التطبيقات», the home screen's apps: banners with rounded
+#                                                  corners (the default) or round icons with their names
+#   optimize/saver.sh focus google|apple           «شكل التحديد», the focused app: Google TV's white ring (the
+#                                                  default) or Apple TV's lift and shadow
 #   optimize/saver.sh sources world skynews,bbc    a news page's sources (news tech local world), read together; ""
 #                                                  = its defaults. The ids: optimize/saver.sh show (sources_…)
 #   optimize/saver.sh autoupdate on|off            the page's auto-update from github.com/raad113/SaudiTV (on by default)
@@ -60,10 +64,16 @@ case "${1:-}" in
   numerals)
     case "${2:-}" in 0-9|latin|western|latn) v=latn ;; arabic|arab|٠-٩) v=arab ;; *) echo "usage: optimize/saver.sh numerals 0-9|arabic"; exit 1 ;; esac
     send SET "--es numerals $v" ;;
+  tiles)
+    case "${2:-}" in rounded|round) v=rounded ;; circle|circles) v=circle ;; *) echo "usage: optimize/saver.sh tiles rounded|circle"; exit 1 ;; esac
+    send SET "--es tile_shape $v" ;;
+  focus)
+    case "${2:-}" in google|google-tv) v=google ;; apple|apple-tv) v=apple ;; *) echo "usage: optimize/saver.sh focus google|apple"; exit 1 ;; esac
+    send SET "--es focus_style $v" ;;
   sources)
     case "${2:-}" in news|tech|local|world) ;; *) echo "usage: optimize/saver.sh sources news|tech|local|world id,id (\"\" = the defaults)"; exit 1 ;; esac
     [ $# -ge 3 ] || { echo "usage: optimize/saver.sh sources $2 id,id (\"\" = the defaults)"; exit 1; }
     send SET "--es src_$2 $(quote "$3")" ;;
   find-team) shift; "$PY" -I optimize/find-team.py "$@" ;;   # Arabic or English name
-  *) sed -n '2,25p' "$0"; exit 1 ;;
+  *) sed -n '2,29p' "$0"; exit 1 ;;
 esac

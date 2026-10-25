@@ -540,9 +540,10 @@
      No info bar, no pixelShift, no night dimming and no photo drift: every frame the page draws redraws the whole
      home screen, the launcher's views included. */
   .hinfo{display:none}
-  /* 90 / 72 (was 112 / 50): a slimmer apps row, and under it the info strip (72 - 42 = 30px); the card's
-     tallest panel (three two-line news items and the rotation dots, 260px) still fits above the row, ring and all */
-  html.home{--dock-h:90px;--dock-b:72px;--pills-h:26px}
+  /* 104 / 72 (was 90 / 72): the apps row holds a focused tile with its ring or lift and its name (HomePage.DOCK_H_DP,
+     sent as dockh), and under it the info strip (72 - 42 = 30px); a card taller than the room left is cut at its
+     bottom, never over the row */
+  html.home{--dock-h:104px;--dock-b:72px;--pills-h:26px}
   /* 8px above the apps row (was 10) and the rules under the dates and the weather a little closer
      (.8vh, was 1.2vh): room for the focus ring (3px outline, 2px offset, 1.02 scale) around a 260px card */
   html.home .stage{padding:16px 3.6vw calc(var(--dock-b) + var(--dock-h) + 8px);grid-template-rows:auto minmax(0,1fr);gap:8px}

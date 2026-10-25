@@ -9,7 +9,8 @@ import android.net.Uri;
 /**
  * Read-only: hands the launcher (same signing key, see READ_CONFIG in the manifest) what its home-screen
  * card needs: the page settings as a URL fragment, which card to show ("none" = off) and «شكل الأرقام» (numerals:
- * latn or arab, for the launcher's own text; the fragment carries it for the page).
+ * latn or arab, for the launcher's own text; the fragment carries it for the page), and the app tiles' look
+ * (tile_shape: rounded or circle; focus_style: google or apple).
  * content://com.raad.sauditv.screensaver.config/update: the last app-update check, for the home screen's
  * «تحديث متوفر» pill: available (the newer versionCode, 0 = none), name (its versionName), installed (this app's).
  */
@@ -26,8 +27,8 @@ public class ConfigProvider extends ContentProvider {
             return c;
         }
         Prefs p = new Prefs(getContext());
-        MatrixCursor c = new MatrixCursor(new String[] {"fragment", "home_panel", "numerals"});
-        c.addRow(new Object[] {p.fragment(), p.homePanel(), p.numerals()});
+        MatrixCursor c = new MatrixCursor(new String[] {"fragment", "home_panel", "numerals", "tile_shape", "focus_style"});
+        c.addRow(new Object[] {p.fragment(), p.homePanel(), p.numerals(), p.tileShape(), p.focusStyle()});
         return c;
     }
 

@@ -11,9 +11,11 @@ import android.provider.Settings;
 import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,6 +28,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /** Remote-friendly settings: every row is a button that opens a list. */
@@ -132,6 +135,11 @@ public class SettingsActivity extends Activity {
             new Runnable() { public void run() { pickPanel(true); } });
         row("ترتيب التطبيقات المفضلة", "قائمة ترتّب فيها المفضلة بالأسهم", R.drawable.ic_star,
             new Runnable() { public void run() { openDockSettings(); } });
+        row("شكل التطبيقات", Prefs.label(Prefs.TILE_SHAPES, prefs.tileShape()), R.drawable.ic_category,
+            new Runnable() { public void run() { pickTileLook(true); } });
+        // an RLM first: «Google TV» on the right like the other values, not on the left as a Latin line would be
+        row("شكل التحديد", "‏" + Prefs.label(Prefs.FOCUS_STYLES, prefs.focusStyle()), R.drawable.ic_eye,
+            new Runnable() { public void run() { pickTileLook(false); } });
 
         // each news page on a card: its sources (Prefs.NEWS_SOURCES), ticked in a list like the cards'
         boolean anyNews = false;
@@ -376,8 +384,10 @@ public class SettingsActivity extends Activity {
 
     /**
      * The card beside the screensaver's clock, or (home) the one on the launcher's home screen.
-     * Several cards, OK ticks or unticks one; they take turns in the order they were ticked (the
-     * gold number beside each). Saved as saver.sh does: "a,b,c", one id alone, or "none" when nothing is ticked.
+     * The ticked cards come first, in the order they take turns (the gold number beside each), then the others.
+     * OK ticks or unticks one (a newly ticked card takes the last turn). On a ticked card ◀ ▶ move it one place, as
+     * the list reads right to left: ▶ one turn earlier (towards 1), ◀ one later; the focus stays on it. Saved as
+     * saver.sh does: "a,b,c" in that order, one id alone, or "none" when nothing is ticked.
      */
     private void pickPanel(final boolean home) {
         final List<String> ids = new ArrayList<>();   // every card but "none"
@@ -387,26 +397,84 @@ public class SettingsActivity extends Activity {
             s = s.trim();
             if (ids.contains(s) && !order.contains(s)) order.add(s);
         }
+        final List<String> rows = new ArrayList<>();   // the list, top to bottom: order, then the unticked ones
         final CharSequence[] labels = new CharSequence[ids.size()];
         final boolean[] on = new boolean[ids.size()];
-        for (int i = 0; i < on.length; i++) on[i] = order.contains(ids.get(i));
-        panelLabels(ids, order, labels);
-        new AlertDialog.Builder(this, DIALOG_THEME)
-            .setTitle((home ? "بطاقة على الشاشة الرئيسية" : "بجانب الساعة") + " (تتناوب بترتيب الأرقام)")
+        panelRows(ids, order, rows, labels, on);
+        final AlertDialog dialog = new AlertDialog.Builder(this, DIALOG_THEME)
+            .setCustomTitle(pickerTitle((home ? "بطاقة على الشاشة الرئيسية" : "بجانب الساعة") + " (تتناوب بترتيب الأرقام)",
+                "OK للتحديد · ◀ ▶ لتغيير الترتيب"))
             .setMultiChoiceItems(labels, on, (d, i, checked) -> {
-                on[i] = checked;
-                order.remove(ids.get(i));
-                if (checked) order.add(ids.get(i));
-                panelLabels(ids, order, labels);   // the list adapter shows this same array
-                android.widget.ListAdapter a = ((AlertDialog) d).getListView().getAdapter();
-                if (a instanceof android.widget.BaseAdapter) ((android.widget.BaseAdapter) a).notifyDataSetChanged();
+                String id = rows.get(i);
+                order.remove(id);
+                if (checked) order.add(id);
+                showPanelRows((AlertDialog) d, ids, order, rows, labels, on, id, 0);
             })
             .setPositiveButton("تم", (d, w) -> {
                 String v = order.isEmpty() ? "none" : Prefs.join(order, ",");
                 if (home) prefs.setHomePanel(v); else prefs.setPanel(v);
                 render();
             })
-            .setNegativeButton("إلغاء", null).show();
+            .setNegativeButton("إلغاء", null).create();
+        final ListView lv = dialog.getListView();   // made by create()
+        lv.setOnKeyListener((v, code, e) -> {
+            if (code != KeyEvent.KEYCODE_DPAD_LEFT && code != KeyEvent.KEYCODE_DPAD_RIGHT) return false;
+            if (e.getAction() != KeyEvent.ACTION_DOWN) return true;   // never out of the list sideways
+            int at = lv.getSelectedItemPosition();
+            int to = at + (code == KeyEvent.KEYCODE_DPAD_LEFT ? 1 : -1);
+            if (at < 0 || at >= order.size() || to < 0 || to >= order.size()) return true;   // unticked, or at an end
+            Collections.swap(order, at, to);
+            showPanelRows(dialog, ids, order, rows, labels, on, order.get(to), to - at);
+            return true;
+        });
+        dialog.show();
+    }
+
+    /** The list's rows (the ticked ids in order, then the others as Prefs.PANELS lists them), their labels and ticks. */
+    private void panelRows(List<String> ids, List<String> order, List<String> rows, CharSequence[] labels, boolean[] on) {
+        rows.clear();
+        rows.addAll(order);
+        for (String id : ids) if (!order.contains(id)) rows.add(id);
+        for (int i = 0; i < rows.size(); i++) on[i] = i < order.size();
+        panelLabels(rows, order, labels);
+    }
+
+    /** The list again after a tick or a move; the focus stays on `focus`, which moved `step` rows (0: anywhere,
+     *  kept where the focus was, the list shifting under it). */
+    private void showPanelRows(AlertDialog d, List<String> ids, List<String> order, List<String> rows,
+                               CharSequence[] labels, boolean[] on, String focus, int step) {
+        panelRows(ids, order, rows, labels, on);   // the list adapter shows these same arrays
+        ListView lv = d.getListView();
+        View sel = lv.getSelectedView();
+        int y = sel == null ? 0 : sel.getTop(), h = sel == null ? 0 : sel.getHeight();
+        android.widget.ListAdapter a = lv.getAdapter();
+        if (a instanceof android.widget.BaseAdapter) ((android.widget.BaseAdapter) a).notifyDataSetChanged();
+        for (int i = 0; i < on.length; i++) lv.setItemChecked(i, on[i]);
+        int bottom = Math.max(0, lv.getHeight() - lv.getPaddingBottom() - h);
+        lv.setSelectionFromTop(rows.indexOf(focus), Math.max(lv.getPaddingTop(), Math.min(bottom, y + step * h)));
+    }
+
+    /** A dialog title with a hint line under it (a list dialog has no room for a message). */
+    private View pickerTitle(String title, String hint) {
+        android.content.Context dc = new android.view.ContextThemeWrapper(this, DIALOG_THEME);
+        LinearLayout box = new LinearLayout(dc);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        box.setPadding(dp(24), dp(18), dp(24), dp(6));
+        TextView t = new TextView(dc);
+        t.setTextAppearance(android.R.style.TextAppearance_Material_DialogWindowTitle);
+        t.setText(title);
+        t.setSingleLine(true);
+        t.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        box.addView(t);
+        TextView h = new TextView(dc);
+        h.setTextAppearance(android.R.style.TextAppearance_Material_Body1);
+        h.setTextColor(0xB3FFFFFF);
+        h.setTextDirection(View.TEXT_DIRECTION_RTL);   // it starts with «OK»: still a right-to-left line
+        h.setText(hint);
+        h.setPadding(0, dp(4), 0, 0);
+        box.addView(h);
+        return box;
     }
 
     /** Each card's name, with its turn (1، 2، … in the chosen digits) in gold when ticked. */
@@ -420,6 +488,26 @@ public class SettingsActivity extends Activity {
             s.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), name.length(), s.length(), 0);
             out[i] = s;
         }
+    }
+
+    /** «شكل التطبيقات» (shape) or «شكل التحديد»: the home screen redraws its tiles at once (CONFIG_CHANGED). */
+    private void pickTileLook(final boolean shape) {
+        final String[][] table = shape ? Prefs.TILE_SHAPES : Prefs.FOCUS_STYLES;
+        String cur = shape ? prefs.tileShape() : prefs.focusStyle();
+        String[] labels = new String[table.length];
+        int sel = 0;
+        for (int i = 0; i < table.length; i++) {
+            labels[i] = table[i][1];
+            if (table[i][0].equals(cur)) sel = i;
+        }
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(shape ? "شكل التطبيقات" : "شكل التحديد")
+            .setSingleChoiceItems(labels, sel, (d, i) -> {
+                if (shape) prefs.setTileShape(table[i][0]); else prefs.setFocusStyle(table[i][0]);
+                d.dismiss();
+                changed();
+                render();
+            })
+            .show();
     }
 
     /** A card setting holds a comma list now */

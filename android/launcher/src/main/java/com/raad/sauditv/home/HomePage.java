@@ -55,7 +55,9 @@ final class HomePage {
     /** The room the launcher's views take, in dp (= the page's CSS px): the pills' height (top left, TOP_DP from the
      *  top), the apps row's height and its distance from the bottom edge (above the page's 42px ticker tape and,
      *  its 30px info strip: DOCK_B_DP - 42). */
-    static final int PILLS_H_DP = 26, TOP_DP = 16, DOCK_H_DP = 90, DOCK_B_DP = 72;   // 90 / 72 (was 112 / 50), slimmer row, the strip under it
+    // 104 / 72 (was 90 / 72): the row holds a focused tile (scaled, with its ring or lift) and its name under it, for
+    // both tile shapes and both focus styles (MainActivity's DOCK_* sizes); the page's own default (--dock-h) matches
+    static final int PILLS_H_DP = 26, TOP_DP = 16, DOCK_H_DP = 104, DOCK_B_DP = 72;
     /** the page's side margin (.stage padding: 3.6vw), for the launcher's views to line up with it */
     static final float SIDE = 0.036f;
 
@@ -69,6 +71,8 @@ final class HomePage {
     private String panelList;    // the configured panels, comma-separated: LEFT/RIGHT on the detail page
     private boolean opening;     // one detail launch per OK press
     private boolean appsOpen;    // the launcher's apps grid is open (window.sauditvAppsOpen)
+    // the app tiles' look from the same settings read (ConfigProvider's tile_shape, focus_style; absent: the defaults)
+    private volatile boolean circles, apple;
     private Runnable onFocus;
     private Consumer<Boolean> onCardChanged;
 
@@ -108,6 +112,12 @@ final class HomePage {
 
     /** The card view while the page shows a card, else null. */
     View focusableCard() { return card.getVisibility() == View.VISIBLE ? card : null; }
+
+    /** «شكل التطبيقات»: round app icons (else banners with rounded corners), as of the last settings read */
+    boolean circles() { return circles; }
+
+    /** «شكل التحديد»: Apple TV's lift and shadow (else Google TV's ring), as of the last settings read */
+    boolean apple() { return apple; }
 
     /** onResume: follow the current settings (a changed choice gets a fresh page), run again, release the card. */
     void resume() {
@@ -150,15 +160,20 @@ final class HomePage {
 
     /** The page's URL: the screensaver's settings, the home card's panels (rotating 30 s), home mode and its room. */
     private String readUrl() {
-        String frag = "", panel = "none";
+        String frag = "", panel = "none", shape = null, focus = null;
         try (Cursor c = activity.getContentResolver().query(CONFIG, null, null, null, null)) {
             if (c != null && c.moveToFirst()) {
                 if (c.getString(0) != null) frag = c.getString(0);
                 if (c.getString(1) != null) panel = c.getString(1);
+                int s = c.getColumnIndex("tile_shape"), f = c.getColumnIndex("focus_style");   // absent from older apps
+                if (s >= 0) shape = c.getString(s);
+                if (f >= 0) focus = c.getString(f);
             }
         } catch (RuntimeException e) {
             Log.w("SaudiTV-Home", "settings: " + e);   // screensaver app missing or too old: the page's defaults
         }
+        circles = "circle".equals(shape);
+        apple = "apple".equals(focus);
         // a comma list ("prayers,forecast,matches") = one card that shows each in turn, 30 s each
         String[] panels = panel.replace(" ", "").split(",");
         panel = panels[0].isEmpty() ? "none" : panels[0];

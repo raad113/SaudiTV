@@ -21,6 +21,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
+import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.tv.TvContract;
@@ -58,7 +59,8 @@ import java.util.Map;
  * page in home mode) draws the photo, the dates, the weather, the clock with the VPN badge, the rotating card, the
  * info strip (next prayer, Ramadan, next match) and the moving market ticker; on top of it: the pills (compact
  * glass, top left, over the weather), an invisible focusable view over the page's card, and the dock in a slim glass
- * band above the info strip (hugging its smaller tiles, centred; the focused tile glows). Down from the dock
+ * band above the info strip (hugging its smaller tiles, centred; banners or circles, the focused tile in Google TV's
+ * or Apple TV's look, as the screensaver app's settings say). Down from the dock
  * scrolls the apps grid up over the page, which a dark shade dims. The native header (greeting, clock, date, VPN
  * chip), the native wallpaper rotation, the glow, the dock app's title and the separate card WebView are gone.
  *
@@ -81,6 +83,7 @@ public class MainActivity extends Activity {
         ComponentName component;
         Drawable art;
         boolean isBanner;
+        boolean fullBleed;   // «دوائر»: an older icon that is an opaque square, drawn to fill its circle
         int color;
     }
 
@@ -88,6 +91,9 @@ public class MainActivity extends Activity {
     private final List<View> dockCards = new ArrayList<>();
     private final List<View> gridCards = new ArrayList<>();
     private final List<View> pills = new ArrayList<>();
+    private final Map<View, Tile> tiles = new HashMap<>();   // each card's views, for its focus look
+    // the tiles' look (the screensaver app's settings, read by HomePage): «دوائر», else banners; Apple TV, else Google TV
+    private boolean circles, apple;
 
     private HomeScrollView scroll;
     private LinearLayout content, dockRow;
@@ -118,9 +124,10 @@ public class MainActivity extends Activity {
         @Override public void onReceive(Context c, Intent i) { dockApps = loadDock(); buildApps(); }
     };
 
-    // the screensaver app's settings changed (e.g. over ADB) while the home screen is up: reload its page
+    // the screensaver app's settings changed (e.g. over ADB) while the home screen is up: reload its page, and the
+    // tiles when their look changed
     private final BroadcastReceiver configChanged = new BroadcastReceiver() {
-        @Override public void onReceive(Context c, Intent i) { homePage.refresh(); }
+        @Override public void onReceive(Context c, Intent i) { homePage.refresh(); applyStyle(); }
     };
 
     // the screensaver app checked for an app update (or installed one) while the home screen is up
@@ -143,6 +150,8 @@ public class MainActivity extends Activity {
                 View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         setContentView(buildUi());
+        circles = homePage.circles();   // read with the page's settings
+        apple = homePage.apple();
         buildApps();
 
         IntentFilter pf = new IntentFilter();
@@ -174,6 +183,7 @@ public class MainActivity extends Activity {
         updateWifi();
         refreshUpdate();
         homePage.resume();   // the page runs again (it has the clock, the photos and the VPN badge)
+        applyStyle();   // the tiles' look may have changed in the settings meanwhile
         wireFocus();   // the card may have appeared or gone
         View last = lastFocusedId == View.NO_ID ? null : findViewById(lastFocusedId);
         if (last != null && !last.isShown()) last = null;   // e.g. the card while the page has none
@@ -402,6 +412,10 @@ public class MainActivity extends Activity {
         PackageManager pm = getPackageManager();
         android.content.pm.ChangedPackages changed = pm.getChangedPackages(packageSeq);
         if (changed != null) packageSeq = changed.getSequenceNumber();
+        // a tile keeps the focus across a rebuild (new views, new ids): remembered by its app
+        String focusPkg = pkgOf(lastFocusedId == View.NO_ID ? null : findViewById(lastFocusedId));
+        String dockPkg = pkgOf(lastDockId == View.NO_ID ? null : findViewById(lastDockId));
+        cols = circles ? GRID_CIRCLE_COLS : getResources().getInteger(R.integer.columns);
         Map<String, App> byPkg = new HashMap<>();
         for (ResolveInfo ri : Dock.catalogue(this)) {
             ActivityInfo ai = ri.activityInfo;
@@ -410,11 +424,19 @@ public class MainActivity extends Activity {
             a.label = String.valueOf(ri.loadLabel(pm));
             a.component = new ComponentName(ai.packageName, ai.name);
             a.category = Dock.isTv(ri) ? Intent.CATEGORY_LEANBACK_LAUNCHER : Intent.CATEGORY_LAUNCHER;
-            Drawable banner = ai.loadBanner(pm);
-            if (banner == null) banner = ai.applicationInfo.loadBanner(pm);
-            a.isBanner = banner != null;
-            a.art = banner != null ? banner : ri.loadIcon(pm);
-            a.color = sampleColor(a.pkg, a.art);
+            if (circles) {   // «دوائر»: the app's own icon (an adaptive icon's layers, or an older square one)
+                Drawable icon;
+                try { icon = pm.getApplicationIcon(ai.applicationInfo); } catch (RuntimeException e) { icon = ri.loadIcon(pm); }
+                a.art = icon;
+                a.isBanner = false;
+                a.fullBleed = !(icon instanceof AdaptiveIconDrawable) && fullBleed(icon);
+            } else {
+                Drawable banner = ai.loadBanner(pm);
+                if (banner == null) banner = ai.applicationInfo.loadBanner(pm);
+                a.isBanner = banner != null;
+                a.art = banner != null ? banner : ri.loadIcon(pm);
+                a.color = sampleColor(a.pkg, a.art);
+            }
             byPkg.put(a.pkg, a);
         }
 
@@ -430,19 +452,26 @@ public class MainActivity extends Activity {
         grid.removeAllViews();
         dockCards.clear();
         gridCards.clear();
+        tiles.clear();
+        Shadow.forget();   // new tiles, new sizes
 
-        // the dock's tiles at most DOCK_TILE_H_DP tall (16:9), centred in the band; more apps than fit
-        // at that size share the band's width, as before
-        int n = Math.max(1, dock.size()), gap = dp(DOCK_GAP_DP);   // DOCK_GAP_DP (was 14)
+        // the dock's tiles: banners at most DOCK_TILE_H_DP tall (16:9), or circles CIRCLE_DP across in CIRCLE_SLOT_DP
+        // wide slots (their names under them), centred in the band; more apps than fit share the band's width
+        int n = Math.max(1, dock.size()), gap = dp(circles ? CIRCLE_GAP_DP : DOCK_GAP_DP);
+        dockRow.setPadding(dp(DOCK_PAD_DP), dp(circles ? CIRCLE_TOP_DP : DOCK_TOP_DP), dp(DOCK_PAD_DP), 0);
         int inner = getResources().getDisplayMetrics().widthPixels - 2 * side() - 2 * dp(DOCK_PAD_DP);
-        int tileW = Math.min(dp(DOCK_TILE_H_DP * 16f / 9f), (inner - (n - 1) * gap) / n);
+        int tileW = Math.min(dp(circles ? CIRCLE_SLOT_DP : DOCK_TILE_H_DP * 16f / 9f), (inner - (n - 1) * gap) / n);
+        int dockD = Math.min(dp(CIRCLE_DP), tileW - dp(CIRCLE_SLOT_DP - CIRCLE_DP));   // a circle's size (circles)
         for (int i = 0; i < dock.size(); i++) {
-            View tile = tile(dock.get(i), true);
+            View tile = tile(dock.get(i), true, dockD);
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(tileW, -2);
             p.setMargins(i == 0 ? 0 : gap, 0, 0, 0);
             dockRow.addView(tile, p);
         }
 
+        // the grid's cells: cols to a row, 20dp apart; a circle GRID_CIRCLE_DP across, smaller if a cell is narrower
+        int cell = (getResources().getDisplayMetrics().widthPixels - 2 * dp(68) - (cols - 1) * dp(20)) / cols;
+        int gridD = Math.min(dp(GRID_CIRCLE_DP), cell - dp(16));
         LinearLayout row = null;
         for (int i = 0; i < rest.size(); i++) {
             if (i % cols == 0) {
@@ -451,7 +480,7 @@ public class MainActivity extends Activity {
                 row.setClipToPadding(false);
                 grid.addView(row, llp(-1, -2, 0, 0, 0, dp(26)));
             }
-            View tile = tile(rest.get(i), false);
+            View tile = tile(rest.get(i), false, gridD);
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -2, 1f);
             p.setMargins(i % cols == 0 ? 0 : dp(10), 0, i % cols == cols - 1 ? 0 : dp(10), 0);
             row.addView(tile, p);
@@ -463,97 +492,131 @@ public class MainActivity extends Activity {
             row.addView(new View(this), p);
         }
         appsLabel.setVisibility(rest.isEmpty() ? View.GONE : View.VISIBLE);
+        View kept = focusPkg == null ? null : cardByPkg.get(focusPkg);
+        if (kept != null) lastFocusedId = kept.getId();
+        View keptDock = dockPkg == null ? null : cardByPkg.get(dockPkg);
+        if (keptDock != null && dockCards.contains(keptDock)) lastDockId = keptDock.getId();
         wireFocus();
 
+        if (quick.isOpen()) return;   // the panel keeps the focus (e.g. a change over ADB while it is open)
         View last = lastFocusedId == View.NO_ID ? null : findViewById(lastFocusedId);
         if (last != null) last.requestFocus();
         else if (!dockCards.isEmpty()) dockCards.get(0).requestFocus();
     }
 
-    /** A 16:9 card with the app's banner; the name shows under it while focused. */
-    private View tile(App app, boolean inDock) {
+    /** the app of a tile's card (its tag), else null */
+    private static String pkgOf(View v) {
+        return v != null && v.getTag() instanceof App ? ((App) v.getTag()).pkg : null;
+    }
+
+    /** «شكل التطبيقات» or «شكل التحديد» changed (the screensaver app's settings, or ADB): the tiles again in the new
+     *  look, the focus on the same app. HomePage read them with the page's settings. */
+    private void applyStyle() {
+        if (homePage.circles() == circles && homePage.apple() == apple) return;
+        circles = homePage.circles();
+        apple = homePage.apple();
+        buildApps();
+    }
+
+    /**
+     * An app's tile: a 16:9 banner with rounded corners (its name under it while focused), or («دوائر») its round icon
+     * `circleD` across with its name always under it, dim, bright while focused. Focused, Google TV's look («شكل
+     * التحديد»): 1.10 times, a white ring with a dark gap around it (Ring), the other tiles of its row or grid dimmed to
+     * 70% (refreshDims); Apple TV's: 1.12 times and lifted, a soft shadow under it (Shadow), a sheen over it (Sheen).
+     */
+    private View tile(App app, boolean inDock, int circleD) {
+        final Tile t = new Tile();
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER_HORIZONTAL);
         box.setClipChildren(false);
         box.setClipToPadding(false);
 
-        // the card over its glow (Glow: drawn around it while it has focus, scaled with it)
+        // the card, with its shadow under it (Apple TV) or its ring over it (Google TV): the same size and place, scaled
+        // and lifted with it, drawn outside their bounds (nothing up to the screen clips)
         FrameLayout frame = new FrameLayout(this);
         frame.setClipChildren(false);
         frame.setClipToPadding(false);
-        View glow = new AspectFrame(this);   // 16:9 like the card (a MATCH_PARENT child would stretch the frame)
-        glow.setBackground(new Glow(dp(TILE_RADIUS_DP), dp(GLOW_DP), GLOW_COLOR));
-        glow.setAlpha(0f);
-        frame.addView(glow, new FrameLayout.LayoutParams(-1, -2));
+        final float radius = dp(TILE_RADIUS_DP);
+        if (apple) {
+            t.shadow = shapeView();
+            t.shadow.setBackground(new Shadow(radius, circles, circles ? CIRCLE_SHADOW : BANNER_SHADOW,
+                    DESIGN_DP * getResources().getDisplayMetrics().density));
+            t.shadow.setAlpha(0f);
+            frame.addView(t.shadow, shapeParams(circleD));
+        }
 
-        FrameLayout card = new AspectFrame(this);
+        FrameLayout card = circles ? new FrameLayout(this) : new AspectFrame(this);
         card.setId(View.generateViewId());
         card.setFocusable(true);
         card.setClickable(true);
+        card.setDefaultFocusHighlightEnabled(false);   // the look below is the focus
         card.setTag(app);
         card.setClipToOutline(true);
         card.setOutlineProvider(new ViewOutlineProvider() {
             @Override public void getOutline(View v, Outline o) {
-                o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), dp(TILE_RADIUS_DP));   // TILE_RADIUS_DP (was 10)
+                if (circles) o.setOval(0, 0, v.getWidth(), v.getHeight());
+                else o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), radius);   // 20px at 1280 (was 11dp)
             }
         });
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(app.isBanner ? 0xFF1C1C1E : darken(app.color, 0.45f));
-        card.setBackground(bg);
-
-        ImageView img = new ImageView(this);
-        img.setImageDrawable(app.art);
-        if (app.isBanner) {
-            img.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            card.addView(img, new FrameLayout.LayoutParams(-1, -1));
+        if (circles) {
+            card.addView(new CircleIcon(this, app.art, app.fullBleed), new FrameLayout.LayoutParams(-1, -1));
         } else {
-            img.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            card.addView(img, new FrameLayout.LayoutParams(-1, -1));
-            img.setPadding(dp(22), dp(14), dp(22), dp(14));
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(app.isBanner ? 0xFF1C1C1E : darken(app.color, 0.45f));
+            card.setBackground(bg);
+            ImageView img = new ImageView(this);
+            img.setImageDrawable(app.art);
+            if (app.isBanner) {
+                img.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                card.addView(img, new FrameLayout.LayoutParams(-1, -1));
+            } else {
+                img.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                card.addView(img, new FrameLayout.LayoutParams(-1, -1));
+                img.setPadding(dp(22), dp(14), dp(22), dp(14));
+            }
         }
+        if (apple) {   // the sheen, over the art and inside its shape
+            t.sheen = new View(this);
+            t.sheen.setBackground(new Sheen());
+            t.sheen.setAlpha(0f);
+            card.addView(t.sheen, new FrameLayout.LayoutParams(-1, -1));
+        } else {       // a black veil that dims the tile while another one has the focus
+            t.dim = new View(this);
+            t.dim.setBackgroundColor(Color.BLACK);
+            t.dim.setAlpha(0f);
+            card.addView(t.dim, new FrameLayout.LayoutParams(-1, -1));
+        }
+        frame.addView(card, shapeParams(circleD));
+        if (!apple) {
+            t.ring = shapeView();
+            t.ring.setBackground(new Ring(radius, circles, dp(RING_GAP_DP), dp(RING_DP)));
+            t.ring.setAlpha(0f);
+            frame.addView(t.ring, shapeParams(circleD));
+        }
+        box.addView(frame, circles ? new LinearLayout.LayoutParams(circleD, circleD) : new LinearLayout.LayoutParams(-1, -2));
 
-        // Focus ring and sheen, drawn above the art.
-        GradientDrawable ring = new GradientDrawable();
-        ring.setCornerRadius(dp(TILE_RADIUS_DP));   // TILE_RADIUS_DP (was 10)
-        ring.setStroke(dp(2), 0xE6FFFFFF);
-        ring.setOrientation(GradientDrawable.Orientation.TL_BR);
-        ring.setColors(new int[]{0x26FFFFFF, 0x00FFFFFF, 0x00FFFFFF});
-        View shine = new View(this);
-        shine.setBackground(ring);
-        shine.setAlpha(0f);
-        card.addView(shine, new FrameLayout.LayoutParams(-1, -1));
-
-        frame.addView(card, new FrameLayout.LayoutParams(-1, -2));   // in the frame, over the glow
-        box.addView(frame, new LinearLayout.LayoutParams(-1, -2));
-
-        TextView label = text(11, "sans-serif-medium", Color.WHITE);
+        // the name: under a circle always (dim), under a banner while focused; clear of the scaled tile and its ring
+        TextView label = text(circles ? 10 : 11, circles ? "sans-serif" : "sans-serif-medium", Color.WHITE);
         label.setText(app.label);
         label.setSingleLine(true);
         label.setEllipsize(android.text.TextUtils.TruncateAt.END);   // a long name ends in «…»
         label.setGravity(Gravity.CENTER);
         label.setShadowLayer(dp(3), 0, dp(1), 0x99000000);   // readable on the glass and the photo
-        label.setAlpha(0f);
-        // the dock shows the focused tile's name under it too (no title over the dock any more); there it
-        // slides down into place, just under the scaled tile and inside the band (DOCK_LABEL_GAP_DP)
-        if (inDock) label.setTranslationY(-dp(4));
-        box.addView(label, llp(-1, -2, 0, dp(inDock ? DOCK_LABEL_GAP_DP : 10), 0, 0));
+        label.setAlpha(circles ? NAME_DIM : 0f);
+        float under = circles ? CIRCLE_LABEL_GAP_DP : inDock ? DOCK_LABEL_GAP_DP : GRID_LABEL_GAP_DP;
+        box.addView(label, llp(-1, -2, 0, dp(under), 0, 0));
+        t.card = card;
+        t.label = label;
+        tiles.put(card, t);
 
         card.setOnClickListener(v -> launch(new Intent(Intent.ACTION_MAIN)
                 .addCategory(app.category)
                 .setComponent(app.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)));
         card.setOnFocusChangeListener((v, has) -> {
-            float s = has ? 1.1f : 1f;   // 1.1 in the dock too (was 1.12)
-            // no lift shadow in the dock (the glow is the focus there)
-            v.animate().scaleX(s).scaleY(s).translationZ(has && !inDock ? dp(14) : 0)
-                    .setInterpolator(has ? new OvershootInterpolator(1.8f) : new DecelerateInterpolator())
-                    .setDuration(has ? 320 : 200).start();
-            glow.animate().scaleX(s).scaleY(s).alpha(has ? 1f : 0f)
-                    .setInterpolator(has ? new OvershootInterpolator(1.8f) : new DecelerateInterpolator())
-                    .setDuration(has ? 320 : 200).start();
-            shine.animate().alpha(has ? 1f : 0f).setDuration(160).start();
-            label.animate().alpha(has ? 1f : 0f)
-                    .translationY(inDock ? (has ? 0 : -dp(4)) : (has ? dp(4) : 0)).setDuration(200).start();
+            focusLook(t, has);
+            v.post(this::refreshDims);   // once the focus has settled on its new tile
             if (!has) return;
             lastFocusedId = v.getId();
             if (inDock) {
@@ -574,6 +637,51 @@ public class MainActivity extends Activity {
 
         (inDock ? dockCards : gridCards).add(card);
         return box;
+    }
+
+    /** a view the card's size and place, for its ring or shadow: 16:9 at the frame's width, or the circle */
+    private View shapeView() {
+        return circles ? new View(this) : new AspectFrame(this);
+    }
+
+    private FrameLayout.LayoutParams shapeParams(int circleD) {
+        return circles ? new FrameLayout.LayoutParams(circleD, circleD) : new FrameLayout.LayoutParams(-1, -2);
+    }
+
+    /** A tile gains or loses the focus: scale (and lift), its ring or shadow and sheen, its name. Eased out over
+     *  FOCUS_MS, from wherever a running change has got to (a quick move interrupts it); Android's animator duration
+     *  scale applies (ViewPropertyAnimator), 0 = at once. */
+    private void focusLook(Tile t, boolean has) {
+        float s = has ? (apple ? APPLE_SCALE : GOOGLE_SCALE) : 1f, y = has && apple ? -dp(APPLE_LIFT_DP) : 0f;
+        ease(t.card.animate().scaleX(s).scaleY(s).translationY(y));
+        if (t.ring != null) ease(t.ring.animate().scaleX(s).scaleY(s).translationY(y).alpha(has ? 1f : 0f));
+        if (t.shadow != null) ease(t.shadow.animate().scaleX(s).scaleY(s).translationY(y).alpha(has ? 1f : 0f));
+        if (t.sheen != null) ease(t.sheen.animate().alpha(has ? 1f : 0f));
+        ease(t.label.animate().alpha(has ? 1f : circles ? NAME_DIM : 0f));
+        if (circles) t.label.setTypeface(font(has ? "medium" : "regular"));   // the focused name bolder
+    }
+
+    private static void ease(android.view.ViewPropertyAnimator a) {
+        a.setInterpolator(EASE_OUT).setDuration(FOCUS_MS).setStartDelay(0).start();
+    }
+
+    /** Google TV: while a tile has the focus, the others of its row (the dock) or of the grid are dimmed to 70%. */
+    private void refreshDims() {
+        dims(dockCards);
+        dims(gridCards);
+    }
+
+    private void dims(List<View> cards) {
+        View focused = null;
+        for (View c : cards) if (c.isFocused()) focused = c;
+        for (View c : cards) {
+            Tile t = tiles.get(c);
+            if (t == null || t.dim == null) continue;
+            float want = focused != null && c != focused ? DIM : 0f;
+            if (t.dimTo == want) continue;   // only the ones that change animate
+            t.dimTo = want;
+            ease(t.dim.animate().alpha(want));
+        }
     }
 
     /** Explicit D-pad targets: one row per press, ends of rows and of the top bar don't wrap. */
@@ -848,6 +956,22 @@ public class MainActivity extends Activity {
         homePage.setAppsOpen(on || quick.isOpen());
     }
 
+    /** An older (not adaptive) icon whose four corners are opaque: a full square picture, which fills a circle as
+     *  well; the others (a shape on transparency) sit on a disc. */
+    private static boolean fullBleed(Drawable d) {
+        try {
+            Bitmap bm = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888);
+            d.setBounds(0, 0, 32, 32);
+            d.draw(new Canvas(bm));
+            boolean full = true;
+            for (int[] p : new int[][]{{1, 1}, {30, 1}, {1, 30}, {30, 30}}) full &= Color.alpha(bm.getPixel(p[0], p[1])) > 240;
+            bm.recycle();
+            return full;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
     /** Average the banner's vivid pixels, then push saturation so the glow reads as a colour. */
     private int sampleColor(String pkg, Drawable d) {
         Integer cached = colorCache.get(pkg);
@@ -926,14 +1050,30 @@ public class MainActivity extends Activity {
     static final int GOLD = 0xFFD6AF6B;
     // glass as the page's card: rgba(4,14,9,.60) over the photo, a 1px gold edge rgba(220,184,111,.16)
     static final int GLASS = 0x99040E09, GLASS_EDGE = 0x29DCB86F;
-    // the dock band's side padding, and its tiles' largest height (the band is HomePage.DOCK_H_DP tall)
-    // ... and the gap between a dock tile and its name (shown while focused)
-    // ... and the tiles' distance from the band's top, the gap between tiles, the band's corners;
-    // tiles 58 (were 72), names 3 under them (were 4, sliding 4 further down), the band 90 tall (was 112)
-    static final int DOCK_PAD_DP = 14, DOCK_TILE_H_DP = 58, DOCK_LABEL_GAP_DP = 3;
-    static final int DOCK_TOP_DP = 8, DOCK_GAP_DP = 16, DOCK_RADIUS_DP = 18;
-    // every tile's corners (dock and grid, were 10), and its focus glow: how far out it reaches, its colour
-    static final int TILE_RADIUS_DP = 11, GLOW_DP = 10, GLOW_COLOR = 0xFFFFF1D6;
+    // ---- the app tiles, from the approved mock-ups (design/focus/gen2.js: CSS px of a 1280-wide screen, DESIGN_DP dp
+    // each). The dock band is HomePage.DOCK_H_DP tall (104: 138px); in it, for either shape and focus look, the
+    // focused tile with its ring or lift fits under its top edge and its name clear under the tile, inside the band.
+    static final float DESIGN_DP = 0.75f;
+    // the band's side padding and corners; «زوايا دائرية»: banners 58 tall (16:9), 16px from the band's top, 16px
+    // apart, the name 16px under them (grid: 14dp, clear of a larger banner's ring), 20px corners (were 11dp)
+    static final int DOCK_PAD_DP = 14, DOCK_TILE_H_DP = 58, DOCK_RADIUS_DP = 18;
+    static final float DOCK_TOP_DP = 12f, DOCK_GAP_DP = 12f, DOCK_LABEL_GAP_DP = 12f, GRID_LABEL_GAP_DP = 14f;
+    static final float TILE_RADIUS_DP = 15f;
+    // «دوائر»: 84px icons in 104px slots 6px apart, 14px from the band's top; the names 12dp under them (the mock-up's
+    // 10px touches the ring), 13px, 55% white, bright while focused; in the grid 7 to a row, 76dp across
+    static final float CIRCLE_DP = 63f, CIRCLE_SLOT_DP = 78f, CIRCLE_GAP_DP = 4.5f, CIRCLE_TOP_DP = 10.5f;
+    static final float CIRCLE_LABEL_GAP_DP = 12f, GRID_CIRCLE_DP = 76f, NAME_DIM = 0.55f;
+    static final int ICON_DISC = 0xFF2C2E33;   // the subtle disc under an icon that doesn't fill its circle
+    static final int GRID_CIRCLE_COLS = 7;
+    // «شكل التحديد» Google TV: 1.10 times, a 3px dark gap then a 3px white ring, the other tiles at 70% (a 30% black
+    // veil); Apple TV: 1.12 times, 3px up, two shadows {y, blur, spread, alpha} in px (rounded, circle), the sheen
+    static final float GOOGLE_SCALE = 1.10f, APPLE_SCALE = 1.12f, APPLE_LIFT_DP = 3 * DESIGN_DP, DIM = 0.3f;
+    static final float RING_GAP_DP = 3 * DESIGN_DP, RING_DP = 3 * DESIGN_DP;
+    static final int RING_GAP_COLOR = 0xFF08090B, RING_COLOR = Color.WHITE;
+    static final float[][] BANNER_SHADOW = {{18, 28, -6, .75f}, {6, 12, 0, .4f}}, CIRCLE_SHADOW = {{16, 24, -6, .8f}, {6, 12, 0, .45f}};
+    // focus and blur: 180 ms, eased out (the brief: 150 to 200)
+    static final int FOCUS_MS = 180;
+    private static final android.animation.TimeInterpolator EASE_OUT = new DecelerateInterpolator();
     // the dock band's glass (GlassBand): the page's dark tint, lighter than the card's .60; a sheen from
     // the top; a highlight on its top edge that fades down its sides
     static final int BAND_TINT = 0x6B040E09, BAND_SHEEN_TOP = 0x14FFFFFF, BAND_SHEEN_BOTTOM = 0x05FFFFFF, BAND_RIM = 0x47FFFFFF;
@@ -1055,34 +1195,167 @@ public class MainActivity extends Activity {
         @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
     }
 
-    /** a soft glow around a focused tile, drawn outside its view's bounds (no parent up to the screen
-     *  clips): STEPS rounded rectangles, each a little larger and faint, stacked, so the light fades out over `spread`.
-     *  No blur filter, so it stays on the GPU. */
-    static final class Glow extends Drawable {
-        private static final int STEPS = 10;
-        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final RectF r = new RectF();
-        private final float radius, spread;
+    /** one app tile's views, for its focus look (focusLook, refreshDims) */
+    static final class Tile {
+        View card, ring, shadow, sheen, dim;   // ring and dim: Google TV; shadow and sheen: Apple TV
+        TextView label;
+        float dimTo;                           // the veil's alpha it is heading to
+    }
 
-        Glow(float radius, float spread, int color) {
+    /** Google TV's focus ring: a dark gap around the tile, then a white ring, following its shape (its corner radius
+     *  grown with the ring, or a circle); drawn outside the view's bounds. The gap starts 1px inside the tile's edge,
+     *  over its anti-aliased rim. */
+    static final class Ring extends Drawable {
+        private final Paint gapPaint = new Paint(Paint.ANTI_ALIAS_FLAG), ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF r = new RectF();
+        private final float radius, gap, width;
+        private final boolean oval;
+
+        Ring(float radius, boolean oval, float gap, float width) {
             this.radius = radius;
-            this.spread = spread;
-            p.setColor(color);
-            p.setAlpha(18);   // 10 layers at the tile's edge: about half
+            this.oval = oval;
+            this.gap = gap;
+            this.width = width;
+            gapPaint.setStyle(Paint.Style.STROKE);
+            gapPaint.setStrokeWidth(gap + 1);
+            gapPaint.setColor(RING_GAP_COLOR);
+            ringPaint.setStyle(Paint.Style.STROKE);
+            ringPaint.setStrokeWidth(width);
+            ringPaint.setColor(RING_COLOR);
         }
 
         @Override public void draw(Canvas c) {
+            stroke(c, gapPaint, (gap - 1) / 2f);
+            stroke(c, ringPaint, gap + width / 2f);
+        }
+
+        /** a stroke centred `out` px outside the bounds */
+        private void stroke(Canvas c, Paint p, float out) {
             Rect b = getBounds();
-            for (int i = STEPS; i > 0; i--) {
-                float o = spread * i / STEPS;
-                r.set(b.left - o, b.top - o, b.right + o, b.bottom + o);
-                c.drawRoundRect(r, radius + o, radius + o, p);
-            }
+            r.set(b.left - out, b.top - out, b.right + out, b.bottom + out);
+            if (oval) c.drawOval(r, p);
+            else c.drawRoundRect(r, radius + out, radius + out, p);
         }
 
         @Override public void setAlpha(int a) { }
         @Override public void setColorFilter(ColorFilter f) { }
         @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
+    }
+
+    /** Apple TV's shadow under a focused tile: soft shadows of its shape (the mock-up's box-shadow layers, {y, blur,
+     *  spread, alpha} in CSS px, `k` px each), blurred once in software into a bitmap per size, shared by the tiles of
+     *  that size; drawn outside the view's bounds. */
+    static final class Shadow extends Drawable {
+        private static final Map<String, Bitmap> CACHE = new HashMap<>();
+        private final Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        private final float radius, k;
+        private final boolean oval;
+        private final float[][] layers;
+        private Bitmap bm;
+        private int pad;
+
+        Shadow(float radius, boolean oval, float[][] layers, float k) {
+            this.radius = radius;
+            this.oval = oval;
+            this.layers = layers;
+            this.k = k;
+        }
+
+        /** the bitmaps of tiles that are gone */
+        static void forget() { CACHE.clear(); }
+
+        @Override protected void onBoundsChange(Rect b) { bm = null; }
+
+        @Override public void draw(Canvas c) {
+            Rect b = getBounds();
+            if (b.isEmpty()) return;
+            if (bm == null) bm = bitmap(b.width(), b.height());
+            c.drawBitmap(bm, b.left - pad, b.top - pad, paint);
+        }
+
+        private Bitmap bitmap(int w, int h) {
+            float most = 0;
+            for (float[] l : layers) most = Math.max(most, (Math.abs(l[0]) + 1.5f * l[1]) * k);   // a blur reaches 3 sigma
+            pad = (int) Math.ceil(most);
+            String key = w + "x" + h + (oval ? "o" : "r" + radius) + "k" + k;
+            Bitmap cached = CACHE.get(key);
+            if (cached != null) return cached;
+            Bitmap out = Bitmap.createBitmap(w + 2 * pad, h + 2 * pad, Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(out);
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            RectF r = new RectF();
+            for (float[] l : layers) {
+                float dy = l[0] * k, sigma = l[1] * k / 2f, in = -l[2] * k;   // CSS blur = 2 sigma; a negative spread shrinks
+                p.setColor(Color.argb(Math.round(l[3] * 255), 0, 0, 0));
+                // Skia's blur radius: sigma = 0.57735 radius + 0.5
+                p.setMaskFilter(sigma > 0.5f ? new android.graphics.BlurMaskFilter((sigma - 0.5f) / 0.57735f,
+                        android.graphics.BlurMaskFilter.Blur.NORMAL) : null);
+                r.set(pad + in, pad + in + dy, pad + w - in, pad + h - in + dy);
+                if (oval) c.drawOval(r, p);
+                else c.drawRoundRect(r, Math.max(0, radius - in), Math.max(0, radius - in), p);
+            }
+            CACHE.put(key, out);
+            return out;
+        }
+
+        @Override public void setAlpha(int a) { }
+        @Override public void setColorFilter(ColorFilter f) { }
+        @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
+    }
+
+    /** Apple TV's sheen over a focused tile: linear-gradient(125deg, white .28 0%, .08 38%, 0 55%), as CSS draws it */
+    static final class Sheen extends Drawable {
+        private final Paint p = new Paint();
+
+        @Override protected void onBoundsChange(Rect b) {
+            double a = Math.toRadians(125);   // CSS angles: 0 points up, 90 right
+            float dx = (float) Math.sin(a), dy = (float) -Math.cos(a);
+            float half = (Math.abs(b.width() * dx) + Math.abs(b.height() * dy)) / 2f;
+            float cx = b.exactCenterX(), cy = b.exactCenterY();
+            p.setShader(new LinearGradient(cx - dx * half, cy - dy * half, cx + dx * half, cy + dy * half,
+                    new int[]{0x47FFFFFF, 0x14FFFFFF, 0x00FFFFFF}, new float[]{0f, .38f, .55f}, Shader.TileMode.CLAMP));
+        }
+
+        @Override public void draw(Canvas c) { c.drawRect(getBounds(), p); }
+        @Override public void setAlpha(int a) { }
+        @Override public void setColorFilter(ColorFilter f) { }
+        @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
+    }
+
+    /** «دوائر»: an app's icon in its circle (the card clips to it), on a subtle disc. An adaptive icon's two layers fill
+     *  it as Android shows them (the middle 72 of 108dp: the layers 1.5 times the circle); an older icon fills it when
+     *  it is a full square picture (fullBleed), else it sits in the middle, 0.6 of the circle. */
+    static final class CircleIcon extends View {
+        private final Drawable icon;
+        private final boolean fill;
+
+        CircleIcon(Context c, Drawable icon, boolean fill) {
+            super(c);
+            this.icon = icon;
+            this.fill = fill;
+        }
+
+        @Override protected void onDraw(Canvas c) {
+            int w = getWidth(), h = getHeight();
+            c.drawColor(ICON_DISC);
+            if (fill && icon != null) {
+                icon.setBounds(0, 0, w, h);
+                icon.draw(c);
+            } else if (icon instanceof AdaptiveIconDrawable) {
+                AdaptiveIconDrawable a = (AdaptiveIconDrawable) icon;
+                int in = w / 4;
+                for (Drawable l : new Drawable[]{a.getBackground(), a.getForeground()}) {
+                    if (l == null) continue;
+                    l.setBounds(-in, -in, w + in, h + in);
+                    l.draw(c);
+                }
+            } else {
+                if (icon == null) return;
+                int s = Math.round(w * 0.6f), l = (w - s) / 2, t = (h - s) / 2;
+                icon.setBounds(l, t, l + s, t + s);
+                icon.draw(c);
+            }
+        }
     }
 
     /** ScrollView that never auto-scrolls to the focused child; the activity scrolls it by row. */

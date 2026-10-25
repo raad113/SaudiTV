@@ -19,6 +19,7 @@ import java.util.List;
  *       [--es panel prayers | prayers,forecast,news,local,world,verse,hadith] [--es home_panel none] [--es minrating 7]
  *       [--es genres Drama,Comedy] [--es langs English] [--es autoupdate true|false] [--es numerals latn|arab]
  *       [--es src_news aawsat,okaz] [--es src_tech …] [--es src_local …] [--es src_world …]   ("" = the page's defaults)
+ *       [--es tile_shape rounded|circle] [--es focus_style google|apple]   (the home screen's app tiles)
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.UPDATE
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.APP_CHECK
  *       (checks the GitHub release for a newer version of both apps; installing is the settings screen's)
@@ -129,6 +130,9 @@ public class SaverReceiver extends BroadcastReceiver {
         String numerals = i.getStringExtra("numerals");
         if (numerals != null && !numerals.equals("latn") && !numerals.equals("arab"))
             return "error: numerals is latn (0 1 2 3) or arab (٠ ١ ٢ ٣)";
+        String shape = i.getStringExtra("tile_shape"), focus = i.getStringExtra("focus_style");
+        if (shape != null && !known(Prefs.TILE_SHAPES, shape)) return "error: tile_shape is " + names(Prefs.TILE_SHAPES);
+        if (focus != null && !known(Prefs.FOCUS_STYLES, focus)) return "error: focus_style is " + names(Prefs.FOCUS_STYLES);
         java.util.Map<String, List<String>> sources = new java.util.LinkedHashMap<>();
         for (String page : Prefs.NEWS_PAGES) {
             String raw = i.getStringExtra("src_" + page);
@@ -158,6 +162,8 @@ public class SaverReceiver extends BroadcastReceiver {
         if (genres != null) p.setList("genres", genres);
         if (langs != null) p.setList("langs", langs);
         if (numerals != null) p.setNumerals(numerals);
+        if (shape != null) p.setTileShape(shape);
+        if (focus != null) p.setFocusStyle(focus);
         for (java.util.Map.Entry<String, List<String>> e : sources.entrySet()) p.setSources(e.getKey(), e.getValue());
         // a home screen already in front shows the new settings now, not at its next resume
         c.sendBroadcast(new Intent(CHANGED).setPackage("com.raad.sauditv.home"));
@@ -173,7 +179,13 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\ngenres: " + Prefs.join(p.list("genres"), ",") + "\nlangs: " + Prefs.join(p.list("langs"), ",")
             + "\nautoupdate: " + p.autoUpdate()
             + "\nnumerals: " + p.numerals()
+            + "\ntile_shape: " + p.tileShape() + "\nfocus_style: " + p.focusStyle()
             + sourcesLine(p);
+    }
+
+    private static boolean known(String[][] table, String v) {
+        for (String[] x : table) if (x[0].equals(v)) return true;
+        return false;
     }
 
     /** "\nsources_news: aawsat,okaz (default)" for each news page */
