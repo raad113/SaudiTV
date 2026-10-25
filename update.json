@@ -1,24 +1,24 @@
 {
-  "versionCode": 9046,
-  "versionName": "9046",
-  "tag": "v9046",
-  "notes": "معالج إعداد بسيط عند أول تشغيل، تحديد المدينة تلقائيًا، صور توضيحية لشكل التطبيقات وشكل التحديد، خيار واحد لإذاعة القرآن، خيار توفير الطاقة، استهلاك أقل للذاكرة، وإزالة الأفلام والمسلسلات",
+  "versionCode": 9047,
+  "versionName": "9047",
+  "tag": "v9047",
+  "notes": "الأذان في أوقات الصلاة مع إيقاف إذاعة القرآن مؤقتاً، القناة والمعلق لمباريات أنديتك، شكل جديد للواجهة كخيار، إصلاح عرض الأرقام في التحديث، وإزالة CNN بالعربية.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9046,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9046/saudi-tv-screensaver.apk",
-      "sha256": "41051897b4021225093b5f9ab08e049e6e9c94f78f0e34b7a6617c73cb6ea670",
-      "size": 9091645
+      "versionCode": 9047,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9047/saudi-tv-screensaver.apk",
+      "sha256": "aea30277a98fb1ce0cc9bb0db7d65fadc0cc1f0bdf33bfc37263d22debfb5d73",
+      "size": 13264739
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9046,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9046/saudi-tv-home.apk",
-      "sha256": "d7dcc34ec0216deb238134bdb3c619b918c23e793c78bce6e65c192181c46cd0",
-      "size": 2714735
+      "versionCode": 9047,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9047/saudi-tv-home.apk",
+      "sha256": "362cc496a0955b553fc0a0da682d18fd2c411ad1a1fb1cd18cdba7ba3e443006",
+      "size": 2709389
     }
   ]
 }
