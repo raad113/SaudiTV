@@ -21,7 +21,8 @@ import java.util.Set;
  * front this binds RadioService as "home", and lets go GRACE_MS after the last one went, so the screensaver (which
  * binds as "saver") takes over without a gap and Back from the card never cuts it. An app that plays takes the audio
  * focus at once anyway, and the radio stops then.
- * The chip's state and the quick-settings tile read and write the screensaver app's ConfigProvider (/radio).
+ * The chips («تشغيل القرآن» / «إيقاف القرآن» among the pills, «يُتلى الآن» under the clock) and the quick-settings tile
+ * read and write the screensaver app's ConfigProvider (/radio).
  */
 final class RadioLink {
     static final String SAVER_PKG = "com.raad.sauditv.screensaver";
@@ -87,7 +88,14 @@ final class RadioLink {
         }
     }
 
-    /** the quick-settings tile: on or off (RadioService follows); false when the screensaver app can't be reached */
+    /** the chip's and the tile's press (RadioChip): playing, off (stopped, and it stays off); else on and playing now, here
+     *  too whatever «متى تعمل الإذاعة» says (ConfigProvider). false when the screensaver app can't be reached */
+    static boolean toggle(Context c) {
+        String[] r = read(c);
+        return r != null && set(c, RadioChip.pressTurnsOn(r[0], r[1]));
+    }
+
+    /** on (and playing now) or off (RadioService follows); false when the screensaver app can't be reached */
     static boolean set(Context c, boolean on) {
         ContentValues v = new ContentValues();
         v.put("on", on ? 1 : 0);

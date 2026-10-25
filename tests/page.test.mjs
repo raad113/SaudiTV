@@ -565,6 +565,133 @@ for (const [panel, title] of [['world', 'أخبار العالم'], ['hadith', '
   await ctx.close();
 }
 
+// ---- the screensaver's footer: the middle panel (Ramadan) on the screen's centre line, whatever the pixel shift; a long
+// match and the prayer's countdown stay in their own columns
+for (const [w, h] of [[1280, 720], [1920, 1080]]) {
+  const { p, ctx, errors } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728&teams=136013', { width: w, height: h });
+  const r = await p.evaluate(() => {
+    MATCHES['136013'] = {idEvent: 'g9', strHomeTeam: 'الأهلي المصري', strAwayTeam: 'سيراميكا كليوباترا',
+      strTimestamp: new Date(Date.now() + 4 * 864e5).toISOString(), intHomeScore: null, intAwayScore: null, strStatus: 'NS'};
+    renderMatches();
+    const box = q => document.querySelector(q).getBoundingClientRect();
+    const mid = box('.p-mid'), match = box('.p-match'), pray = box('.p-prayer');
+    const inside = (q, b) => [...document.querySelectorAll(q)].every(e => { const r = e.getBoundingClientRect();
+      return !r.width || (r.left >= b.left - 1 && r.right <= b.right + 1); });
+    return { off: (mid.left + mid.right) / 2 - innerWidth / 2 - SHIFT_AT[0], gapL: mid.left - match.right, gapR: pray.left - mid.right,
+             matchIn: inside('.p-match .mblock, .p-match .big > span, .p-match .sub', match),
+             prayIn: inside('.p-prayer .big, .p-prayer .sub', pray), text: document.getElementById('match-row').innerText.replace(/\s+/g, ' ') };
+  });
+  check(`screensaver footer ${w}x${h}: the middle panel centred (±3 px, pixel shift aside), the others clear of it`,
+    !errors.length && Math.abs(r.off) <= 3 && r.gapL > 10 && r.gapR > 10 && r.matchIn && r.prayIn && r.text.includes('سيراميكا'),
+    JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+}
+
+// ---- the ticker follows the news country; the settings' chosen items (#tape) in their order
+{
+  const tape = async (hash) => {
+    const { p, ctx, errors } = await open('tv.html', hash);
+    const r = await p.evaluate(() => ({ ids: TAPE.map(t => t.sym || t.cg), names: TAPE.map(t => t.name) }));
+    await ctx.close();
+    return { ...r, errors };
+  };
+  let r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=SA');
+  check('ticker: country US, news SA: «تاسي» and «الدولار/الريال» (SAR=X), as at home', !r.errors.length
+    && r.ids.join() === '^TASI.SR,^GSPC,^IXIC,^DJI,GC=F,BZ=F,SAR=X,bitcoin,ethereum', JSON.stringify(r));
+  r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=US');
+  check('ticker: country US, news US: as the US (no index, «اليورو/الدولار»)', r.ids[0] === '^GSPC' && r.ids.includes('EURUSD=X') && r.ids.length === 8, JSON.stringify(r));
+  r = await tape('city=القاهرة&lat=30.04&lon=31.24&cc=EG&newscc=EG');
+  check('ticker: Egypt with its news: EGX30 and EGP=X', r.ids[0] === '^CASE30' && r.ids[6] === 'EGP=X', JSON.stringify(r));
+  r = await tape('city=أبو ظبي&lat=24.45&lon=54.38&cc=AE&newscc=AE');
+  check('ticker: Abu Dhabi with its news: Abu Dhabi\'s index', r.ids[0] === 'FADGI.FGI', JSON.stringify(r));
+  r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=SA&tape=gold,btc,cur');
+  check('ticker, chosen items: gold, bitcoin, the country\'s currency, in that order', r.ids.join() === 'GC=F,bitcoin,SAR=X'
+    && r.names.join() === 'الذهب,بيتكوين,الدولار/الريال', JSON.stringify(r));
+  r = await tape('city=القاهرة&lat=30.04&lon=31.24&cc=EG&newscc=EG&tape=cur,idx,silver,i:SA,c:AED,eurusd,bogus,gold,gold,c:XYZ');
+  check('ticker, chosen items: «عملة/مؤشر الدولة» follow the country (EG), more items, unknown ones and repeats left out',
+    r.ids.join() === 'EGP=X,^CASE30,SI=F,^TASI.SR,AED=X,EURUSD=X,GC=F', JSON.stringify(r));
+  r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=US&tape=idx,cur,i:AD');
+  check('ticker, chosen items in the US: no index of its own, the euro; Abu Dhabi\'s by id', r.ids.join() === 'EURUSD=X,FADGI.FGI', JSON.stringify(r));
+  r = await tape('city=جدة&lat=21.5&lon=39.2&tape=bogus');
+  check('ticker: only unknown items chosen: the country\'s own list', r.ids.length === 9 && r.ids[0] === '^TASI.SR', JSON.stringify(r));
+}
+
+// ---- the mouse: never on the screensaver; on the launcher's pages the pointer while it moves (hidden after 3 s);
+// detail pages: hover = the D-pad's focus, click = OK, a dot opens its page, the wheel moves a row or scrolls the text
+{
+  let { p, ctx, errors } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728', { width: 1280, height: 720 });
+  await p.mouse.move(300, 300); await p.mouse.move(320, 310);
+  let r = await p.evaluate(() => ({ cls: document.documentElement.classList.contains('mouse'), cur: getComputedStyle(document.body).cursor }));
+  check('mouse, screensaver: never a pointer (cursor none, no html.mouse)', !errors.length && !r.cls && r.cur === 'none', JSON.stringify(r));
+  await ctx.close();
+
+  const native = () => { window.__opened = []; window.SaudiTVNative = { openUrl: u => window.__opened.push(u) }; };
+  ({ p, ctx, errors } = await open('tv.html', 'detail=world&panels=world,tech,verse', { width: 1280, height: 720, init: native }));
+  await p.evaluate(() => {
+    NEWS.world = Array.from({ length: 8 }, (_, i) => ({ headline: 'خبر رقم ' + i, source: 'bbc', t: Date.now() - i * 6e4, link: 'https://example.com/' + i }));
+    DV.answered.world = true; renderDetail();
+  });
+  const item = async i => p.evaluate(k => { const b = document.querySelectorAll('#dv .dv-item')[k].getBoundingClientRect();
+    return [b.left + b.width / 2, b.top + b.height / 2]; }, i);
+  const focus = () => p.evaluate(() => [DV.focus, [...document.querySelectorAll('#dv .dv-item')].findIndex(e => e.classList.contains('focus'))]);
+  let [x, y] = await item(2);
+  await p.mouse.move(x, y);
+  r = await p.evaluate(() => ({ cls: document.documentElement.classList.contains('mouse'),
+    cur: getComputedStyle(document.querySelector('#dv .dv-item')).cursor }));
+  const f1 = await focus();
+  await p.keyboard.press('ArrowDown');
+  const f2 = await focus();
+  check('mouse, detail: the pointer shows while it moves (cursor), hover focuses the item, ▼ goes on from there',
+    !errors.length && r.cls && r.cur === 'pointer' && f1.join() === '2,2' && f2.join() === '3,3', JSON.stringify([r, f1, f2]));
+  [x, y] = await item(1);
+  await p.mouse.click(x, y);
+  r = await p.evaluate(() => [DV.focus, window.__opened.slice()]);
+  check('mouse, detail: click on a news item = OK (focused, its article opened)', r[0] === 1 && r[1].join() === 'https://example.com/1', JSON.stringify(r));
+  await p.mouse.wheel(0, 120); await p.waitForTimeout(50);
+  const w1 = await focus();
+  await p.waitForTimeout(450); await p.mouse.wheel(0, -120); await p.waitForTimeout(50);
+  const w2 = await focus();
+  check('mouse, detail: the wheel moves one item a notch (down, then up)', w1[0] === 2 && w2[0] === 1, JSON.stringify([w1, w2]));
+  await p.waitForTimeout(3200);
+  r = await p.evaluate(() => document.documentElement.classList.contains('mouse'));
+  check('mouse: the pointer hidden after 3 s still', r === false, r);
+  const dot = await p.evaluate(() => { const b = document.querySelectorAll('#dv .dv-dot')[2].getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; });
+  await p.mouse.click(dot[0], dot[1]);
+  await p.waitForTimeout(600);
+  r = await p.evaluate(() => [CONFIG.detail, document.querySelector('#dv .dv-title').textContent, !!document.querySelector('#dv .dv-scroll')]);
+  check('mouse, detail: a click on a page\'s dot opens that page (the third: the verse)', r[0] === 'verse' && r[1] === 'آية اليوم', JSON.stringify(r));
+  const before = await p.evaluate(() => { const sc = document.querySelector('#dv .dv-scroll'); sc.style.height = '120px'; sc.scrollTop = 0; return sc.scrollHeight > 130; });
+  await p.mouse.move(640, 500); await p.mouse.wheel(0, 90); await p.waitForTimeout(100);
+  r = await p.evaluate(() => document.querySelector('#dv .dv-scroll').scrollTop);
+  check('mouse, detail: the wheel scrolls a page\'s text', before && r > 0, JSON.stringify([before, r]));
+  check('mouse, detail: no script errors', !errors.length, errors.join('; '));
+  await ctx.close();
+
+  // home: «يُتلى الآن»'s box for the launcher's focusable view over it, and its focus look
+  const radio = () => {
+    window.__rects = []; window.__radio = 'playing|إذاعة القرآن الكريم من السعودية';
+    window.SaudiTVRadio = { state: () => window.__radio };
+    window.SaudiTVNative = { cardRect: () => {}, qrRect: (...a) => window.__rects.push(a) };
+  };
+  ({ p, ctx, errors } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728&home=1&panel=prayers', { width: 1280, height: 720, init: radio }));
+  await p.waitForTimeout(900);
+  r = await p.evaluate(() => { const b = document.getElementById('qr').getBoundingClientRect(), a = window.__rects[window.__rects.length - 1];
+    return { a, b: [b.left, b.top, b.width, b.height].map(Math.round) }; });
+  const near = (a, b) => a && b && a.slice(0, 4).every((v, i) => Math.abs(v - b[i]) <= 1);
+  check('home: «يُتلى الآن»\'s box sent to the launcher (qrRect, CSS px and the viewport\'s width)', !errors.length && near(r.a, r.b) && r.a[4] === 1280,
+    JSON.stringify(r) + errors.join('; '));
+  await p.evaluate(() => { window.sauditvQrFocused(true); });
+  r = await p.evaluate(() => ({ bg: getComputedStyle(document.getElementById('qr')).backgroundColor, c: getComputedStyle(document.querySelector('#qr b')).color }));
+  check('home: «يُتلى الآن» focused looks like a focused pill (white, dark text)', /255, 255, 255/.test(r.bg) && r.c === 'rgb(17, 17, 17)', JSON.stringify(r));
+  await p.evaluate(() => { window.sauditvQrFocused(false); window.__radio = ''; tickRadio(); });
+  r = await p.evaluate(() => window.__rects[window.__rects.length - 1]);
+  check('home: «يُتلى الآن» gone: a 0 x 0 box (the launcher drops its view)', r && r.slice(0, 4).join() === '0,0,0,0', JSON.stringify(r));
+  await p.mouse.move(200, 200); await p.mouse.move(210, 205);
+  r = await p.evaluate(() => [document.documentElement.classList.contains('mouse'), getComputedStyle(document.body).cursor]);
+  check('mouse, home: the pointer shows while it moves', r[0] && r[1] === 'default', JSON.stringify(r));
+  await ctx.close();
+}
+
 await browser.close();
 console.log(failed ? `\n${failed} failed` : '\nall page tests passed');
 process.exit(failed ? 1 : 0);

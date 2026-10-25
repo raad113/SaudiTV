@@ -48,6 +48,12 @@
 #   optimize/saver.sh radio-test [id]              each address of the two Quran radios (or of one station), read for
 #                                                  3 s from the TV (through its VPN)
 #   optimize/saver.sh radio-hold on|off            the athan's hook: the radio stops (up to 15 min), then plays again
+#   optimize/saver.sh radio-when both|saver|home   «متى تعمل الإذاعة»: the home screen and the screensaver (the
+#                                                  default), only the screensaver, or only the home screen
+#   optimize/saver.sh tape auto|gold,btc,cur       «عناصر شريط الأسعار», in order: cur idx (the news country's currency
+#                                                  and index) gold silver brent btc eth spx ndx dji i:SA i:AE i:AD i:QA
+#                                                  i:KW i:EG eurusd c:SAR c:AED c:EGP c:KWD c:QAR c:BHD c:OMR; auto: each
+#                                                  country's own list
 # Only ADB can change these (com.raad.sauditv.screensaver/.SaverReceiver needs the shell's DUMP).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -131,7 +137,13 @@ case "${1:-}" in
     if [ $# -ge 2 ]; then send RADIO_STATIONS "--es filter $(quote "$2")"; else send RADIO_STATIONS; fi ;;
   radio-test)
     if [ $# -ge 2 ]; then send RADIO_TEST "--es station $(quote "$2")"; else send RADIO_TEST; fi ;;
+  radio-when)
+    case "${2:-}" in both|saver|home) ;; *) echo "usage: optimize/saver.sh radio-when both|saver|home"; exit 1 ;; esac
+    send SET "--es radio_when $2" ;;
+  tape)
+    [ -n "${2:-}" ] || { echo "usage: optimize/saver.sh tape auto|gold,btc,cur (ids: optimize/saver.sh tape help)"; exit 1; }
+    send SET "--es tape $(quote "$2")" ;;
   radio-hold)
     case "${2:-}" in on) send PAUSE_FOR_ATHAN ;; off) send RESUME_AFTER_ATHAN ;; *) echo "usage: optimize/saver.sh radio-hold on|off"; exit 1 ;; esac ;;
-  *) sed -n '2,50p' "$0"; exit 1 ;;
+  *) sed -n '2,56p' "$0"; exit 1 ;;
 esac

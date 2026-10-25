@@ -116,11 +116,16 @@ LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
 ### ١٠. إذاعة القرآن الكريم
 - إعدادات سعودي TV ← «إذاعة القرآن الكريم» (متوقفة افتراضياً): تشغيل وإيقاف، «المحطة» (إذاعة القرآن الكريم من السعودية
   ومن القاهرة أول، ثم قرّاء mp3quran.net، مع بحث و«رابط من عندي»)، «مستوى صوت الإذاعة» (١٠ إلى ١٠٠٪، غير صوت التلفاز)،
-  و«معاينة الإذاعة». وفي الإعدادات السريعة للواجهة زر «إذاعة القرآن».
+  و«معاينة الإذاعة»، و«متى تعمل الإذاعة»: الشاشة الرئيسية وشاشة التوقف (الافتراضي)، أو شاشة التوقف فقط، أو الشاشة الرئيسية فقط.
+  وفي الإعدادات السريعة للواجهة زر «إذاعة القرآن»، وفي صف الأزرار فوق زر «تشغيل القرآن» / «إيقاف القرآن» (الإيقاف يطفيها
+  تماماً)، و«يُتلى الآن» تحت الساعة تقدر توقفها منه بـ OK.
 - تشتغل ما دامت الواجهة أو شاشة التوقف قدامك، وتوقف لما يفتح أي تطبيق ثاني (يوتيوب، نتفليكس…) أو تنطفي الشاشة، وترجع
   لما ترجع للواجهة. تحت الساعة «يُتلى الآن: …».
 - من ADB: `optimize/saver.sh radio on|off`، `radio-station saudi|cairo|<رقم>|https://…`، `radio-volume 50`،
-  `radio-stations [بحث]`، و `radio-test` (يجرّب روابط الإذاعتين من التلفاز نفسه، يعني من خلال الـ VPN).
+  `radio-when both|saver|home`، `radio-stations [بحث]`، و `radio-test` (يجرّب روابط الإذاعتين من التلفاز نفسه، يعني من خلال الـ VPN).
+- **شريط الأسعار:** يتبع «دولة الأخبار» (مؤشرها وعملتها)، وإلا دولة المدينة. وتختار عناصره وترتيبها من الإعدادات ←
+  «عناصر شريط الأسعار» (مثل البطاقات)، أو `optimize/saver.sh tape gold,btc,cur` (`auto`: قائمة الدولة).
+- **الماوس:** يشتغل في الواجهة والصفحات والإعدادات: التمرير فوق عنصر يحدده، والضغط = OK، والعجلة = ▲▼، والزر الأيمن = رجوع.
 - **تغيير الدولة:** اختيار مدينة في دولة ثانية من الإعدادات يجيب أخبار الدولة (لو لها قائمة أخبار، وإلا تبقى أخبارك
   ويقولها صف «دولة الأخبار»)، ودوريها الأول في الترتيب، وأول ثلاثة أندية في جدوله. مرة وحدة وقت التغيير، وتقدر تغيّرها بعدين.
   `optimize/saver.sh` ما يسوي كذا: كل قيمة بأمرها.
@@ -251,7 +256,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 ### 10. The tools
 | | |
 |---|---|
-| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `minrating`, `autoupdate`, `update`, `app-check`, `radio`, `radio-station`, `radio-volume`, `radio-stations`, `radio-test`, `radio-hold` |
+| `optimize/saver.sh` | the screensaver's settings: `show`, `countries`, `cities`, `country`, `city`, `method`, `units`, `leagues`, `league`, `news-country`, `teams`, `find-team`, `clubs`, `card`, `home-card`, `numerals`, `tiles`, `focus`, `sources`, `minrating`, `autoupdate`, `update`, `app-check`, `radio`, `radio-station`, `radio-volume`, `radio-when`, `radio-stations`, `radio-test`, `radio-hold`, `tape` |
 | `optimize/dock.sh` | the favourites row: `show`, `apps`, `set`, `reset` |
 | `optimize/check-home.sh` | opens an app, presses Home, says whether our home screen came back |
 | `optimize/start-saver.sh` · `shot.sh` | start the screensaver now · screenshots without navigating |
@@ -264,7 +269,9 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 - سعودي TV's settings > «إذاعة القرآن الكريم» (off by default): on/off, «المحطة» (the Quran radios from Saudi Arabia and
   from Cairo first, then mp3quran.net's reciters; a search, and «رابط من عندي» for any http(s) stream), «مستوى صوت
   الإذاعة» (10–100 %, apart from the TV's volume) and «معاينة الإذاعة». The home screen's quick settings have a
-  «إذاعة القرآن» tile.
+  «إذاعة القرآن» tile, and its top row a «تشغيل القرآن» / «إيقاف القرآن» pill (stop turns the radio off, so it stays off);
+  OK on «يُتلى الآن» under the clock stops it too. «متى تعمل الإذاعة»: the home screen and the screensaver (the default),
+  only the screensaver (silent on the home screen unless «تشغيل القرآن» is pressed there), or only the home screen.
 - The screensaver app plays it natively (`RadioService`, Android's MediaPlayer: MP3/AAC over HTTP or ICY, and HLS), so a
   page reload never cuts it, while the home screen (or its full-screen card) or the screensaver is in front. Another app
   taking the audio focus (YouTube, Netflix, any player) stops it; it plays again when our home screen or screensaver is
@@ -272,7 +279,13 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
   after 5, 15, 30, 60, 120, then every 300 s. «يُتلى الآن: …» under the clock while it plays (dimmed and moved with the
   clock on the screensaver).
 - Over ADB: `optimize/saver.sh radio on|off`, `radio-station saudi|cairo|<id>|https://…`, `radio-volume 50`,
-  `radio-stations [filter]`, `radio-test [id]` (reads each address from the TV itself, so through its VPN).
+  `radio-when both|saver|home`, `radio-stations [filter]`, `radio-test [id]` (reads each address from the TV itself, so
+  through its VPN).
+- **The ticker tape** follows the news country (its index and currency), else the city's. Its items and their order:
+  settings > «عناصر شريط الأسعار» (ticked and ordered like the cards; «إعادة الافتراضي» = the country's own list), or
+  `optimize/saver.sh tape gold,btc,cur` (`auto` for the country's own list).
+- **A mouse** works on the home screen, its pages and the settings: hover moves the focus, a click is OK, the wheel is
+  ▲▼, the right button is Back; the pointer hides after 3 s still, and never shows over the screensaver.
 - **The athan's hook** (for the athan, not built yet): in the screensaver app, `RadioService.hold(context, true)` before
   the athan and `hold(context, false)` after it; from the home app (same signing key), the broadcasts
   `com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN` / `RESUME_AFTER_ATHAN` to `com.raad.sauditv.screensaver/.RadioReceiver`;

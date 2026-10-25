@@ -386,9 +386,16 @@
   .qr.error{color:#DFA597;border-color:rgba(238,139,112,.32)}
   .qr.error svg{fill:#DFA597}
   html.widget .qr,html.detail .qr,html.ticker .qr{display:none}
+  /* the home screen's D-pad or mouse on it (the launcher's view over it, sauditvQrFocused): as a focused pill */
+  html.qr-focus .qr{background:rgba(255,255,255,.95);border-color:transparent}
+  html.qr-focus .qr,html.qr-focus .qr b{color:#111}
+  html.qr-focus .qr svg{fill:#111}
+  /* a mouse moved in the last 3 s (bootMouse; never on the screensaver) */
+  html.mouse,html.mouse body{cursor:default}
+  html.mouse :is(.dv-item,.dv-dot){cursor:pointer}
 
   .bottom{
-    display:grid;grid-template-columns:1fr .9fr 1.3fr;
+    display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);   /* equal sides: the middle panel on the centre line */
     gap:2.4vw;align-items:start;
     border-top:1px solid rgba(220,184,111,.30);
     padding-top:2.1vh;
@@ -412,7 +419,7 @@
 
   .p-prayer{text-align:right}
   .p-prayer .big{justify-content:flex-start}
-  .p-mid{text-align:center}
+  .p-mid{text-align:center;max-width:30vw}
   .p-mid .big{display:block;text-align:center;line-height:1.06}
   .p-mid .num{font-size:1.3em;line-height:1}
   .p-mid .unit{font-size:.46em;font-weight:500;color:#D6AF6B;letter-spacing:.02em;display:inline;vertical-align:.5em}
@@ -534,7 +541,6 @@
     html.ss-swap .markets{text-align:right}
     html.ss-swap .wxline{justify-content:flex-start}
     html.ss-swap .markets .rule.l{margin-left:auto;margin-right:0;background:linear-gradient(270deg,var(--gold),rgba(220,184,111,0))}
-    html.ss-swap .bottom{grid-template-columns:1.3fr .9fr 1fr}
     html.ss-swap .p-match{grid-column:1;grid-row:1;text-align:right}
     html.ss-swap .p-mid{grid-column:2;grid-row:1}
     html.ss-swap .p-prayer{grid-column:3;grid-row:1;text-align:left}
@@ -789,6 +795,7 @@ const CONFIG = {
   // each news page's sources, picked in the settings (#src_news=aawsat,okaz,…); none valid = the page's defaults
   // (NEWS_SOURCES, newsSources)
   sources: {news: _list('src_news'), tech: _list('src_tech'), local: _list('src_local'), world: _list('src_world')},
+  tape: _list('tape'),   // the ticker's items chosen in the settings, in order (tapeList); none = the country's own
 };
 // in detail mode the loaders' own "redraw if this panel is shown" checks draw the detail page
 if(CONFIG.detail) CONFIG.panel = CONFIG.detail;
@@ -894,10 +901,13 @@ function tickRadio(){
   const i = s.indexOf('|'), st = i < 0 ? s : s.slice(0, i), name = i < 0 ? '' : s.slice(i + 1);
   const show = (st === 'playing' || st === 'error') && !!name;
   el.hidden = !show;
-  if(!show) return;
-  el.className = 'qr ' + st;
-  document.getElementById('qr-t').innerHTML = st === 'error' ? 'تعذّر تشغيل ' + esc(name) : 'يُتلى الآن: <b>' + esc(name) + '</b>';
+  if(show){
+    el.className = 'qr ' + st;
+    document.getElementById('qr-t').innerHTML = st === 'error' ? 'تعذّر تشغيل ' + esc(name) : 'يُتلى الآن: <b>' + esc(name) + '</b>';
+  }
+  QR_SEND();
 }
+let QR_SEND = () => {};   // home: the chip's box to the launcher (homeQrRect)
 if(!CONFIG.ticker && !CONFIG.widget && !CONFIG.detail){ setInterval(tickRadio, 3000); setTimeout(tickRadio, 500); }
 
 function tickClock(){
@@ -1580,22 +1590,25 @@ async function loadMatches(){
 
 // the ticker tape's markets, in this order: Yahoo symbol or CoinGecko id, and how its value is written
 // (index: whole points; usd: dollars, whole from 1,000 up; fx: four decimals, two from 100 up, whole from 1,000 up).
-// The first item (the local index) and the dollar's rate follow the city's country (CONFIG.country, '' = Saudi
-// Arabia: tapeList): its main index where Yahoo has one (TAPE_INDEX; none: the item is left out) and the dollar
+// The first item (the local index) and the dollar's rate follow the ticker's country (the news country, #newscc,
+// else the city's, '' = Saudi Arabia: tapeList): its main index where Yahoo has one (TAPE_INDEX; none: left out) and the dollar
 // against its currency (TAPE_CUR, the currency's Arabic name in TAPE_CUR_NAME, else its code). A country on the
 // dollar (TAPE_USD) shows the euro against the dollar instead. er: the currency on open.er-api.com (keyless), asked
 // when Yahoo does not answer for it (no daily change there); '1/' its inverse.
+// id: the settings' «عناصر شريط الأسعار» (#tape, Tape.java); idx and cur follow the ticker's country
 const TAPE_SA = [
-  {name:'تاسي',           sym:'^TASI.SR', fmt:'index'},
-  {name:'S&P 500',        sym:'^GSPC',    fmt:'index'},
-  {name:'ناسداك',         sym:'^IXIC',    fmt:'index'},
-  {name:'داو جونز',       sym:'^DJI',     fmt:'index'},
-  {name:'الذهب',          sym:'GC=F',     fmt:'usd'},
-  {name:'برنت',           sym:'BZ=F',     fmt:'usd'},
-  {name:'الدولار/الريال', sym:'SAR=X',    fmt:'fx', er:'SAR'},   // er: when Yahoo's price is off the peg (mkFxQuote)
-  {name:'بيتكوين',        cg:'bitcoin',   fmt:'usd'},
-  {name:'إيثريوم',        cg:'ethereum',  fmt:'usd'},
+  {id:'idx',   name:'تاسي',           sym:'^TASI.SR', fmt:'index'},
+  {id:'spx',   name:'S&P 500',        sym:'^GSPC',    fmt:'index'},
+  {id:'ndx',   name:'ناسداك',         sym:'^IXIC',    fmt:'index'},
+  {id:'dji',   name:'داو جونز',       sym:'^DJI',     fmt:'index'},
+  {id:'gold',  name:'الذهب',          sym:'GC=F',     fmt:'usd'},
+  {id:'brent', name:'برنت',           sym:'BZ=F',     fmt:'usd'},
+  {id:'cur',   name:'الدولار/الريال', sym:'SAR=X',    fmt:'fx', er:'SAR'},   // er: when Yahoo's price is off the peg (mkFxQuote)
+  {id:'btc',   name:'بيتكوين',        cg:'bitcoin',   fmt:'usd'},
+  {id:'eth',   name:'إيثريوم',        cg:'ethereum',  fmt:'usd'},
 ];
+// only in a chosen list, with i:<country> (its index; i:AD Abu Dhabi's) and c:<currency> (the dollar in it)
+const TAPE_MORE = {silver:{name:'الفضة', sym:'SI=F', fmt:'usd'}, eurusd:{name:'اليورو/الدولار', sym:'EURUSD=X', fmt:'fx', er:'1/EUR'}};
 // a country's main index on Yahoo (each checked through the TVs' VPN with #tapetest=1); AE: Dubai's, Abu Dhabi's
 // for a city of that emirate (tapeList). Digits in a name follow the numerals setting (tapeName).
 const TAPE_INDEX = {
@@ -1655,18 +1668,25 @@ const TAPE_CUR_NAME = {
   LSL:'اللوتي', SZL:'الليلانغيني', PGK:'الكينا', TOP:'البانغا', WST:'التالا', VUV:'الفاتو', BTN:'النغولترم',
   AWG:'الفلورن', XCG:'الغيلدر',
 };
-// the tape for country cc ('' = Saudi Arabia: TAPE_SA as it is) and the city's name (AE: Abu Dhabi's index)
-function tapeList(cc, city){
+const tapeIdx = x => x && {name:x[0], sym:x[1], fmt:'index', dg:/[0-9]/.test(x[0])};
+const tapeCur = c => c && {name:'الدولار/' + (TAPE_CUR_NAME[c] || c), sym:c + '=X', fmt:'fx', er:c};
+// the tape for country cc ('' = Saudi Arabia: TAPE_SA as it is) and the city's name (AE: Abu Dhabi's index): the
+// chosen items in their order (ids, #tape; unknown ones and repeats left out), else every country's own list
+function tapeList(cc, city, ids){
   cc = /^[A-Z]{2}$/.test(cc || '') ? cc : 'SA';
-  if(cc === 'SA') return TAPE_SA.slice();
-  const ad = cc === 'AE' && /أبو ?ظبي|العين|abu dhabi|al ain/i.test(city || '');
-  const idx = ad ? TAPE_INDEX_AD : TAPE_INDEX[cc], cur = TAPE_CUR[cc];
-  const fx = TAPE_USD.includes(cc) ? {name:'اليورو/الدولار', sym:'EURUSD=X', fmt:'fx', er:'1/EUR'}
-    : cur ? {name:'الدولار/' + (TAPE_CUR_NAME[cur] || cur), sym:cur + '=X', fmt:'fx', er:cur} : null;
-  return TAPE_SA.flatMap((t, i) => i === 0 ? (idx ? [{name:idx[0], sym:idx[1], fmt:'index', dg:/[0-9]/.test(idx[0])}] : [])
-    : t.fmt === 'fx' ? (fx ? [fx] : []) : [t]);
+  const ad = cc === 'AE' && /أبو ?ظبي|العين|abu dhabi|al ain/i.test(city || ''), sa = cc === 'SA';
+  const own = {idx: sa ? TAPE_SA[0] : tapeIdx(ad ? TAPE_INDEX_AD : TAPE_INDEX[cc]),
+    cur: sa ? TAPE_SA[6] : TAPE_USD.includes(cc) ? TAPE_MORE.eurusd : tapeCur(TAPE_CUR[cc])};
+  const one = id => id in own ? own[id] : TAPE_SA.find(t => t.id === id) || TAPE_MORE[id]
+    || (/^i:/.test(id) ? tapeIdx(id === 'i:AD' ? TAPE_INDEX_AD : TAPE_INDEX[id.slice(2)])
+      : /^c:/.test(id) && Object.values(TAPE_CUR).includes(id.slice(2)) ? tapeCur(id.slice(2)) : null);
+  const list = L => { const seen = new Set(); return L.map(one).filter(t => t && !seen.has(t.sym || t.cg) && seen.add(t.sym || t.cg)); };
+  const got = list(ids || []);   // nothing left of a choice: the country's own list
+  return got.length ? got : list(TAPE_SA.map(t => t.id));
 }
-const TAPE = tapeList(CONFIG.country, CONFIG.city);
+// the ticker's country: the news country (a Saudi household abroad keeps «تاسي» and the riyal), else the city's
+const TAPE_CC = _Q.get('newscc') ? CONFIG.newsCC : CONFIG.country;
+const TAPE = tapeList(TAPE_CC, TAPE_CC === CONFIG.country ? CONFIG.city : '', CONFIG.tape);
 // a market's name; one of the countries' indexes with its digits as set (the Saudi tape's names are as they were)
 const tapeName = t => t.dg ? esc(t.name).replace(/[0-9]+/g, n => mkIso(mkNum(+n, 0))) : esc(t.name);
 
@@ -1819,7 +1839,7 @@ async function tapeTest(){
     .then(r => r.ok ? r.json() : 'HTTP ' + r.status).catch(e => String(e && e.message || e));
   log('coingecko ' + JSON.stringify(coins).slice(0, 120));
   const jobs = [];
-  TAPE_SA.filter(t => t.sym).forEach(t => jobs.push(['sa', 'SA', t.sym, '']));
+  TAPE_SA.concat(TAPE_MORE.silver).filter(t => t.sym).forEach(t => jobs.push(['sa', 'SA', t.sym, '']));
   Object.entries(TAPE_INDEX).concat([['AE-AD', TAPE_INDEX_AD]]).forEach(([cc, x]) => jobs.push(['idx', cc, x[1], '']));
   [...new Set(Object.values(TAPE_CUR))].sort().forEach(c => jobs.push(['fx', c, c + '=X', c]));
   jobs.push(['fx', 'EUR/USD', 'EURUSD=X', '1/EUR']);
@@ -3818,7 +3838,54 @@ function restoreSnap(){
   }catch(e){}
 }
 
+// ---- the mouse, on the launcher's pages (never the screensaver): the pointer while it moves, hidden after 3 s still;
+// on a detail page hover = the D-pad's focus, click = OK (a dot: its page), the wheel = ▲▼ or scrolls the text.
+// The launcher's own views (pills, apps, the card) take the mouse themselves (Mouse.java).
+function bootMouse(){
+  const root = document.documentElement, key = k => detailKey({key: k, preventDefault(){}});
+  let t = 0, x = -1, y = -1, acc = 0, at = 0;
+  addEventListener('mousemove', e => {
+    if(e.clientX === x && e.clientY === y) return;   // moved, not a page that moved under it
+    x = e.clientX; y = e.clientY;
+    root.classList.add('mouse');
+    clearTimeout(t); t = setTimeout(() => root.classList.remove('mouse'), 3000);
+    const it = CONFIG.detail && e.target.closest('#dv .dv-item');
+    if(it && +it.dataset.i !== DV.focus) dvNewsFocus(+it.dataset.i);
+  }, {passive: true});
+  if(!CONFIG.detail) return;
+  addEventListener('click', e => {
+    const d = e.target.closest('.dv-dot'), it = e.target.closest('#dv .dv-item');
+    if(d){ const k = [...d.parentNode.children].indexOf(d) - DV_LIST.indexOf(DV_TO || CONFIG.detail); if(k) dvGo(k); }
+    else if(it){ dvNewsFocus(+it.dataset.i); key('Enter'); }
+  });
+  addEventListener('wheel', e => {
+    e.preventDefault();
+    const sc = document.querySelector('#dv .dv-scroll');
+    if(sc){ sc.scrollTop += e.deltaY; return; }
+    if(Date.now() - at > 400) acc = 0;   // a notch (or a trackpad's run) moves one row
+    at = Date.now(); acc += e.deltaY;
+    if(Math.abs(acc) >= 40){ key(acc > 0 ? 'ArrowDown' : 'ArrowUp'); acc = 0; }
+  }, {passive: false});
+}
+// home: «يُتلى الآن»'s box (CSS px; 0 x 0 hidden) for the launcher's focusable view over it (SaudiTVNative.qrRect)
+function homeQrRect(){
+  const N = window.SaudiTVNative, el = document.getElementById('qr');
+  window.sauditvQrFocused = on => document.documentElement.classList.toggle('qr-focus', !!on);
+  if(!N || typeof N.qrRect !== 'function' || !el) return;
+  let last = '';
+  QR_SEND = () => {
+    let x = 0, y = 0;
+    for(let e = el; e; e = e.offsetParent){ x += e.offsetLeft; y += e.offsetTop; }
+    const v = (el.offsetParent ? [x, y, el.offsetWidth, el.offsetHeight] : [0, 0, 0, 0]).concat(innerWidth).map(Math.round);
+    if(v.join() !== last){ last = v.join(); try{ N.qrRect(...v); }catch(e){} }
+  };
+  if(window.ResizeObserver) new ResizeObserver(() => QR_SEND()).observe(el);
+  addEventListener('resize', () => QR_SEND());
+  QR_SEND();
+}
+
 function boot(){
+  if(CONFIG.home || CONFIG.detail || CONFIG.ticker || CONFIG.widget) bootMouse();
   if(CONFIG.feedTest) setTimeout(feedTest, 3000);   // tests only (#feedtest=1)
   if(CONFIG.tapeTest) setTimeout(tapeTest, 3000);   // tests only (#tapetest=1)
   if(CONFIG.ticker){ bootTicker(); return; }
@@ -3929,6 +3996,7 @@ function bootHome(){
     window.sauditvSetFocused = window.sauditvStep = window.sauditvHold = () => {};
   } else cardStart();
   homeCardRect();
+  homeQrRect();
   setInterval(tickClock, 1000);
   setInterval(() => { tickDates(); tickPrayer(); tickRamadan(); if(CONFIG.panel === 'prayers') renderPanel(false); }, 15000);
   setInterval(loadPrayers, 6*3600*1000);

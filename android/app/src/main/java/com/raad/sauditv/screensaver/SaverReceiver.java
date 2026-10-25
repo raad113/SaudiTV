@@ -27,7 +27,9 @@ import java.util.List;
  *       [--es src_news aawsat,okaz] [--es src_tech …] [--es src_local …] [--es src_world …]   ("" = the page's defaults)
  *       [--es tile_shape rounded|circle] [--es focus_style google|apple]   (the home screen's app tiles)
  *       [--es radio on|off] [--es radio_station saudi|cairo|63|https://…] [--es radio_volume 10…100]
- *       («إذاعة القرآن الكريم»: RadioService; a station id from RADIO_STATIONS, or any http(s) address)
+ *       [--es radio_when both|saver|home]
+ *       («إذاعة القرآن الكريم»: RadioService; a station id from RADIO_STATIONS, or any http(s) address; RadioWhen)
+ *       [--es tape auto|gold,btc,cur…]   (the ticker's items in order, Tape; auto: each country's own list)
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.UPDATE
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.APP_CHECK
  *       (checks the GitHub release for a newer version of both apps; installing is the settings screen's)
@@ -311,6 +313,15 @@ public class SaverReceiver extends BroadcastReceiver {
                 station = new String[] {s.id, s.name, s.urls[0]};
             }
         }
+        String when = i.getStringExtra("radio_when");
+        if (when != null) {
+            when = when.trim().toLowerCase(java.util.Locale.ROOT);
+            if (!known(RadioWhen.CHOICES, when)) return "error: radio_when is " + names(RadioWhen.CHOICES)
+                + " (both: the home screen and the screensaver)";
+        }
+        String tapeRaw = i.getStringExtra("tape");
+        List<String> tape = tapeRaw == null ? null : Tape.parse(tapeRaw);
+        if (tapeRaw != null && tape == null) return "error: tape is auto, or a comma list of " + names(Tape.ITEMS);
         String vol = i.getStringExtra("radio_volume");
         int volume = vol == null ? -1 : RadioStations.volume(vol);
         if (vol != null && volume < 0)
@@ -338,6 +349,8 @@ public class SaverReceiver extends BroadcastReceiver {
         if (station != null) p.setRadioStation(station[0], station[1], station[2]);
         if (volume > 0) p.setRadioVolume(volume);
         if (radio != null) p.setRadioOn(radio.equals("on"));
+        if (when != null) p.setRadioWhen(when);
+        if (tape != null) p.setTape(tape);
         // a home screen already in front shows the new settings now, not at its next resume
         c.sendBroadcast(new Intent(CHANGED).setPackage("com.raad.sauditv.home"));
         return "saved\n" + describe(c, p);
@@ -365,6 +378,8 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\nradio_station: " + p.radioStation() + " " + p.radioName()
                 + (RadioStations.CUSTOM.equals(p.radioStation()) ? " " + p.radioUrl() : "")
             + "\nradio_volume: " + p.radioVolume()
+            + "\nradio_when: " + p.radioWhen()
+            + "\ntape: " + (p.tapeAuto() ? "auto (" + Prefs.join(p.tapeShown(), ",") + ")" : Prefs.join(p.tape(), ","))
             + sourcesLine(p);
     }
 

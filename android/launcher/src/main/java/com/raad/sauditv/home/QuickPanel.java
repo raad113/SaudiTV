@@ -290,11 +290,12 @@ final class QuickPanel {
         f.requestFocus();
     }
 
-    /** the radio tile: on turns it off, off turns it on; its second line says which, at once */
+    /** the radio tile, as the home screen's «تشغيل القرآن» / «إيقاف القرآن» (RadioLink.toggle): playing, it turns it off;
+     *  else on and playing now; its second line says which, at once, and so does the chip */
     private void toggleRadio() {
-        String[] r = RadioLink.read(a);
-        if (r == null || !RadioLink.set(a, !"1".equals(r[0]))) { radioSub.setText("غير متاحة"); radioSub.setVisibility(View.VISIBLE); return; }
+        if (!RadioLink.toggle(a)) { radioSub.setText("غير متاحة"); radioSub.setVisibility(View.VISIBLE); return; }
         refreshRadio();
+        a.radioChanged();
     }
 
     /** «تعمل» / «يُتلى الآن» / «متوقفة» under the radio tile (nothing when the screensaver app can't be reached) */

@@ -1,13 +1,16 @@
 package com.raad.sauditv.screensaver;
 
+import com.raad.sauditv.home.RadioChip;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /**
  * The settings app's plain-Java logic, run by tests/java_test.py (javac and java, no Android): a change of country
- * (CountryChange: news, league, clubs; never on a reload or a re-pick in the same country) and the Quran radio's
- * stations and volume (RadioStations).
+ * (CountryChange: news, league, clubs; never on a reload or a re-pick in the same country), the Quran radio's
+ * stations and volume (RadioStations), where it plays (RadioWhen) and the home screen's chip (RadioChip, the launcher's),
+ * and the ticker's items (Tape).
  */
 public class LogicTest {
     static int failed = 0;
@@ -128,6 +131,51 @@ public class LogicTest {
         check("radio: a custom address is http(s) with a host", RadioStations.validUrl("http://example.com:8000/live")
             && RadioStations.validUrl("https://a.b/x.m3u8") && !RadioStations.validUrl("ftp://a.b/x") && !RadioStations.validUrl("https://nohost")
             && !RadioStations.validUrl("javascript:alert(1)") && !RadioStations.validUrl("https://a.b/x y"), "");
+
+        // ---- «متى تعمل الإذاعة» (RadioWhen.plays: when, on, home, saver, preview, override)
+        String b = RadioWhen.BOTH, s = RadioWhen.SAVER, h = RadioWhen.HOME;
+        check("radio when: the default is both (as before), unknown values too", RadioWhen.of(null).equals(b) && RadioWhen.of("x").equals(b)
+            && RadioWhen.of("saver").equals(s) && RadioWhen.label(s).equals("شاشة التوقف فقط"), "");
+        // home -> the screensaver starts (home still bound for its 3 s) -> the screensaver alone -> back home
+        boolean[][] steps = {{true, false}, {true, true}, {false, true}, {true, false}};
+        for (String[] w : new String[][] {{b, "1111"}, {s, "0110"}, {h, "1001"}}) {
+            StringBuilder got = new StringBuilder();
+            for (boolean[] st : steps) got.append(RadioWhen.plays(w[0], true, st[0], st[1], false, false) ? '1' : '0');
+            check("radio when " + w[0] + ": home, the screensaver starts, the screensaver, back home = " + w[1], got.toString().equals(w[1]), got);
+        }
+        check("radio when saver: «تشغيل القرآن» on the home screen plays it there (the override)",
+            RadioWhen.plays(s, true, true, false, false, true) && !RadioWhen.plays(s, true, true, false, false, false), "");
+        check("radio when home: the override does not play it over the screensaver", !RadioWhen.plays(h, true, false, true, false, true), "");
+        check("radio when: off is silent anywhere; nothing in front is silent; the settings' preview always plays",
+            !RadioWhen.plays(b, false, true, true, false, true) && !RadioWhen.plays(b, true, false, false, false, true)
+            && RadioWhen.plays(s, false, false, false, true, false) && RadioWhen.plays(h, false, true, true, true, false), "");
+
+        // ---- the home screen's «تشغيل القرآن» / «إيقاف القرآن» (RadioChip)
+        check("radio chip: «إيقاف القرآن» while it plays, loads or retries", RadioChip.label("1", "playing").equals("إيقاف القرآن")
+            && RadioChip.label("1", "loading").equals(RadioChip.STOP) && RadioChip.label("1", "error").equals(RadioChip.STOP), "");
+        check("radio chip: «تشغيل القرآن» while off, paused by the remote, or silent here (idle)", RadioChip.label("0", "idle").equals("تشغيل القرآن")
+            && RadioChip.label("1", "paused").equals(RadioChip.PLAY) && RadioChip.label("1", "idle").equals(RadioChip.PLAY)
+            && RadioChip.label("0", "playing").equals(RadioChip.PLAY), "");
+        check("radio chip: a press turns it off while it plays, else on (and playing now)", !RadioChip.pressTurnsOn("1", "playing")
+            && RadioChip.pressTurnsOn("1", "paused") && RadioChip.pressTurnsOn("0", "idle"), "");
+
+        // ---- «عناصر شريط الأسعار» (Tape)
+        check("tape: automatic = each country's own list (SA: its index first; US: none)",
+            Tape.auto("SA").toString().equals("[idx, spx, ndx, dji, gold, brent, cur, btc, eth]")
+            && Tape.auto("EG").get(0).equals("idx") && !Tape.auto("US").contains("idx") && Tape.auto("US").size() == 8
+            && Tape.auto(null).equals(Tape.auto("SA")), Tape.auto("US"));
+        check("tape: a choice in its order, each once; ids in any case; auto or empty = automatic; unknown refused",
+            Tape.parse("gold, BTC,gold,c:sar,i:ae").toString().equals("[gold, btc, c:SAR, i:AE]") && Tape.parse("auto").isEmpty()
+            && Tape.parse("").isEmpty() && Tape.parse("gold,nope") == null, Tape.parse("gold, BTC,gold,c:sar,i:ae"));
+        check("tape: the country's own list saved is automatic again; another order is kept",
+            Tape.store(Tape.auto("SA"), "SA").isEmpty() && Tape.store(Arrays.asList("gold", "btc", "cur"), "SA").equals("gold,btc,cur")
+            && Tape.store(Arrays.asList("spx", "idx"), "SA").equals("spx,idx"), "");
+        check("tape: a choice stays whatever the country (cur and idx are the country's: they follow it)",
+            Tape.store(Arrays.asList("gold", "btc", "cur"), "US").equals("gold,btc,cur")
+            && Tape.store(Arrays.asList("gold", "btc", "cur"), "EG").equals("gold,btc,cur"), "");
+        check("tape: the picker does not list the country's own index and currency twice (SA: no i:SA, c:SAR)",
+            !Tape.offered("SA").contains("i:SA") && !Tape.offered("SA").contains("c:SAR") && Tape.offered("SA").contains("i:EG")
+            && Tape.offered("EG").contains("i:SA") && !Tape.offered("EG").contains("c:EGP") && Tape.offered("US").size() == Tape.ITEMS.length, "");
 
         System.out.println(failed == 0 ? "\nall logic tests passed" : "\n" + failed + " failed");
         System.exit(failed == 0 ? 0 : 1);

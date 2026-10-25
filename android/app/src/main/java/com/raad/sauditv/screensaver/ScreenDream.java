@@ -3,7 +3,8 @@ package com.raad.sauditv.screensaver;
 import android.service.dreams.DreamService;
 import android.webkit.WebView;
 
-/** The system screensaver: starts on the TV's own idle timer, any key wakes it. While it dreams, it holds
+/** The system screensaver: starts on the TV's own idle timer, any key wakes it (and a mouse's move or click:
+ *  DreamService does that while it is not interactive; never a pointer over it). While it dreams, it holds
  *  «إذاعة القرآن الكريم» (RadioService "saver"). */
 public class ScreenDream extends DreamService {
     private WebView web;
@@ -16,7 +17,7 @@ public class ScreenDream extends DreamService {
         setFullscreen(true);
         setScreenBright(true);
         web = ScreenView.create(this);
-        setContentView(web);
+        setContentView(Mouse.hidden(this, web));
     }
 
     @Override

@@ -25,6 +25,7 @@ import android.widget.FrameLayout;
  * links open in an in-app article WebView laid over the panel (no external browser app).
  * Back steps back in the article, then closes it, and only then closes this activity.
  * Both WebViews live only as long as this activity.
+ * A mouse: the page takes hover, clicks and the wheel (its bootMouse); right-click is Back here (Mouse).
  */
 public class DetailActivity extends Activity {
     // the settings fragment plus the card's "&panels=a,b,c" (the page's LEFT/RIGHT); appended as is
@@ -35,6 +36,7 @@ public class DetailActivity extends Activity {
     private WebView web;
     private FrameLayout root;
     private WebView article;   // in-app article view, null when closed
+    private Mouse mouse;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @SuppressWarnings("deprecation")
@@ -90,6 +92,7 @@ public class DetailActivity extends Activity {
         web.addJavascriptInterface(new Native(), "SaudiTVNative");
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
+        mouse = Mouse.attach(this, false);
         web.loadUrl("file:///android_asset/web/tv.html#" + frag + "&detail=" + panel);
         web.requestFocus();
     }
@@ -165,6 +168,16 @@ public class DetailActivity extends Activity {
         } else {
             finish();
         }
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.generic(e)) || super.dispatchGenericMotionEvent(e);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.touch(e)) || super.dispatchTouchEvent(e);
     }
 
     @Override

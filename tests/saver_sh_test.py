@@ -55,16 +55,23 @@ with tempfile.TemporaryDirectory() as tmp:
         (("radio-hold", "on"), AM + "PAUSE_FOR_ATHAN"),
         (("radio-hold", "off"), AM + "RESUME_AFTER_ATHAN"),
         (("show",), AM + "GET"),
+        (("radio-when", "saver"), AM + "SET --es radio_when saver"),
+        (("radio-when", "both"), AM + "SET --es radio_when both"),
+        (("radio-when", "home"), AM + "SET --es radio_when home"),
+        (("tape", "gold,btc,cur"), AM + "SET --es tape 'gold,btc,cur'"),
+        (("tape", "auto"), AM + "SET --es tape 'auto'"),
     ]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: sends «{want[len(AM):]}»", code == 0 and out == want, (code, out))
     for args in [("radio",), ("radio", "maybe"), ("radio-volume", "5"), ("radio-volume", "101"), ("radio-volume", "loud"),
-                 ("radio-volume",), ("radio-station",), ("radio-hold", "x")]:
+                 ("radio-volume",), ("radio-station",), ("radio-hold", "x"), ("radio-when",), ("radio-when", "always"),
+                 ("tape",)]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: refused, nothing sent", code != 0 and "am broadcast" not in out, (code, out))
     code, out = saver("help")
-    check("saver.sh usage lists the radio commands", code != 0 and all(c in out for c in (
-        "radio on|off", "radio-station", "radio-volume", "radio-stations", "radio-test", "radio-hold")), out[-600:])
+    check("saver.sh usage lists the radio commands and the ticker's", code != 0 and all(c in out for c in (
+        "radio on|off", "radio-station", "radio-volume", "radio-stations", "radio-test", "radio-hold", "radio-when both|saver|home",
+        "tape auto|")), out[-900:])
 
 # the app's side of the same commands
 rx = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/SaverReceiver.java").read_text(encoding="utf-8")
@@ -72,8 +79,11 @@ man = (ROOT / "android/app/src/main/AndroidManifest.xml").read_text(encoding="ut
 check("SaverReceiver: takes radio, radio_station and radio_volume, and checks them before saving",
       all(f'getStringExtra("{k}")' in rx for k in ("radio", "radio_station", "radio_volume"))
       and rx.index('getStringExtra("radio_volume")') < rx.index("p.setRadioOn("))
-check("SaverReceiver: show (GET) lists radio, radio_station, radio_volume and the radio's state now",
-      all(f'"\\n{k}: "' in rx for k in ("radio", "radio_station", "radio_volume", "radio_now")))
+check("SaverReceiver: show (GET) lists radio, radio_station, radio_volume, radio_when, tape and the radio's state now",
+      all(f'"\\n{k}: "' in rx for k in ("radio", "radio_station", "radio_volume", "radio_when", "tape", "radio_now")))
+check("SaverReceiver: takes radio_when and tape, checks them (RadioWhen, Tape.parse) before saving",
+      'getStringExtra("radio_when")' in rx and 'getStringExtra("tape")' in rx and "Tape.parse(" in rx
+      and rx.index('getStringExtra("tape")') < rx.index("p.setTape(") and rx.index('getStringExtra("radio_when")') < rx.index("p.setRadioWhen("))
 for a in ("RADIO_STATIONS", "RADIO_TEST", "PAUSE_FOR_ATHAN", "RESUME_AFTER_ATHAN"):
     check(f"manifest: SaverReceiver answers {a}", re.search(r'SaverReceiver.*?com\.raad\.sauditv\.screensaver\.' + a, man, re.S) is not None)
 check("manifest: the radio's service and its athan hook need our signature (READ_CONFIG)",

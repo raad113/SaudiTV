@@ -14,7 +14,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver"
-CLASSES = ["CountryChange.java", "Leagues.java", "RadioStations.java"]   # plain Java only (no android.*)
+CLASSES = ["CountryChange.java", "Leagues.java", "RadioStations.java", "RadioWhen.java", "Tape.java"]   # plain Java only (no android.*)
+HOME = ROOT / "android/launcher/src/main/java/com/raad/sauditv/home"
+HOME_CLASSES = ["RadioChip.java"]   # the launcher's, plain Java too
 
 
 def jdk():
@@ -31,8 +33,8 @@ def jdk():
 
 
 def main():
-    for f in CLASSES:
-        text = (SRC / f).read_text(encoding="utf-8")
+    for f in [SRC / c for c in CLASSES] + [HOME / c for c in HOME_CLASSES]:
+        text = f.read_text(encoding="utf-8")
         if "import android." in text:
             print(f"FAIL {f} must stay plain Java (tests/java_test.py compiles it without Android)")
             return 1
@@ -42,7 +44,8 @@ def main():
         return 0
     with tempfile.TemporaryDirectory() as out:
         r = subprocess.run([javac, "-encoding", "UTF-8", "-nowarn", "-Xlint:-options", "--release", "8", "-d", out]
-                           + [str(SRC / f) for f in CLASSES] + [str(ROOT / "tests/java/LogicTest.java")],
+                           + [str(SRC / f) for f in CLASSES] + [str(HOME / f) for f in HOME_CLASSES]
+                           + [str(ROOT / "tests/java/LogicTest.java")],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode != 0:
             print("FAIL java logic tests: javac\n" + r.stdout + r.stderr)

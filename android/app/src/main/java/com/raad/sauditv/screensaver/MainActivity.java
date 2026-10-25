@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebView;
 
-/** Full-screen preview of the screensaver; any remote key closes it. */
+/** Full-screen preview of the screensaver; any remote key, or a mouse's click or wheel, closes it (never a pointer). */
 public class MainActivity extends Activity {
     private WebView web;
 
@@ -16,7 +16,7 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         web = ScreenView.create(this, getIntent().getStringExtra("test"));   // test values from ADB
-        setContentView(web);
+        setContentView(Mouse.hidden(this, web));
         web.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
@@ -41,6 +41,19 @@ public class MainActivity extends Activity {
     public boolean dispatchKeyEvent(KeyEvent e) {
         if (e.getAction() == KeyEvent.ACTION_UP) finish();
         return true;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent e) {
+        if (!Mouse.isMouse(e)) return super.dispatchTouchEvent(e);
+        if (e.getActionMasked() == android.view.MotionEvent.ACTION_UP) finish();
+        return true;
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent e) {
+        if (Mouse.isMouse(e) && e.getActionMasked() == android.view.MotionEvent.ACTION_SCROLL) { finish(); return true; }
+        return super.dispatchGenericMotionEvent(e);
     }
 
     @Override

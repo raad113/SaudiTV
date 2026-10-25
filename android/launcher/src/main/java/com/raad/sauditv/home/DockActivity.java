@@ -37,6 +37,7 @@ public class DockActivity extends Activity {
     private final List<View> cards = new ArrayList<>(), removes = new ArrayList<>();
     private int moving = -1;
     private int swallowUp = -1;   // the OK that drops an app must not also click it
+    private Mouse mouse;   // hover = focus, the wheel = ▲▼ (moves a picked-up app too), right-click = Back
 
     @Override
     protected void onCreate(Bundle b) {
@@ -65,6 +66,7 @@ public class DockActivity extends Activity {
         list.setOrientation(LinearLayout.VERTICAL);
         col.addView(list, new LinearLayout.LayoutParams(-1, -2));
         setContentView(scroll);
+        mouse = Mouse.attach(this, true);
         render(0);
     }
 
@@ -218,6 +220,16 @@ public class DockActivity extends Activity {
         moving = -1;
         Dock.save(this, row);
         render(at);
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.generic(e)) || super.dispatchGenericMotionEvent(e);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.touch(e)) || super.dispatchTouchEvent(e);
     }
 
     @Override

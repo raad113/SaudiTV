@@ -37,6 +37,7 @@ public class SettingsActivity extends Activity {
 
     private Prefs prefs;
     private ScrollView scroll;
+    private Mouse mouse;
     private LinearLayout list;
     // the row in focus (its key, rowKey) and the list's scroll: a render() puts both back, so choosing something in a
     // dialog, a list or a screen opened from a row comes back to that same row, not to the first one; kept across a
@@ -95,12 +96,23 @@ public class SettingsActivity extends Activity {
         frame.addView(list, new android.widget.FrameLayout.LayoutParams(width, -2, Gravity.CENTER_HORIZONTAL));
         scroll.addView(frame);
         setContentView(scroll);
+        mouse = Mouse.attach(this, true);   // a mouse: hover = focus, the wheel = ▲▼, right-click = Back
         justUpdated = AppUpdate.takeJustUpdated(this);   // the first launch after a self-update
         if (justUpdated != null) toast("تم التحديث إلى " + AppUpdate.digits(this, justUpdated));
         render();
         AppInstaller.setListener(installListener);   // an update still running shows its progress again
         if (getIntent().getBooleanExtra("app_update", false)) openAppUpdate();   // the home screen's «تحديث متوفر»
         else quietCheck();
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.generic(e)) || super.dispatchGenericMotionEvent(e);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.touch(e)) || super.dispatchTouchEvent(e);
     }
 
     @Override
@@ -186,11 +198,15 @@ public class SettingsActivity extends Activity {
         // an RLM first: «Google TV» on the right like the other values, not on the left as a Latin line would be
         row("شكل التحديد", "‏" + Prefs.label(Prefs.FOCUS_STYLES, prefs.focusStyle()), R.drawable.ic_eye,
             new Runnable() { public void run() { pickTileLook(false); } });
+        // the ticker tape (the home screen's and the screensaver's): its items in order, or each country's own
+        row("عناصر شريط الأسعار", tapeLabel(), R.drawable.ic_category, new Runnable() { public void run() { pickTape(); } });
 
         // «إذاعة القرآن الكريم» (RadioService): on or off, the station, its volume, and a preview here
         header("إذاعة القرآن الكريم");
-        row("إذاعة القرآن الكريم", prefs.radioOn() ? "تعمل على الشاشة الرئيسية وشاشة التوقف" : "متوقفة", R.drawable.ic_radio,
+        row("إذاعة القرآن الكريم", prefs.radioOn() ? "تعمل على " + RadioWhen.label(prefs.radioWhen()) : "متوقفة", R.drawable.ic_radio,
             new Runnable() { public void run() { prefs.setRadioOn(!prefs.radioOn()); changed(); render(); } });
+        row("متى تعمل الإذاعة", RadioWhen.label(prefs.radioWhen()), R.drawable.ic_screensaver,
+            new Runnable() { public void run() { pickRadioWhen(); } });
         row("المحطة", stationLabel(), R.drawable.ic_radio, new Runnable() { public void run() { pickStation(); } });
         row("مستوى صوت الإذاعة", percent(prefs.radioVolume()), R.drawable.ic_volume,
             new Runnable() { public void run() { pickVolume(); } });
@@ -279,7 +295,7 @@ public class SettingsActivity extends Activity {
             labels[i + head] = all.get(i).ar;
             if (all.get(i).cc.equals(cur)) sel = i + head;
         }
-        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("الدولة")
+        AlertDialog d = dialog().setTitle("الدولة")
             .setItems(labels, (x, i) -> { if (i < head) typeCity(); else pickCityOf(all.get(i - head)); }).create();
         d.show();
         if (sel >= 0) d.getListView().setSelection(sel);   // the current country in front
@@ -323,7 +339,7 @@ public class SettingsActivity extends Activity {
     private void showPlaces(final Found f, final String q, final long t0) {
         if (f == null || f.places.isEmpty()) { toast("لا توجد نتائج، جرّب اسماً آخر أو اختر الدولة"); return; }
         final android.content.Context app = getApplicationContext();
-        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("«⁨" + q + "⁩»")   // the query isolated (FSI … PDI)
+        AlertDialog d = dialog().setTitle("«⁨" + q + "⁩»")   // the query isolated (FSI … PDI)
             .setItems(f.rows.toArray(new String[0]), (x, i) -> {
                 final Geo.Place p = f.places.get(i);
                 loadThen(() -> Geo.cityOf(app, p), city -> {
@@ -363,7 +379,7 @@ public class SettingsActivity extends Activity {
             if (x.name.equals(cur[0]) && x.lat.equals(cur[1]) && x.lon.equals(cur[2])) sel = i + head;
         }
         if (list.isEmpty() && query != null) toast("لا توجد نتائج، جرّب «ابحث عن مدينة أخرى»");
-        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME)
+        AlertDialog d = dialog()
             .setTitle(query == null ? c.ar : c.shortAr + ": «⁨" + query + "⁩»")   // the query isolated (FSI … PDI)
             .setItems(labels, (x, i) -> {
                 if (i == 0) ask("اسم المدينة بالعربية أو الإنجليزية",
@@ -389,7 +405,7 @@ public class SettingsActivity extends Activity {
         final boolean[] over = {false};
         final Runnable showWait = () -> {
             if (over[0] || isFinishing()) return;
-            wait[0] = new AlertDialog.Builder(this, DIALOG_THEME).setMessage("جارٍ التحميل…").setCancelable(true).show();
+            wait[0] = dialog().setMessage("جارٍ التحميل…").setCancelable(true).show();
         };
         list.postDelayed(showWait, 150);
         new Thread(() -> {
@@ -423,7 +439,7 @@ public class SettingsActivity extends Activity {
                     String region = x.optString("admin1", "");
                     rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
                 }
-                new AlertDialog.Builder(this, DIALOG_THEME).setTitle("اختر المكان")
+                dialog().setTitle("اختر المكان")
                     .setItems(rows, (d, i) -> setPlace(names[i], lats[i], lons[i], c.cc, zones[i])).show();
             }));
     }
@@ -509,7 +525,7 @@ public class SettingsActivity extends Activity {
             labels[i + 1] = Geo.METHODS[i][1];
             if (!prefs.methodAuto() && Geo.METHODS[i][0].equals(String.valueOf(prefs.prayerMethod()))) sel = i + 1;
         }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("طريقة الحساب")
+        dialog().setTitle("طريقة الحساب")
             .setSingleChoiceItems(labels, sel, (d, i) -> {
                 prefs.setMethod(i == 0 ? -1 : Integer.parseInt(Geo.METHODS[i - 1][0]));
                 d.dismiss();
@@ -525,7 +541,7 @@ public class SettingsActivity extends Activity {
         String auto = Geo.fahrenheit(prefs.country()) ? "f" : "c";
         String[] labels = {"تلقائي: " + unitsLabel(auto), unitsLabel("c"), unitsLabel("f")};
         int sel = prefs.unitsAuto() ? 0 : "f".equals(prefs.units()) ? 2 : 1;
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("وحدة الحرارة")
+        dialog().setTitle("وحدة الحرارة")
             .setSingleChoiceItems(labels, sel, (d, i) -> {
                 prefs.setUnits(i == 0 ? null : i == 1 ? "c" : "f");
                 d.dismiss();
@@ -545,7 +561,7 @@ public class SettingsActivity extends Activity {
         String[] labels = new String[groups.size() + 1];
         labels[0] = "تلقائي: " + leagueLabel(prefs.autoLeague());
         for (int i = 0; i < groups.size(); i++) labels[i + 1] = groups.get(i).ar;
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("الدوري في الترتيب")
+        dialog().setTitle("الدوري في الترتيب")
             .setItems(labels, (d, i) -> {
                 if (i == 0) { prefs.setLeague(null); changed(); render(); return; }
                 final Leagues.Group g = groups.get(i - 1);
@@ -553,7 +569,7 @@ public class SettingsActivity extends Activity {
                 String[] names = new String[g.leagues.length];
                 int sel = -1;
                 for (int k = 0; k < names.length; k++) { names[k] = g.leagues[k].ar; if (g.leagues[k].id.equals(prefs.league())) sel = k; }
-                new AlertDialog.Builder(this, DIALOG_THEME).setTitle(g.ar)
+                dialog().setTitle(g.ar)
                     .setSingleChoiceItems(names, sel, (d2, k) -> { prefs.setLeague(g.leagues[k].id); d2.dismiss(); changed(); render(); })
                     .show();
             }).show();
@@ -588,7 +604,7 @@ public class SettingsActivity extends Activity {
             labels[i + 1] = all.get(i).ar;
             if (!prefs.newsCountryAuto() && all.get(i).cc.equals(prefs.newsCountry())) sel = i + 1;
         }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("دولة الأخبار")
+        dialog().setTitle("دولة الأخبار")
             .setSingleChoiceItems(labels, sel, (d, i) -> {
                 prefs.setNewsCountry(i == 0 ? null : all.get(i - 1).cc);
                 d.dismiss();
@@ -602,7 +618,7 @@ public class SettingsActivity extends Activity {
         String[] labels = new String[regions.length + 1];
         labels[0] = "بحث عن مدينة أو قرية…";
         for (int i = 0; i < regions.length; i++) labels[i + 1] = regions[i].name + "  (" + regions[i].cities.length + ")";
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("المنطقة")
+        dialog().setTitle("المنطقة")
             .setItems(labels, (d, i) -> { if (i == 0) searchCity(); else pickCityIn(regions[i - 1]); })
             .show();
     }
@@ -614,7 +630,7 @@ public class SettingsActivity extends Activity {
             names[i] = r.cities[i][0];
             if (names[i].equals(prefs.city()[0])) sel = i;
         }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(r.name)
+        dialog().setTitle(r.name)
             .setSingleChoiceItems(names, sel, (d, i) -> {
                 d.dismiss();
                 savePlace(r.cities[i][0], r.cities[i][1], r.cities[i][2], "SA", Prefs.TZ);   // a Saudi city: Riyadh time
@@ -637,7 +653,7 @@ public class SettingsActivity extends Activity {
                     String region = c.optString("admin1", "");
                     rows[i] = region.isEmpty() ? names[i] : names[i] + "  ·  " + region;
                 }
-                new AlertDialog.Builder(this, DIALOG_THEME).setTitle("اختر المكان")
+                dialog().setTitle("اختر المكان")
                     .setItems(rows, (d, i) -> savePlace(names[i], lats[i], lons[i], "SA", Prefs.TZ)).show();
             }));
     }
@@ -648,7 +664,7 @@ public class SettingsActivity extends Activity {
         String[] labels = new String[cur.size()];
         final boolean[] keep = new boolean[cur.size()];
         for (int i = 0; i < cur.size(); i++) { labels[i] = cur.get(i).split("\\|", 2)[1]; keep[i] = true; }
-        AlertDialog.Builder b = new AlertDialog.Builder(this, DIALOG_THEME)
+        AlertDialog.Builder b = dialog()
             .setTitle(cur.isEmpty() ? "لا توجد فرق متابعة" : "الفرق المتابعة (ألغِ التحديد للحذف)")
             .setPositiveButton("حفظ", (d, w) -> {
                 List<String> v = new ArrayList<>();
@@ -676,7 +692,7 @@ public class SettingsActivity extends Activity {
         labels[0] = "منتخبات";
         for (int i = 0; i < groups.size(); i++) labels[i + 1] = groups.get(i).ar;
         labels[labels.length - 1] = "بحث عن أي فريق أو منتخب…";
-        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("إضافة فريق")
+        AlertDialog d = dialog().setTitle("إضافة فريق")
             .setItems(labels, (x, i) -> {
                 if (i == 0) espnTeams(Leagues.NATIONAL, "منتخبات", true);
                 else if (i == labels.length - 1) searchTeam(slot);
@@ -692,7 +708,7 @@ public class SettingsActivity extends Activity {
         if (g.leagues.length == 1) { clubsOf(slot, g.leagues[0]); return; }
         String[] names = new String[g.leagues.length];
         for (int i = 0; i < names.length; i++) names[i] = g.leagues[i].ar;
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(g.ar)
+        dialog().setTitle(g.ar)
             .setItems(names, (d, i) -> clubsOf(slot, g.leagues[i])).show();
     }
 
@@ -763,7 +779,7 @@ public class SettingsActivity extends Activity {
         String[] labels = new String[n + (more == null ? 0 : 1)];
         for (int i = 0; i < n; i++) labels[i] = "‏" + rows.get(i)[1];   // RLM: an English name keeps the right edge too
         if (more != null) labels[n] = "بحث عن نادٍ آخر…";
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(title)
+        dialog().setTitle(title)
             .setItems(labels, (d, i) -> { if (i < n) addTeam(rows.get(i)[0], rows.get(i)[1]); else more.run(); })
             .show();
     }
@@ -807,7 +823,7 @@ public class SettingsActivity extends Activity {
                     names[i] = t.optString("strTeam");
                     rows[i] = Arabic.team(this, names[i]) + "  ·  " + leagueAr(t.optString("strLeague", ""));
                 }
-                new AlertDialog.Builder(this, DIALOG_THEME).setTitle(title)
+                dialog().setTitle(title)
                     .setItems(rows, (d, i) -> inArabic(names[i], Arabic.TEAM, ar -> addTeam(ids[i], ar)))
                     .show();
     }
@@ -817,7 +833,7 @@ public class SettingsActivity extends Activity {
         String[] labels = new String[options.length];
         final boolean[] on = new boolean[options.length];
         for (int i = 0; i < options.length; i++) { labels[i] = options[i][1]; on[i] = cur.contains(options[i][0]); }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(title + " (بدون اختيار = الكل)")
+        dialog().setTitle(title + " (بدون اختيار = الكل)")
             .setMultiChoiceItems(labels, on, (d, i, checked) -> on[i] = checked)
             .setPositiveButton("حفظ", (d, w) -> {
                 List<String> v = new ArrayList<>();
@@ -833,7 +849,7 @@ public class SettingsActivity extends Activity {
         String[] labels = new String[cur.size()];
         final boolean[] keep = new boolean[cur.size()];
         for (int i = 0; i < cur.size(); i++) { labels[i] = cur.get(i).split("\\|", 2)[1]; keep[i] = true; }
-        AlertDialog.Builder b = new AlertDialog.Builder(this, DIALOG_THEME)
+        AlertDialog.Builder b = dialog()
             .setTitle(cur.isEmpty() ? "لا توجد مسلسلات مختارة" : "المسلسلات المختارة (ألغِ التحديد للحذف)")
             .setPositiveButton("حفظ", (d, w) -> {
                 List<String> v = new ArrayList<>();
@@ -861,7 +877,7 @@ public class SettingsActivity extends Activity {
                 rows[i] = names[i] + (year.length() >= 4 ? "  ·  " + year.substring(0, 4) : "")
                     + "  ·  " + labelOf(Prefs.LANGS, s.optString("language", ""));
             }
-            new AlertDialog.Builder(this, DIALOG_THEME).setTitle("اختر المسلسل")
+            dialog().setTitle("اختر المسلسل")
                 .setItems(rows, (d, i) -> {
                     for (String s : prefs.shows()) if (s.startsWith(ids[i] + "|")) { toast("مضاف مسبقاً"); return; }
                     List<String> v = prefs.shows();
@@ -897,25 +913,40 @@ public class SettingsActivity extends Activity {
             s = s.trim();
             if (ids.contains(s) && !order.contains(s)) order.add(s);
         }
-        final List<String> rows = new ArrayList<>();   // the list, top to bottom: order, then the unticked ones
-        final CharSequence[] labels = new CharSequence[ids.size()];
-        final boolean[] on = new boolean[ids.size()];
-        panelRows(ids, order, rows, labels, on);
-        final AlertDialog dialog = new AlertDialog.Builder(this, DIALOG_THEME)
-            .setCustomTitle(pickerTitle((home ? "بطاقة على الشاشة الرئيسية" : "بجانب الساعة") + " (تتناوب بترتيب الأرقام)",
-                "OK للتحديد · ◀ ▶ لتغيير الترتيب"))
-            .setMultiChoiceItems(labels, on, (d, i, checked) -> {
-                String id = rows.get(i);
-                order.remove(id);
-                if (checked) order.add(id);
-                showPanelRows((AlertDialog) d, ids, order, rows, labels, on, id, 0);
-            })
-            .setPositiveButton("تم", (d, w) -> {
+        orderedPicker((home ? "بطاقة على الشاشة الرئيسية" : "بجانب الساعة") + " (تتناوب بترتيب الأرقام)", ids, order,
+            prefs::panelTitle, false, null, () -> {
                 String v = order.isEmpty() ? "none" : Prefs.join(order, ",");
                 if (home) prefs.setHomePanel(v); else prefs.setPanel(v);
                 render();
+            });
+    }
+
+    /** a row's name in an ordered picker */
+    interface Title { String of(String id); }
+
+    /**
+     * A list to tick and order (the cards, the ticker's items): OK ticks, ◀ ▶ move a ticked row, the ticked ones first
+     * in their order (numbered); «تم» runs done with `order` as it is then. atLeastOne: the last ticked row stays
+     * ticked; reset: a neutral «إعادة الافتراضي» button.
+     */
+    private void orderedPicker(String title, final List<String> ids, final List<String> order, final Title name,
+                               final boolean atLeastOne, final Runnable reset, final Runnable done) {
+        final List<String> rows = new ArrayList<>();   // the list, top to bottom: order, then the unticked ones
+        final CharSequence[] labels = new CharSequence[ids.size()];
+        final boolean[] on = new boolean[ids.size()];
+        panelRows(ids, order, rows, labels, on, name);
+        AlertDialog.Builder b = dialog()
+            .setCustomTitle(pickerTitle(title, "OK للتحديد · ◀ ▶ لتغيير الترتيب"))
+            .setMultiChoiceItems(labels, on, (d, i, checked) -> {
+                String id = rows.get(i);
+                if (!checked && atLeastOne && order.size() == 1 && order.contains(id)) toast("يبقى عنصر واحد على الأقل");
+                else { order.remove(id); if (checked) order.add(id); }
+                showPanelRows((AlertDialog) d, ids, order, rows, labels, on, id, 0, name);
             })
-            .setNegativeButton("إلغاء", null).create();
+            .setPositiveButton("تم", (d, w) -> done.run())
+            .setNegativeButton("إلغاء", null);
+        if (reset != null) b.setNeutralButton("إعادة الافتراضي", (d, w) -> reset.run());
+        final AlertDialog dialog = b.create();
         final ListView lv = dialog.getListView();   // made by create()
         lv.setOnKeyListener((v, code, e) -> {
             if (code != KeyEvent.KEYCODE_DPAD_LEFT && code != KeyEvent.KEYCODE_DPAD_RIGHT) return false;
@@ -924,26 +955,26 @@ public class SettingsActivity extends Activity {
             int to = at + (code == KeyEvent.KEYCODE_DPAD_LEFT ? 1 : -1);
             if (at < 0 || at >= order.size() || to < 0 || to >= order.size()) return true;   // unticked, or at an end
             Collections.swap(order, at, to);
-            showPanelRows(dialog, ids, order, rows, labels, on, order.get(to), to - at);
+            showPanelRows(dialog, ids, order, rows, labels, on, order.get(to), to - at, name);
             return true;
         });
         dialog.show();
     }
 
-    /** The list's rows (the ticked ids in order, then the others as Prefs.PANELS lists them), their labels and ticks. */
-    private void panelRows(List<String> ids, List<String> order, List<String> rows, CharSequence[] labels, boolean[] on) {
+    /** The list's rows (the ticked ids in order, then the others in their own order), their labels and ticks. */
+    private void panelRows(List<String> ids, List<String> order, List<String> rows, CharSequence[] labels, boolean[] on, Title name) {
         rows.clear();
         rows.addAll(order);
         for (String id : ids) if (!order.contains(id)) rows.add(id);
         for (int i = 0; i < rows.size(); i++) on[i] = i < order.size();
-        panelLabels(rows, order, labels);
+        panelLabels(rows, order, labels, name);
     }
 
     /** The list again after a tick or a move; the focus stays on `focus`, which moved `step` rows (0: anywhere,
      *  kept where the focus was, the list shifting under it). */
     private void showPanelRows(AlertDialog d, List<String> ids, List<String> order, List<String> rows,
-                               CharSequence[] labels, boolean[] on, String focus, int step) {
-        panelRows(ids, order, rows, labels, on);   // the list adapter shows these same arrays
+                               CharSequence[] labels, boolean[] on, String focus, int step, Title name) {
+        panelRows(ids, order, rows, labels, on, name);   // the list adapter shows these same arrays
         ListView lv = d.getListView();
         View sel = lv.getSelectedView();
         int y = sel == null ? 0 : sel.getTop(), h = sel == null ? 0 : sel.getHeight();
@@ -977,10 +1008,10 @@ public class SettingsActivity extends Activity {
         return box;
     }
 
-    /** Each card's name, with its turn (1، 2، … in the chosen digits) in gold when ticked. */
-    private void panelLabels(List<String> ids, List<String> order, CharSequence[] out) {
+    /** Each row's name, with its turn (1، 2، … in the chosen digits) in gold when ticked. */
+    private void panelLabels(List<String> ids, List<String> order, CharSequence[] out, Title title) {
         for (int i = 0; i < out.length; i++) {
-            String name = prefs.panelTitle(ids.get(i));
+            String name = title.of(ids.get(i));
             int turn = order.indexOf(ids.get(i));
             if (turn < 0) { out[i] = name; continue; }
             android.text.SpannableString s = new android.text.SpannableString(name + "   " + num(turn + 1));
@@ -988,6 +1019,33 @@ public class SettingsActivity extends Activity {
             s.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), name.length(), s.length(), 0);
             out[i] = s;
         }
+    }
+
+    /** «عناصر شريط الأسعار»: the ticker's items, ticked and ordered as the cards are (Tape); «إعادة الافتراضي» = each
+     *  country's own list. The country's currency and index follow the news country, the rest stays. */
+    private void pickTape() {
+        final String cc = prefs.newsCountry();
+        final List<String> order = new ArrayList<>(prefs.tapeShown()), ids = Tape.offered(cc);
+        for (String id : order) if (!ids.contains(id)) ids.add(id);   // chosen in another country
+        orderedPicker("عناصر شريط الأسعار", ids, order, this::tapeName, true,
+            () -> { prefs.setTape(new ArrayList<>()); changed(); render(); },
+            () -> { prefs.setTape(order); changed(); render(); });
+    }
+
+    /** an item's name; the country's own currency and index with the news country's name */
+    private String tapeName(String id) {
+        if ("cur".equals(id) || "idx".equals(id)) {
+            String c = prefs.newsCountryName();
+            boolean none = "idx".equals(id) && !Tape.hasIndex(prefs.newsCountry());
+            return Tape.label(id) + " (" + (none ? "لا يوجد لـ" + c : c) + ")";
+        }
+        return Tape.label(id);
+    }
+
+    private String tapeLabel() {
+        List<String> names = new ArrayList<>();
+        for (String id : prefs.tapeShown()) names.add(tapeName(id));
+        return (prefs.tapeAuto() ? "تلقائي · " : "") + Prefs.join(names, "، ");
     }
 
     /** «شكل التطبيقات» (shape) or «شكل التحديد»: the home screen redraws its tiles at once (CONFIG_CHANGED). */
@@ -1000,7 +1058,7 @@ public class SettingsActivity extends Activity {
             labels[i] = table[i][1];
             if (table[i][0].equals(cur)) sel = i;
         }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle(shape ? "شكل التطبيقات" : "شكل التحديد")
+        dialog().setTitle(shape ? "شكل التطبيقات" : "شكل التحديد")
             .setSingleChoiceItems(labels, sel, (d, i) -> {
                 if (shape) prefs.setTileShape(table[i][0]); else prefs.setFocusStyle(table[i][0]);
                 d.dismiss();
@@ -1024,7 +1082,7 @@ public class SettingsActivity extends Activity {
             labels[i] = Prefs.NUMERALS[i][1];
             if (Prefs.NUMERALS[i][0].equals(prefs.numerals())) sel = i;
         }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("شكل الأرقام")
+        dialog().setTitle("شكل الأرقام")
             .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setNumerals(Prefs.NUMERALS[i][0]); d.dismiss(); changed(); render(); })
             .show();
     }
@@ -1041,7 +1099,7 @@ public class SettingsActivity extends Activity {
         String[] labels = new String[all.length];
         final boolean[] on = new boolean[all.length];
         for (int i = 0; i < all.length; i++) { labels[i] = all[i][1]; on[i] = cur.contains(all[i][0]); }
-        new AlertDialog.Builder(this, DIALOG_THEME)
+        dialog()
             .setTitle("مصادر " + prefs.panelTitle(page) + " (بدون اختيار = الافتراضية)")
             .setMultiChoiceItems(labels, on, (d, i, checked) -> on[i] = checked)
             .setPositiveButton("تم", (d, w) -> {
@@ -1070,7 +1128,7 @@ public class SettingsActivity extends Activity {
         labels[0] = "بدون حد";
         int sel = 0;
         for (int i = 0; i < Prefs.MIN_RATINGS.length; i++) if (Prefs.MIN_RATINGS[i].equals(prefs.minRating())) sel = i;
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("أقل تقييم")
+        dialog().setTitle("أقل تقييم")
             .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setMinRating(Prefs.MIN_RATINGS[i]); d.dismiss(); render(); })
             .show();
     }
@@ -1146,7 +1204,7 @@ public class SettingsActivity extends Activity {
         msg.append("\n\nيُنزَّل التحديث ويُتحقَّق منه أولاً، ثم يطلب التلفاز موافقتك على تثبيت ")
            .append(self && home ? "كل تطبيق (الواجهة الرئيسية ثم الإعدادات)" : "التطبيق").append('.');
         if (self) msg.append(" في النهاية يُغلق هذا التطبيق ويعود التلفاز إلى الشاشة الرئيسية.");
-        new AlertDialog.Builder(this, DIALOG_THEME)
+        dialog()
             .setTitle("تحديث متوفر: " + AppUpdate.digits(this, m.versionName))
             .setMessage(msg)
             .setPositiveButton("تثبيت", (d, w) -> install(m))
@@ -1167,7 +1225,7 @@ public class SettingsActivity extends Activity {
 
     /** Once per TV: Android's «تثبيت التطبيقات غير المعروفة» for this app. Back from there continues the update. */
     private void askInstallPermission() {
-        new AlertDialog.Builder(this, DIALOG_THEME)
+        dialog()
             .setTitle("اسمح لـ «سعودي TV» بتثبيت تحديثاته")
             .setMessage("مرة واحدة فقط: ليثبّت «سعودي TV» تحديثاته من صفحة المشروع على GitHub يحتاج إذن "
                 + "«تثبيت التطبيقات غير المعروفة».\n\nاضغط «فتح الإعدادات» وفعّل «سعودي TV»، ثم ارجع بزر الرجوع ويكمل التحديث."
@@ -1225,7 +1283,7 @@ public class SettingsActivity extends Activity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = dp(14);
         box.addView(progressBar, lp);
-        progress = new AlertDialog.Builder(this, DIALOG_THEME)
+        progress = dialog()
             .setTitle("تحديث التطبيق")
             .setView(box)
             .setCancelable(false)
@@ -1307,7 +1365,7 @@ public class SettingsActivity extends Activity {
             if (found.get(i).id.equals(prefs.radioStation())) sel = i + head;
         }
         if (found.isEmpty() && query != null) toast("لا توجد نتائج");
-        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME)
+        AlertDialog d = dialog()
             .setTitle(query == null ? "المحطة" : "«⁨" + query + "⁩»")
             .setItems(labels, (x, i) -> {
                 if (i == 0) ask("اسم المحطة أو القارئ", q -> loadThen(() -> RadioStations.search(all, q), r -> showStations(all, r, q)));
@@ -1331,7 +1389,7 @@ public class SettingsActivity extends Activity {
         in.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         in.setTextDirection(View.TEXT_DIRECTION_LTR);
         if (RadioStations.CUSTOM.equals(prefs.radioStation())) in.setText(prefs.radioUrl());
-        final AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("رابط البث").setView(in)
+        final AlertDialog d = dialog().setTitle("رابط البث").setView(in)
             .setPositiveButton("حفظ", (x, w) -> {
                 String u = in.getText().toString().trim();
                 if (!RadioStations.validUrl(u)) { toast("رابط غير صالح: يبدأ بـ http:// أو https://"); return; }
@@ -1358,9 +1416,26 @@ public class SettingsActivity extends Activity {
             labels[i] = percent(v);
             if (v == prefs.radioVolume()) sel = i;
         }
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("مستوى صوت الإذاعة")
+        dialog().setTitle("مستوى صوت الإذاعة")
             .setSingleChoiceItems(labels, sel, (d, i) -> {
                 prefs.setRadioVolume(RadioStations.VOLUME_MIN + i * RadioStations.VOLUME_STEP);
+                d.dismiss();
+                render();
+            }).show();
+    }
+
+    /** «متى تعمل الإذاعة» (RadioWhen): RadioService follows it at once */
+    private void pickRadioWhen() {
+        String[] labels = new String[RadioWhen.CHOICES.length];
+        int sel = 0;
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = RadioWhen.CHOICES[i][1];
+            if (RadioWhen.CHOICES[i][0].equals(prefs.radioWhen())) sel = i;
+        }
+        dialog().setTitle("متى تعمل الإذاعة")
+            .setSingleChoiceItems(labels, sel, (d, i) -> {
+                prefs.setRadioWhen(RadioWhen.CHOICES[i][0]);
+                changed();
                 d.dismiss();
                 render();
             }).show();
@@ -1463,6 +1538,13 @@ public class SettingsActivity extends Activity {
         return tf;
     }
 
+    /** every dialog here takes the mouse too (Mouse.dialog: hover = the D-pad's focus, the wheel = ▲▼, right-click = Back) */
+    private AlertDialog.Builder dialog() {
+        return new AlertDialog.Builder(this, DIALOG_THEME) {
+            @Override public AlertDialog create() { AlertDialog d = super.create(); Mouse.dialog(d); return d; }
+        };
+    }
+
     private void header(String text) {
         TextView t = new TextView(this);
         t.setText(text);
@@ -1555,7 +1637,7 @@ public class SettingsActivity extends Activity {
         in.setSingleLine(true);
         in.setInputType(InputType.TYPE_CLASS_TEXT);
         in.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
-        final AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("بحث").setView(in)
+        final AlertDialog d = dialog().setTitle("بحث").setView(in)
             .setPositiveButton("بحث", (x, w) -> {
                 String q = in.getText().toString().trim();
                 if (!q.isEmpty()) then.got(q);

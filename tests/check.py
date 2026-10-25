@@ -166,6 +166,22 @@ check("country news: each country 2 to 4 outlets on by default, no id twice, no 
       all(2 <= sum(d for _, d in v) <= 4 and len({i for i, _ in v}) == len(v) and not {"google", "bing"} & {i for i, _ in v}
           for v in java_cn.values()), {k: [i for i, d in v if d] for k, v in java_cn.items()})
 
+# ---- the ticker's items: the settings app's «عناصر شريط الأسعار» (Tape.java) and the page (TAPE_SA, TAPE_MORE,
+# TAPE_INDEX, TAPE_CUR) know the same ids
+tape = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Tape.java").read_text(encoding="utf-8")
+java_items = re.findall(r'\{"([\w:]+)", "', re.search(r"ITEMS = \{(.*?)\n    \};", tape, re.S).group(1))
+java_index = re.search(r'INDEX = Arrays\.asList\(\("(.*?)"\s*\+\s*"(.*?)"\)', tape, re.S)
+java_index = set((java_index.group(1) + java_index.group(2)).split())
+page_ids = set(re.findall(r"\{id:'(\w+)'", re.search(r"const TAPE_SA = \[(.*?)\n\];", tmpl, re.S).group(1)))
+page_more = set(re.findall(r"(\w+):\{name:", re.search(r"const TAPE_MORE = \{(.*?)\};\n", tmpl, re.S).group(1)))
+page_index = set(re.findall(r"\b([A-Z]{2}): \[", re.search(r"const TAPE_INDEX = \{(.*?)\n\};", tmpl, re.S).group(1)))
+page_cur = set(re.findall(r"\b([A-Z]{3}):'", re.search(r"const TAPE_CUR = (.*?)\n\}\)", tmpl, re.S).group(1)))
+unknown = [i for i in java_items if not (i in page_ids or i in page_more or (i.startswith("i:") and (i[2:] in page_index or i == "i:AD"))
+                                         or (i.startswith("c:") and i[2:] in page_cur))]
+check("ticker items: every id of the settings (Tape.ITEMS) is one the page knows", not unknown and len(java_items) >= 20, unknown)
+check("ticker items: the countries with an index are the same (Tape.INDEX, the page's TAPE_INDEX)", java_index == page_index,
+      sorted(java_index ^ page_index))
+
 # ---- worldwide: the bundled countries and cities (.github/tools/gen_geo.py), the prayer methods, the leagues
 import gzip
 geo = ROOT / "assets/geo"
@@ -186,7 +202,7 @@ check("ticker tape: every index (TAPE_INDEX) is a bundled country's, Saudi Arabi
       len(tidx) >= 30 and set(tidx) <= set(codes) and "SA: ['تاسي', '^TASI.SR']" in tmpl, sorted(set(tidx) - set(codes)))
 tsa = re.search(r"const TAPE_SA = \[\n(.*?)\n\];", tmpl, re.S).group(1)
 check("ticker tape: the Saudi tape is as before (TASI first, the dollar in riyals, the same nine markets in order)",
-      re.findall(r"\{name:'([^']+)', +(?:sym|cg):'([^']+)'", tsa) == [
+      re.findall(r"\{(?:id:'\w+', +)?name:'([^']+)', +(?:sym|cg):'([^']+)'", tsa) == [
           ("تاسي", "^TASI.SR"), ("S&P 500", "^GSPC"), ("ناسداك", "^IXIC"), ("داو جونز", "^DJI"), ("الذهب", "GC=F"),
           ("برنت", "BZ=F"), ("الدولار/الريال", "SAR=X"), ("بيتكوين", "bitcoin"), ("إيثريوم", "ethereum")], tsa)
 check("ticker tape: no API key in its sources (Yahoo, CoinGecko, open.er-api.com)",

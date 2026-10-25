@@ -39,7 +39,9 @@ import java.util.Set;
  * «معاينة الإذاعة»: plays even while the radio is off). Bound by none, the service ends and the radio with it.
  *
  * It plays while: someone is in front, the screen is on (ACTION_SCREEN_OFF stops it), the radio is on (or a preview),
- * no athan holds it (below), and it has the audio focus. Another app taking the focus (YouTube, Netflix, any player)
+ * «متى تعمل الإذاعة» lets it (RadioWhen: both, only the screensaver, only the home screen; userPlay, the home screen's
+ * «تشغيل القرآن», plays it there too until it is turned off, our screens all go, the focus is lost or the screen goes
+ * off), no athan holds it (below), and it has the audio focus. Another app taking the focus (YouTube, Netflix, any player)
  * stops it: it plays again when our home screen or screensaver comes back in front (a new bind). A short loss (the
  * Assistant) pauses it, a ducking one lowers it; the remote's pause / play (our media session) pause and resume it.
  *
@@ -71,6 +73,8 @@ public class RadioService extends Service {
     private static volatile int state = IDLE;
     private static volatile String name = "", error = "", holders = "";
     private static volatile RadioService running;
+    /** «تشغيل القرآن» on the home screen (ConfigProvider, the remote's play): plays there whatever RadioWhen says */
+    private static volatile boolean override;
 
     /** what the chip and the settings show: "idle", "loading", "playing", "error" or "paused" */
     static String state() { return STATES[state]; }
@@ -94,6 +98,16 @@ public class RadioService extends Service {
     }
 
     static boolean held(Context c) { return new Prefs(c).raw().getLong("radioHoldUntil", 0) > System.currentTimeMillis(); }
+
+    /** the home screen's «تشغيل القرآن» (with the radio turned on): plays now, a pause by the remote resumed */
+    static void userPlay() {
+        override = true;
+        final RadioService s = running;
+        if (s != null) s.main.post(s::resumeFromUser);
+    }
+
+    /** the home screen's «إيقاف القرآن» (with the radio turned off) */
+    static void userStop() { override = false; }
 
     /** a playing stream: StreamPlayer (MP3, AAC) or Hls (MediaPlayer) */
     interface Out {
@@ -133,7 +147,8 @@ public class RadioService extends Service {
     private final SharedPreferences.OnSharedPreferenceChangeListener prefsListener = (sp, key) -> {
         if (key == null) return;
         switch (key) {
-            case "radioOn": userPaused = false; evaluate(); break;
+            case "radioOn": userPaused = false; if (!prefs.radioOn()) override = false; evaluate(); break;
+            case "radioWhen": evaluate(); break;
             // a station is three keys in one save: one restart after them
             case "radioStation": case "radioUrl": case "radioName":
                 userPaused = false;
@@ -182,7 +197,7 @@ public class RadioService extends Service {
         session = new MediaSession(this, "SaudiTV-Radio");
         session.setCallback(new MediaSession.Callback() {
             // the remote's play / pause while our session is the active one
-            @Override public void onPlay() { resumeFromUser(); }
+            @Override public void onPlay() { override = true; resumeFromUser(); }
             @Override public void onPause() { pauseByUser(); }
             @Override public void onStop() { pauseByUser(); }
         });
@@ -238,8 +253,10 @@ public class RadioService extends Service {
     // ---------------------------------------------------------------- what should happen now
 
     private boolean wanted() {
-        if (who.isEmpty() || !interactive || focusLost) return false;
-        if (!prefs.radioOn() && !who.contains(PREVIEW)) return false;
+        // none of our screens, the screen off, another app's sound: the home screen's «تشغيل القرآن» is over too
+        if (who.isEmpty() || !interactive || focusLost) { override = false; return false; }
+        if (!RadioWhen.plays(prefs.radioWhen(), prefs.radioOn(), who.contains(HOME), who.contains(SAVER), who.contains(PREVIEW),
+            override)) return false;
         long until = prefs.raw().getLong("radioHoldUntil", 0), now = System.currentTimeMillis();
         if (until > now) {
             main.removeCallbacks(holdEnd);

@@ -430,6 +430,21 @@ final class Prefs {
     }
     int radioVolume() { return RadioStations.clampVolume(sp.getInt("radioVolume", RadioStations.VOLUME_DEFAULT)); }
     void setRadioVolume(int v) { sp.edit().putInt("radioVolume", RadioStations.clampVolume(v)).apply(); }
+    /** «متى تعمل الإذاعة» (RadioWhen): both (the default), saver or home */
+    String radioWhen() { return RadioWhen.of(sp.getString("radioWhen", RadioWhen.BOTH)); }
+    void setRadioWhen(String v) { sp.edit().putString("radioWhen", RadioWhen.of(v)).apply(); }
+
+    // ---------- «عناصر شريط الأسعار» (Tape): the ticker's items in order; none = each country's own list («تلقائي»).
+    // Its country is the news country (the page's TAPE_CC): cur and idx follow it, the choice itself stays.
+    List<String> tape() { List<String> v = Tape.parse(sp.getString("tape", "")); return v == null ? new ArrayList<>() : v; }
+    boolean tapeAuto() { return tape().isEmpty(); }
+    /** the items as shown: the chosen ones, else the news country's own list */
+    List<String> tapeShown() { return tapeAuto() ? Tape.auto(newsCountry()) : tape(); }
+    /** [] (or the news country's own list) = automatic */
+    void setTape(List<String> ids) {
+        String v = Tape.store(ids, newsCountry());
+        if (v.isEmpty()) sp.edit().remove("tape").apply(); else sp.edit().putString("tape", v).apply();
+    }
 
     // on by default: the page comes from this project's own repository (Updater), so page fixes reach the TV
     // without a reinstall; the settings screen or `optimize/saver.sh autoupdate off` turn it off
@@ -508,6 +523,7 @@ final class Prefs {
             + "&shows=" + join(ids, ",")
             + "&minrating=" + minRating()
             + "&numerals=" + numerals()
+            + (tapeAuto() ? "" : "&tape=" + Uri.encode(join(tape(), ",")))   // the ticker's chosen items
             + sourceParams();
     }
 

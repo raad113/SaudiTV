@@ -67,6 +67,12 @@ import java.util.Map;
  * the «الإعدادات» pill, the remote's gear key (where the TV lets it through) and a long press of Menu
  * open the quick-settings panel (QuickPanel), like Google TV's; its «كل الإعدادات» tile opens the TV's settings.
  *
+ * «تشغيل القرآن» / «إيقاف القرآن» (the radio pill, after «شاشة التوقف»): the Quran radio on and playing now, or off
+ * (RadioLink.toggle); its label follows the radio every RADIO_POLL_MS, whoever changed it (the settings, the quick
+ * panel's tile, the remote's play/pause). «يُتلى الآن» under the clock is focusable too (HomePage.qrView): OK stops it.
+ *
+ * A mouse (Mouse): hover = the D-pad's focus (no scrolling for it), click = OK, the wheel = ▲▼, right-click = Back.
+ *
  * Adapted from github.com/mihirgupta0900/tv-home (MIT, see android/launcher/LICENSE-tv-home):
  * Arabic text and digits, Hijri date, Thmanyah fonts, the screensaver's gold palette and Saudi photos,
  * clock on the right, and a pill that opens the screensaver's settings.
@@ -111,6 +117,12 @@ public class MainActivity extends Activity {
     private QuickPanel quick;   // the quick-settings panel
     private TextView settingsPill;   // the «الإعدادات» pill (the panel gives the focus back to it)
     private TextView updatePill;   // «تحديث متوفر»: in the row only while the screensaver app found a newer release
+    private TextView radioPill;    // «تشغيل القرآن» / «إيقاف القرآن» (refreshRadio)
+    private Mouse mouse;
+    static final long RADIO_POLL_MS = 2000;
+    private final Runnable radioTick = new Runnable() {
+        @Override public void run() { refreshRadio(); pillRow.postDelayed(this, RADIO_POLL_MS); }
+    };
     private boolean gridOpen, menuLong;   // the apps grid is up; Menu is held (long press)
 
     private final BroadcastReceiver tick = new BroadcastReceiver() {
@@ -127,7 +139,7 @@ public class MainActivity extends Activity {
     // the screensaver app's settings changed (e.g. over ADB) while the home screen is up: reload its page, and the
     // tiles when their look changed
     private final BroadcastReceiver configChanged = new BroadcastReceiver() {
-        @Override public void onReceive(Context c, Intent i) { homePage.refresh(); applyStyle(); }
+        @Override public void onReceive(Context c, Intent i) { homePage.refresh(); applyStyle(); refreshRadio(); }
     };
 
     // the screensaver app checked for an app update (or installed one) while the home screen is up
@@ -150,6 +162,7 @@ public class MainActivity extends Activity {
                 View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         setContentView(buildUi());
+        mouse = Mouse.attach(this, true);
         circles = homePage.circles();   // read with the page's settings
         apple = homePage.apple();
         buildApps();
@@ -183,6 +196,8 @@ public class MainActivity extends Activity {
         listen(updateState, new IntentFilter("com.raad.sauditv.screensaver.UPDATE_STATE"), true);   // from the screensaver app
         updateWifi();
         refreshUpdate();
+        pillRow.removeCallbacks(radioTick);
+        radioTick.run();   // the radio pill's label, now and every RADIO_POLL_MS
         homePage.resume();   // the page runs again (it has the clock, the photos and the VPN badge)
         applyStyle();   // the tiles' look may have changed in the settings meanwhile
         wireFocus();   // the card may have appeared or gone
@@ -203,6 +218,7 @@ public class MainActivity extends Activity {
         unregisterReceiver(tick);
         unregisterReceiver(configChanged);
         unregisterReceiver(updateState);
+        pillRow.removeCallbacks(radioTick);
         if (inputsPopup != null) inputsPopup.dismiss();
         homePage.pause();
         quick.pause();
@@ -284,7 +300,11 @@ public class MainActivity extends Activity {
         hero.addView(buildPills(), lp(-2, dp(HomePage.PILLS_H_DP), Gravity.LEFT | Gravity.TOP, side, dp(HomePage.TOP_DP), 0, 0));
         // the card is selectable; focused, it acts like a pill (first screen in view, no shade)
         hero.addView(homePage.cardView(), new FrameLayout.LayoutParams(0, 0, Gravity.LEFT | Gravity.TOP));
-        homePage.setOnFocus(() -> { lastFocusedId = homePage.cardView().getId(); scroll.smoothScrollTo(0, 0); shade(false); });
+        homePage.setOnFocus(() -> { lastFocusedId = homePage.cardView().getId(); if (!Mouse.byPointer()) { scroll.smoothScrollTo(0, 0); shade(false); } });
+        // «يُتلى الآن»: focusable like the card; OK or a click stops the radio (and it stays off), the focus to the pill
+        hero.addView(homePage.qrView(), new FrameLayout.LayoutParams(0, 0, Gravity.LEFT | Gravity.TOP));
+        homePage.setOnQr(() -> { lastFocusedId = homePage.qrView().getId(); if (!Mouse.byPointer()) { scroll.smoothScrollTo(0, 0); shade(false); } },
+            () -> { RadioLink.set(this, false); refreshRadio(); if (radioPill != null && radioPill.isShown()) radioPill.requestFocus(); });
         // the page shows a card, moves it or drops it (e.g. «none» chosen): rewire, never lose the focus
         homePage.setOnCardChanged(hadFocus -> {
             wireFocus();
@@ -335,7 +355,10 @@ public class MainActivity extends Activity {
         // the quick-settings panel (was the TV's settings, now its «كل الإعدادات» tile)
         settings.setOnClickListener(v -> quick.open());
         settingsPill = settings;
-        for (TextView p : isInstalled(SAVER_PKG) ? new TextView[]{inputs, wifiPill, settings, saver}
+        // «تشغيل القرآن» / «إيقاف القرآن»: the screensaver app's radio (refreshRadio sets the label)
+        radioPill = pill(RadioChip.PLAY, R.drawable.ic_radio);
+        radioPill.setOnClickListener(v -> { if (RadioLink.toggle(this)) refreshRadio(); });
+        for (TextView p : isInstalled(SAVER_PKG) ? new TextView[]{inputs, wifiPill, settings, saver, radioPill}
                                                   : new TextView[]{inputs, wifiPill, settings}) {
             pillRow.addView(p, llp(-2, -1, pills.isEmpty() ? 0 : dp(8), 0, 0, 0));
             pills.add(p);
@@ -403,10 +426,24 @@ public class MainActivity extends Activity {
             ic.setTint(has ? 0xFF111111 : 0xE6FFFFFF);
             v.animate().scaleX(has ? 1.08f : 1f).scaleY(has ? 1.08f : 1f)
                     .setInterpolator(new OvershootInterpolator(2f)).setDuration(220).start();
-            if (has) { lastFocusedId = v.getId(); scroll.smoothScrollTo(0, 0); shade(false); }
+            if (has) { lastFocusedId = v.getId(); if (!Mouse.byPointer()) { scroll.smoothScrollTo(0, 0); shade(false); } }
         });
         return p;
     }
+
+    /** the radio pill's label as the radio is now (the settings, the quick panel's tile, the remote's play/pause may
+     *  have changed it); hidden while the screensaver app can't be reached */
+    private void refreshRadio() {
+        if (radioPill == null || !pills.contains(radioPill)) return;
+        String[] r = RadioLink.read(this);
+        radioPill.setVisibility(r == null ? View.GONE : View.VISIBLE);
+        if (r == null) return;
+        String label = RadioChip.label(r[0], r[1]);
+        if (!label.contentEquals(radioPill.getText())) radioPill.setText(label);
+    }
+
+    /** the quick panel's radio tile changed it: the pill now, not at the next poll */
+    void radioChanged() { refreshRadio(); }
 
     // ---------------------------------------------------------------- apps
 
@@ -625,9 +662,10 @@ public class MainActivity extends Activity {
                 // DOWN from the home card returns to this dock card
                 lastDockId = v.getId();
                 homePage.cardView().setNextFocusDownId(lastDockId);
+                if (Mouse.byPointer()) return;   // the pointer: the screen stays as it is
                 shade(false);   // no title or glow over the page
                 scroll.smoothScrollTo(0, 0);
-            } else {
+            } else if (!Mouse.byPointer()) {
                 shade(true);
                 scrollToRow(box);
             }
@@ -689,15 +727,23 @@ public class MainActivity extends Activity {
     /** Explicit D-pad targets: one row per press, ends of rows and of the top bar don't wrap. */
     private void wireFocus() {
         int d = dockCards.size(), g = gridCards.size();
-        // the home card (when shown) sits between the pills and the dock
-        View card = homePage.focusableCard();
+        // the home card (when shown) sits between the pills and the dock; «يُتلى الآن» (when shown) under the radio pill,
+        // the card on its left
+        View card = homePage.focusableCard(), qr = homePage.focusableQr();
         int dockMidId = d > 0 ? dockCards.get(Math.min(d - 1, d / 2)).getId() : View.NO_ID;
         for (int i = 0; i < pills.size(); i++) {
             View p = pills.get(i);
             p.setNextFocusLeftId(i == 0 ? p.getId() : pills.get(i - 1).getId());
             p.setNextFocusRightId(i == pills.size() - 1 ? p.getId() : pills.get(i + 1).getId());
             p.setNextFocusUpId(p.getId());
-            p.setNextFocusDownId(card != null ? card.getId() : d > 0 ? dockMidId : p.getId());
+            p.setNextFocusDownId(p == radioPill && qr != null ? qr.getId() : card != null ? card.getId() : d > 0 ? dockMidId : p.getId());
+        }
+        if (qr != null) {
+            View up = radioPill != null && pills.contains(radioPill) ? radioPill : pills.get(pills.size() - 1);
+            qr.setNextFocusUpId(up.getId());
+            qr.setNextFocusDownId(d > 0 ? dockDownId() : qr.getId());
+            qr.setNextFocusLeftId(card != null ? card.getId() : qr.getId());
+            qr.setNextFocusRightId(qr.getId());
         }
         int topId = pills.get(0).getId();
         if (card != null) {
@@ -833,6 +879,7 @@ public class MainActivity extends Activity {
         }
         pw.setOutsideTouchable(true);
         pw.setElevation(dp(16));
+        pw.setTouchInterceptor((v, e) -> { if (Mouse.rightDown(e)) { pw.dismiss(); return true; } return false; });   // right-click = Back
         pw.showAsDropDown(anchor, 0, -anchor.getHeight() - dp(8) * (rows.size() + 2) - dp(36) * rows.size(), Gravity.START);
         rows.get(0).requestFocus();
     }
@@ -893,6 +940,7 @@ public class MainActivity extends Activity {
         }
         pw.setOutsideTouchable(true);
         pw.setElevation(dp(16));
+        pw.setTouchInterceptor((v, e) -> { if (Mouse.rightDown(e)) { pw.dismiss(); return true; } return false; });   // right-click = Back
         pw.setOnDismissListener(() -> { inputsPopup = null; anchor.requestFocus(); });
         inputsPopup = pw;
         pw.showAsDropDown(anchor, 0, dp(8), Gravity.START);
@@ -920,6 +968,11 @@ public class MainActivity extends Activity {
         r.setOnFocusChangeListener((v, has) -> {
             bg.setColor(has ? 0xF2FFFFFF : Color.TRANSPARENT);
             r.setTextColor(has ? 0xFF111111 : Color.WHITE);
+        });
+        // a popup is a window of its own (no Mouse there): the pointer moving onto a row focuses it
+        r.setOnHoverListener((v, e) -> {
+            if (e.getActionMasked() == android.view.MotionEvent.ACTION_HOVER_MOVE && !v.isFocused()) v.requestFocus();
+            return false;
         });
         return r;
     }
@@ -1127,6 +1180,16 @@ public class MainActivity extends Activity {
 
     private static int darken(int c, float f) {
         return Color.rgb((int) (Color.red(c) * f), (int) (Color.green(c) * f), (int) (Color.blue(c) * f));
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.generic(e)) || super.dispatchGenericMotionEvent(e);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent e) {
+        return (mouse != null && mouse.touch(e)) || super.dispatchTouchEvent(e);
     }
 
     @Override

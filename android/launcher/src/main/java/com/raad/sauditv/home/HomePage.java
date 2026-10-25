@@ -43,6 +43,8 @@ import java.util.function.Consumer;
  * The card is selected through an invisible focusable view (cardView) that the page places over its card
  * (SaudiTVNative.cardRect). OK on it opens the current panel full screen in DetailActivity; LEFT/RIGHT step the
  * panels; the page draws the focus ring and scale (window.sauditvSetFocused). The WebView never takes key focus.
+ * The same for «يُتلى الآن» under the clock (qrView, SaudiTVNative.qrRect, window.sauditvQrFocused): OK or a click on it
+ * stops the radio (setOnQr).
  */
 final class HomePage {
     private static final Uri CONFIG = Uri.parse("content://com.raad.sauditv.screensaver.config");
@@ -64,6 +66,8 @@ final class HomePage {
     private final Activity activity;
     private final ViewGroup parent;
     private final FrameLayout card;   // invisible, focusable, over the page's card
+    private final FrameLayout qr;     // the same over «يُتلى الآن»
+    private Runnable onQrFocus, onQrClick;
     private WebView web;
     private String url;
     private String fragment;     // the settings fragment without panel/panels/rotate/week/widget, for the detail page
@@ -97,8 +101,28 @@ final class HomePage {
             setPageFocused(has);
             if (has && onFocus != null) onFocus.run();
         });
+        qr = new FrameLayout(activity);
+        qr.setId(View.generateViewId());
+        qr.setFocusable(true);
+        qr.setClickable(true);
+        qr.setDefaultFocusHighlightEnabled(false);   // the page draws it, as a focused pill
+        qr.setVisibility(View.GONE);
+        qr.setOnClickListener(v -> { if (onQrClick != null) onQrClick.run(); });
+        qr.setOnFocusChangeListener((v, has) -> {
+            setQrFocused(has);
+            if (has && onQrFocus != null) onQrFocus.run();
+        });
         String u = readUrl();
         create(u);
+    }
+
+    /** «يُتلى الآن»'s view (added by the caller next to cardView), its focus and its press (the radio stops) */
+    View qrView() { return qr; }
+    View focusableQr() { return qr.getVisibility() == View.VISIBLE ? qr : null; }
+    void setOnQr(Runnable focus, Runnable click) { onQrFocus = focus; onQrClick = click; }
+
+    private void setQrFocused(boolean has) {
+        if (web != null) web.evaluateJavascript("window.sauditvQrFocused && window.sauditvQrFocused(" + has + ")", null);
     }
 
     /** called when the card gains D-pad focus */
@@ -156,7 +180,8 @@ final class HomePage {
         web = null;
         url = null;
         opening = false;
-        placeCard(0, 0, 0, 0, 0);
+        place(card, 0, 0, 0, 0, 0);
+        place(qr, 0, 0, 0, 0, 0);
     }
 
     /** The page's URL: the screensaver's settings, the home card's panels (rotating 30 s), home mode and its room. */
@@ -231,8 +256,9 @@ final class HomePage {
         if (web != null) web.evaluateJavascript("window.sauditvSetFocused && window.sauditvSetFocused(" + has + ")", null);
     }
 
-    /** The card's box from the page, in CSS px of a viewport vw wide (0 x 0: no card), as pixels over the WebView. */
-    private void placeCard(double l, double t, double w, double h, double vw) {
+    /** The card's (or the chip's) box from the page, in CSS px of a viewport vw wide (0 x 0: none), as pixels over the
+     *  WebView. */
+    private void place(FrameLayout card, double l, double t, double w, double h, double vw) {
         float k = web != null && vw > 0 && web.getWidth() > 0 ? (float) (web.getWidth() / vw)
                 : activity.getResources().getDisplayMetrics().density;
         boolean show = w > 0 && h > 0;
@@ -260,7 +286,11 @@ final class HomePage {
         @JavascriptInterface public boolean vpnApp() { return vpn.vpnApp(); }
         @JavascriptInterface public void cardRect(double l, double t, double w, double h, double vw) {
             final WebView from = web;
-            activity.runOnUiThread(() -> { if (web == from && !activity.isDestroyed()) placeCard(l, t, w, h, vw); });
+            activity.runOnUiThread(() -> { if (web == from && !activity.isDestroyed()) place(card, l, t, w, h, vw); });
+        }
+        @JavascriptInterface public void qrRect(double l, double t, double w, double h, double vw) {
+            final WebView from = web;
+            activity.runOnUiThread(() -> { if (web == from && !activity.isDestroyed()) place(qr, l, t, w, h, vw); });
         }
     }
 
@@ -362,6 +392,7 @@ final class HomePage {
             @Override
             public void onPageFinished(WebView v, String u) {
                 if (v == web && card.isFocused()) setPageFocused(true);
+                if (v == web && qr.isFocused()) setQrFocused(true);
                 if (v == web && appsOpen) v.evaluateJavascript("window.sauditvAppsOpen && window.sauditvAppsOpen(true)", null);
             }
         });
