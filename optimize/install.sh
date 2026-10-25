@@ -73,10 +73,13 @@ fi
 
 if [ "$what" = saver ] || [ "$what" = all ]; then
   push_install saudi-tv-screensaver.apk com.raad.sauditv.screensaver
+  # the last line: «الأذان»'s screen and banner over other apps (SYSTEM_ALERT_WINDOW; most TVs have no settings page
+  # for it, so the appop that page would set)
   printf '%s\n' \
     "settings put secure screensaver_enabled 1" \
     "settings put secure screensaver_components com.raad.sauditv.screensaver/.ScreenDream" \
     "settings put secure screensaver_default_component com.raad.sauditv.screensaver/.ScreenDream" \
+    "appops set com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW allow" \
     | "$PY" -I optimize/tv.py --batch
   # don't leave the settings screen open (it held ~40 MB until closed); open it with OPEN_SETTINGS=1
   [ -n "${OPEN_SETTINGS:-}" ] && "$PY" -I optimize/tv.py "am start -n com.raad.sauditv.screensaver/.SettingsActivity" > /dev/null

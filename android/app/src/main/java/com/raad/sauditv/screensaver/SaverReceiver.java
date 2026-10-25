@@ -25,7 +25,10 @@ import java.util.List;
  *       [--es panel prayers | prayers,forecast,news,local,world,verse,hadith] [--es home_panel none]
  *       [--es autoupdate true|false] [--es numerals latn|arab] [--es lowpower true|false]   («توفير الطاقة»)
  *       [--es src_news aawsat,okaz] [--es src_tech …] [--es src_local …] [--es src_world …]   ("" = the page's defaults)
+ *       [--es photos ours,bing,world]   («مصادر الصور», Prefs.PHOTO_SOURCES; "" = the defaults: ours; saudi is read
+ *       as ours while Prefs.SAUDI_PHOTOS is off, else saudi,ours by default)
  *       [--es tile_shape rounded|circle] [--es focus_style google|apple]   (the home screen's app tiles)
+ *       [--es look classic|new]   («شكل الواجهة»: the home screen and the screensaver, Look)
  *       [--es radio on|off] [--es radio_station saudi|cairo|63|https://…] [--es radio_volume 10…100]
  *       [--es radio_when both|saver|home]
  *       («إذاعة القرآن الكريم»: RadioService; a station id from RADIO_STATIONS, or any http(s) address; RadioWhen)
@@ -40,6 +43,12 @@ import java.util.List;
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.RESUME_AFTER_ATHAN
  *       (the athan's hook, RadioService.hold: the radio stops, then plays again)
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.SET
+ *       [--es athan on|off] [--es athan_dhuhr full|short|off] … (every «الأذان» setting: AthanAdb)
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.ATHAN_TEST
+ *       --es prayer asr [--es kind full|short|reminder]   (now, as its alarm would: AthanAdb.test)
+ *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.ATHAN_SHOW
+ *       (today's athans, the settings, the next alarm and the last one)
  *
  * The answer is in the "data" of am's output. Unknown values are refused with a message, nothing half-saved.
  */
@@ -171,6 +180,12 @@ public class SaverReceiver extends BroadcastReceiver {
                 RadioService.hold(c, false);
                 setResultData("radio released");
                 return;
+            case "com.raad.sauditv.screensaver.ATHAN_TEST":
+                setResultData(AthanAdb.test(c, i));
+                return;
+            case "com.raad.sauditv.screensaver.ATHAN_SHOW":
+                setResultData(AthanAdb.show(c));
+                return;
             default:
                 setResultData("error: unknown action " + action);
         }
@@ -262,12 +277,25 @@ public class SaverReceiver extends BroadcastReceiver {
         if (auto != null && !auto.equals("true") && !auto.equals("false")) return "error: autoupdate is true or false";
         String lowPower = i.getStringExtra("lowpower");   // «توفير الطاقة»
         if (lowPower != null && !lowPower.equals("true") && !lowPower.equals("false")) return "error: lowpower is true or false";
+        String photosRaw = i.getStringExtra("photos");   // «مصادر الصور»
+        List<String> photos = null;
+        if (photosRaw != null) {
+            photos = new ArrayList<>();
+            for (String s : photosRaw.split(",")) {
+                s = s.trim();
+                if (s.isEmpty()) continue;
+                if (!known(Prefs.PHOTO_SOURCES, s)) return "error: photos is a comma list of " + names(Prefs.PHOTO_SOURCES) + " (\"\" = the defaults)";
+                if (!photos.contains(s)) photos.add(s);
+            }
+        }
         String numerals = i.getStringExtra("numerals");
         if (numerals != null && !numerals.equals("latn") && !numerals.equals("arab"))
             return "error: numerals is latn (0 1 2 3) or arab (٠ ١ ٢ ٣)";
         String shape = i.getStringExtra("tile_shape"), focus = i.getStringExtra("focus_style");
         if (shape != null && !known(Prefs.TILE_SHAPES, shape)) return "error: tile_shape is " + names(Prefs.TILE_SHAPES);
         if (focus != null && !known(Prefs.FOCUS_STYLES, focus)) return "error: focus_style is " + names(Prefs.FOCUS_STYLES);
+        String lookRaw = i.getStringExtra("look"), look = Look.parse(lookRaw);   // «شكل الواجهة»
+        if (lookRaw != null && look == null) return "error: look is " + names(Look.LOOKS);
         java.util.Map<String, List<String>> sources = new java.util.LinkedHashMap<>();
         for (String page : Prefs.NEWS_PAGES) {
             String raw = i.getStringExtra("src_" + page);
@@ -323,6 +351,9 @@ public class SaverReceiver extends BroadcastReceiver {
             return "error: radio_volume is a percent from " + RadioStations.VOLUME_MIN + " to " + RadioStations.VOLUME_MAX
                 + " (rounded to steps of " + RadioStations.VOLUME_STEP + ")";
 
+        String athan = AthanAdb.check(i);   // «الأذان»'s extras
+        if (athan != null) return athan;
+
         if (cc != null && city == null) p.setCountry(cc);
         if (city != null) p.setCity(city[0], city[1], city[2], cityCc, cityTz);
         else if (tz != null) p.setCityTz(tz);
@@ -335,15 +366,18 @@ public class SaverReceiver extends BroadcastReceiver {
         if (home != null) p.setHomePanel(home);
         if (auto != null) p.setAutoUpdate(Boolean.parseBoolean(auto));
         if (lowPower != null) p.setLowPower(Boolean.parseBoolean(lowPower));
+        if (photos != null) p.setPhotoSources(photos);
         if (numerals != null) p.setNumerals(numerals);
         if (shape != null) p.setTileShape(shape);
         if (focus != null) p.setFocusStyle(focus);
+        if (look != null) p.setLook(look);
         for (java.util.Map.Entry<String, List<String>> e : sources.entrySet()) p.setSources(e.getKey(), e.getValue());
         if (station != null) p.setRadioStation(station[0], station[1], station[2]);
         if (volume > 0) p.setRadioVolume(volume);
         if (radio != null) p.setRadioOn(radio.equals("on"));
         if (when != null) p.setRadioWhen(when);
         if (tape != null) p.setTape(tape);
+        AthanAdb.save(c, i);
         // a home screen already in front shows the new settings now, not at its next resume
         c.sendBroadcast(new Intent(CHANGED).setPackage("com.raad.sauditv.home"));
         return "saved\n" + describe(c, p);
@@ -364,8 +398,10 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\npanel: " + p.panel() + "\nhome_panel: " + p.homePanel()
             + "\nautoupdate: " + p.autoUpdate()
             + "\nlowpower: " + (p.lowPower() ? "on" : "off")
+            + "\nphotos: " + Prefs.join(p.photoSources(), ",")
             + "\nnumerals: " + p.numerals()
             + "\ntile_shape: " + p.tileShape() + "\nfocus_style: " + p.focusStyle()
+            + "\nlook: " + p.look() + " (" + Look.label(p.look()) + ")"
             + "\nradio: " + (p.radioOn() ? "on" : "off")
             + "\nradio_station: " + p.radioStation() + " " + p.radioName()
                 + (RadioStations.CUSTOM.equals(p.radioStation()) ? " " + p.radioUrl() : "")
@@ -373,6 +409,7 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\nradio_when: " + p.radioWhen()
             + "\nsetup_done: " + p.setupDone()
             + "\ntape: " + (p.tapeAuto() ? "auto (" + Prefs.join(p.tapeShown(), ",") + ")" : Prefs.join(p.tape(), ","))
+            + AthanAdb.describe(c)   // athan, athan_next, athan_screen_over_apps, athan_exact_alarms
             + sourcesLine(p);
     }
 

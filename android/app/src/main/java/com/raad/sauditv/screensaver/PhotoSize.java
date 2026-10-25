@@ -30,4 +30,42 @@ final class PhotoSize {
         while (targetW > 0 && srcW / (s * 2) >= targetW) s *= 2;
         return s;
     }
+
+    // ---- the online photos (photos/online.json): Wikimedia Commons thumbnails and Bing's photo of the day, downloaded
+    // by the app at this screen's width and kept, the newest few (PhotoCache.online; HomePage.online in the launcher)
+    private static final java.util.regex.Pattern ONLINE = java.util.regex.Pattern.compile(
+        "^https://((upload|thumb)\\.wikimedia\\.org/wikipedia/commons/[^?#]+\\.(?i:jpe?g)|www\\.bing\\.com/th\\?id=OHR\\.[A-Za-z0-9_.-]+\\.jpg)$");
+    private static final java.util.regex.Pattern COMMONS_THUMB = java.util.regex.Pattern.compile(
+        "^(https://(?:upload|thumb)\\.wikimedia\\.org/wikipedia/commons/thumb/[0-9a-f]/[0-9a-f]{2}/[^/?#]+/)(\\d+)px-([^/?#]+)$");
+    /** the thumbnail widths Commons keeps ready (another width may be refused) */
+    static final int[] COMMONS_WIDTHS = {960, 1280, 1920};
+
+    /** an online photo the app downloads and keeps */
+    static boolean online(String url) { return url != null && ONLINE.matcher(url).matches(); }
+
+    /** A Commons thumbnail (…/thumb/a/ab/Name.jpg/1920px-Name.jpg) at the width this screen draws: the smallest of
+     *  COMMONS_WIDTHS that covers the screen (target's width without its MAX_ZOOM room: the settle's small zoom
+     *  scales it up a little), if narrower than the one asked for; a screen that keeps photos as they are (target:
+     *  null) and any other address: as it is. 1280 x 720 -> 1280, 960 x 540 -> 960, 1920 x 1080 -> 1920. */
+    static String commonsWidth(String url, int screenW, int screenH) {
+        java.util.regex.Matcher m = url == null ? null : COMMONS_THUMB.matcher(url);
+        if (m == null || !m.matches()) return url;
+        int[] t = target(1920, 1080, screenW, screenH);
+        if (t == null) return url;
+        int need = (int) Math.ceil(t[0] / MAX_ZOOM - 1e-6), asked = Integer.parseInt(m.group(2));
+        for (int w : COMMONS_WIDTHS) if (w >= need) return w < asked ? m.group(1) + w + "px-" + m.group(3) : url;
+        return url;
+    }
+
+    /** the kept file's name for an address: its SHA-1, so any address is a safe file name */
+    static String cacheName(String url) {
+        try {
+            byte[] d = java.security.MessageDigest.getInstance("SHA-1").digest(url.getBytes("UTF-8"));
+            StringBuilder b = new StringBuilder();
+            for (byte x : d) b.append(String.format("%02x", x & 0xff));
+            return b.append(".jpg").toString();
+        } catch (Exception e) {
+            return Integer.toHexString(url.hashCode()) + ".jpg";
+        }
+    }
 }

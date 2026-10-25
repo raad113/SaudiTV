@@ -74,6 +74,12 @@ import java.util.Map;
  *
  * A mouse (Mouse): hover = the D-pad's focus (no scrolling for it), click = OK, the wheel = ▲▼, right-click = Back.
  *
+ * «شكل الواجهة» «الجديد» (HomeLook, read with the page's settings): the same views laid out the concept's way. The apps
+ * row has no glass band and runs from the right edge (the first favourite on the right; LEFT goes on), its banners
+ * HomeLook.TILE_H_DP tall, just above the page's «الأسواق» line; the pills in the concept's darker glass with gold icons
+ * (focused: its paper), after a VPN badge (vpnChip, VpnStatus every 3 s while in front); the side margin is the page's.
+ * A change of look (the settings, ADB) lays them out again at once (applyStyle), as the page reloads (HomePage.refresh).
+ *
  * Adapted from github.com/mihirgupta0900/tv-home (MIT, see android/launcher/LICENSE-tv-home):
  * Arabic text and digits, Hijri date, Thmanyah fonts, the screensaver's gold palette and Saudi photos,
  * clock on the right, and a pill that opens the screensaver's settings.
@@ -119,6 +125,11 @@ public class MainActivity extends Activity {
     private TextView settingsPill;   // the «الإعدادات» pill (the panel gives the focus back to it)
     private TextView updatePill;   // «تحديث متوفر»: in the row only while the screensaver app found a newer release
     private TextView radioPill;    // «تشغيل القرآن» / «إيقاف القرآن» (refreshRadio)
+    private TextView vpnChip;      // «الجديد»: the VPN badge first in the pills' row (refreshVpn); not focusable
+    private boolean newLook;       // «شكل الواجهة» «الجديد», as the views are laid out now (HomePage.newLook)
+    private final Runnable vpnTick = new Runnable() {
+        @Override public void run() { refreshVpn(); if (newLook) pillRow.postDelayed(this, 3000); }
+    };
     private Mouse mouse;
     /** the radio changed (RadioLink, while the home screen is in front): the pill, and «يُتلى الآن» on the page */
     private final Runnable radioListener = this::radioChanged;
@@ -167,6 +178,8 @@ public class MainActivity extends Activity {
         mouse = Mouse.attach(this, true);
         circles = homePage.circles();   // read with the page's settings
         apple = homePage.apple();
+        newLook = homePage.newLook();
+        layoutLook();
         buildApps();
 
         IntentFilter pf = new IntentFilter();
@@ -202,6 +215,8 @@ public class MainActivity extends Activity {
         refreshRadio();   // as it is now (it may have changed while another app was in front)
         homePage.resume();   // the page runs again (it has the clock, the photos and the VPN badge)
         applyStyle();   // the tiles' look may have changed in the settings meanwhile
+        pillRow.removeCallbacks(vpnTick);
+        vpnTick.run();   // «الجديد»'s VPN badge, every 3 s while in front
         wireFocus();   // the card may have appeared or gone
         View last = lastFocusedId == View.NO_ID ? null : findViewById(lastFocusedId);
         if (last != null && !last.isShown()) last = null;   // e.g. the card while the page has none
@@ -235,6 +250,7 @@ public class MainActivity extends Activity {
         unregisterReceiver(configChanged);
         unregisterReceiver(updateState);
         RadioLink.unlisten(radioListener);
+        pillRow.removeCallbacks(vpnTick);
         if (inputsPopup != null) inputsPopup.dismiss();
         homePage.pause();
         quick.pause();
@@ -330,14 +346,12 @@ public class MainActivity extends Activity {
 
         dockRow = new LinearLayout(this);
         dockRow.setOrientation(LinearLayout.HORIZONTAL);
-        dockRow.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);   // the tiles near its top, names under them
         dockRow.setClipChildren(false);
         dockRow.setClipToPadding(false);
-        // soft frosted glass that hugs the tiles, centred (GlassBand: the page's dark tint, lighter, a faint
-        // sheen and a highlight along its top edge, no border); the page's info strip is under it
-        dockRow.setPadding(dp(DOCK_PAD_DP), dp(DOCK_TOP_DP), dp(DOCK_PAD_DP), 0);
-        dockRow.setBackground(new GlassBand(dp(DOCK_RADIUS_DP), dp(1)));
+        // its place, size, gravity and glass in the current look: layoutLook
         hero.addView(dockRow, lp(-2, dp(HomePage.DOCK_H_DP), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, side, 0, side, dp(HomePage.DOCK_B_DP)));
+        // «الجديد»'s dateline keeps clear of the pills: where they end, whenever they change (a Wi-Fi name, the radio's label)
+        pillRow.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> homePage.setPillsEnd(r));
 
         appsLabel = text(11, "sans-serif-medium", 0x99FFFFFF);
         appsLabel.setText("كل التطبيقات");
@@ -358,6 +372,20 @@ public class MainActivity extends Activity {
         pillRow = new LinearLayout(this);
         pillRow.setGravity(Gravity.CENTER_VERTICAL);
         pillRow.setClipChildren(false);
+        // «الجديد»: the VPN badge first (refreshVpn), shown only in that look and while a VPN app is installed
+        vpnChip = text(11, "sans-serif-medium", NX_VPN_ON);
+        vpnChip.setGravity(Gravity.CENTER);
+        vpnChip.setPadding(dp(10), 0, dp(10), 0);
+        android.graphics.drawable.Drawable shield = getDrawable(R.drawable.ic_shield).mutate();
+        shield.setBounds(0, 0, dp(14), dp(14));
+        vpnChip.setCompoundDrawables(null, null, shield, null);
+        vpnChip.setCompoundDrawablePadding(dp(5));
+        GradientDrawable vbg = new GradientDrawable();
+        vbg.setCornerRadius(dp(HomePage.PILLS_H_DP / 2f));
+        vbg.setColor(NX_GLASS);
+        vpnChip.setBackground(vbg);
+        vpnChip.setVisibility(View.GONE);
+        pillRow.addView(vpnChip, llp(-2, -1, 0, 0, dp(8), 0));
         TextView saver = pill("شاشة التوقف", R.drawable.ic_screensaver);
         saver.setOnClickListener(v -> openPackage(SAVER_PKG));
         TextView inputs = pill("المصادر", R.drawable.ic_input);
@@ -433,18 +461,68 @@ public class MainActivity extends Activity {
         p.setId(View.generateViewId());
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(dp(HomePage.PILLS_H_DP / 2f));
-        bg.setColor(GLASS);
-        bg.setStroke(dp(1), GLASS_EDGE);
         p.setBackground(bg);
+        paintPill(p, false);
         p.setOnFocusChangeListener((v, has) -> {
-            bg.setColor(has ? 0xF2FFFFFF : GLASS);
-            ((TextView) v).setTextColor(has ? 0xFF111111 : 0xE6FFFFFF);
-            ic.setTint(has ? 0xFF111111 : 0xE6FFFFFF);
+            paintPill((TextView) v, has);
             v.animate().scaleX(has ? 1.08f : 1f).scaleY(has ? 1.08f : 1f)
                     .setInterpolator(new OvershootInterpolator(2f)).setDuration(220).start();
             if (has) { lastFocusedId = v.getId(); if (!Mouse.byPointer()) { scroll.smoothScrollTo(0, 0); shade(false); } }
         });
         return p;
+    }
+
+    /** a pill's colours, focused or not, in the current look: the page's card glass, a thin gold edge, white text and
+     *  icon (focused: white, dark text); «الجديد»: the concept's darker glass and light edge, its ink, gold icons
+     *  (focused: its paper, ink and dark gold) */
+    private void paintPill(TextView p, boolean has) {
+        GradientDrawable bg = (GradientDrawable) p.getBackground();
+        android.graphics.drawable.Drawable ic = p.getCompoundDrawables()[2];
+        bg.setColor(has ? (newLook ? NX_PAPER : 0xF2FFFFFF) : newLook ? NX_GLASS : GLASS);
+        bg.setStroke(dp(1), newLook ? NX_EDGE : GLASS_EDGE);
+        p.setTextColor(has ? (newLook ? NX_PAPER_INK : 0xFF111111) : newLook ? NX_INK : 0xE6FFFFFF);
+        if (ic != null) ic.setTint(has ? (newLook ? NX_PAPER_GOLD : 0xFF111111) : newLook ? NX_GOLD : 0xE6FFFFFF);
+    }
+
+    /** «الجديد»'s VPN badge as VpnStatus has it (the page's tickVpn: green and the exit's flag while it works, amber when
+     *  nothing gets through, red when off); hidden in «الكلاسيكي» (the page has the badge by its clock) and on a TV
+     *  without a VPN app */
+    private void refreshVpn() {
+        if (vpnChip == null) return;
+        int st = newLook && VpnStatus.appInstalled(this) ? VpnStatus.state(this) : -1;
+        vpnChip.setVisibility(st < 0 ? View.GONE : View.VISIBLE);
+        if (st < 0) return;
+        int c = st == 1 ? NX_VPN_ON : st == 2 ? NX_VPN_WARN : NX_VPN_OFF;
+        String flag = st == 1 ? VpnStatus.flag() : "";
+        if (!flag.isEmpty() && !vpnChip.getPaint().hasGlyph(flag)) flag = VpnStatus.country();   // no colour flags: its letters
+        String label = "VPN" + (flag.isEmpty() ? "" : " " + flag);
+        if (!label.contentEquals(vpnChip.getText())) vpnChip.setText(label);
+        vpnChip.setTextColor(c);
+        android.graphics.drawable.Drawable ic = vpnChip.getCompoundDrawables()[2];
+        if (ic != null) ic.setTint(c);
+    }
+
+    /** the pills, the VPN badge and the apps row in the current look (their tiles: buildApps) */
+    private void layoutLook() {
+        int side = side();
+        FrameLayout.LayoutParams pp = (FrameLayout.LayoutParams) pillRow.getLayoutParams();
+        pp.leftMargin = side;
+        pillRow.setLayoutParams(pp);
+        for (View v : pills) paintPill((TextView) v, v.hasFocus());
+        paintPill(updatePill, updatePill.hasFocus());
+        if (newLook) {
+            // from the right edge, no band: the page's «التطبيقات» heading is over it, its «الأسواق» line under it
+            dockRow.setLayoutParams(lp(-1, dp(HomeLook.DOCK_H_DP), Gravity.BOTTOM, side, 0, side, dp(HomeLook.DOCK_B_DP)));
+            dockRow.setGravity(Gravity.RIGHT | Gravity.TOP);
+            dockRow.setBackground(null);
+        } else {
+            dockRow.setLayoutParams(lp(-2, dp(HomePage.DOCK_H_DP), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, side, 0, side, dp(HomePage.DOCK_B_DP)));
+            dockRow.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);   // the tiles near its top, names under them
+            // soft frosted glass that hugs the tiles, centred (GlassBand: the page's dark tint, lighter, a faint
+            // sheen and a highlight along its top edge, no border); the page's info strip is under it
+            dockRow.setBackground(new GlassBand(dp(DOCK_RADIUS_DP), dp(1)));
+        }
+        refreshVpn();
     }
 
     /** the radio pill's label as the radio is now (the settings, the quick panel's tile, the remote's play/pause may
@@ -515,16 +593,22 @@ public class MainActivity extends Activity {
 
         // the dock's tiles: banners at most DOCK_TILE_H_DP tall (16:9), or circles CIRCLE_DP across in CIRCLE_SLOT_DP
         // wide slots (their names under them), centred in the band; more apps than fit share the band's width
-        int n = Math.max(1, dock.size()), gap = dp(circles ? CIRCLE_GAP_DP : DOCK_GAP_DP);
-        dockRow.setPadding(dp(DOCK_PAD_DP), dp(circles ? CIRCLE_TOP_DP : DOCK_TOP_DP), dp(DOCK_PAD_DP), 0);
-        int inner = getResources().getDisplayMetrics().widthPixels - 2 * side() - 2 * dp(DOCK_PAD_DP);
-        int tileW = Math.min(dp(circles ? CIRCLE_SLOT_DP : DOCK_TILE_H_DP * 16f / 9f), (inner - (n - 1) * gap) / n);
+        // «الجديد»: no band (no side padding), banners HomeLook.TILE_H_DP tall, the first favourite on the right
+        int n = Math.max(1, dock.size()), gap = dp(circles ? CIRCLE_GAP_DP : DOCK_GAP_DP), pad = newLook ? 0 : dp(DOCK_PAD_DP);
+        dockRow.setPadding(pad, dp(circles ? CIRCLE_TOP_DP : newLook ? HomeLook.TOP_DP : DOCK_TOP_DP), pad, 0);
+        int inner = getResources().getDisplayMetrics().widthPixels - 2 * side() - 2 * pad;
+        int tileW = Math.min(dp(circles ? CIRCLE_SLOT_DP : (newLook ? HomeLook.TILE_H_DP : DOCK_TILE_H_DP) * 16f / 9f), (inner - (n - 1) * gap) / n);
         int dockD = Math.min(dp(CIRCLE_DP), tileW - dp(CIRCLE_SLOT_DP - CIRCLE_DP));   // a circle's size (circles)
         for (int i = 0; i < dock.size(); i++) {
             View tile = tile(dock.get(i), true, dockD);
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(tileW, -2);
-            p.setMargins(i == 0 ? 0 : gap, 0, 0, 0);
-            dockRow.addView(tile, p);
+            if (newLook) {   // each one before (left of) the one before it in the order
+                p.setMargins(0, 0, i == 0 ? 0 : gap, 0);
+                dockRow.addView(tile, 0, p);
+            } else {
+                p.setMargins(i == 0 ? 0 : gap, 0, 0, 0);
+                dockRow.addView(tile, p);
+            }
         }
 
         // the grid's cells: cols to a row, 20dp apart; a circle GRID_CIRCLE_DP across, smaller if a cell is narrower
@@ -570,9 +654,15 @@ public class MainActivity extends Activity {
     /** «شكل التطبيقات» or «شكل التحديد» changed (the screensaver app's settings, or ADB): the tiles again in the new
      *  look, the focus on the same app. HomePage read them with the page's settings. */
     private void applyStyle() {
-        if (homePage.circles() == circles && homePage.apple() == apple) return;
+        if (homePage.circles() == circles && homePage.apple() == apple && homePage.newLook() == newLook) return;
         circles = homePage.circles();
         apple = homePage.apple();
+        if (homePage.newLook() != newLook) {   // «شكل الواجهة»: the pills and the apps row laid out again, its badge
+            newLook = homePage.newLook();
+            layoutLook();
+            pillRow.removeCallbacks(vpnTick);
+            if (newLook && hasWindowFocus()) pillRow.postDelayed(vpnTick, 3000);
+        }
         buildApps();
     }
 
@@ -662,7 +752,7 @@ public class MainActivity extends Activity {
         label.setGravity(Gravity.CENTER);
         label.setShadowLayer(dp(3), 0, dp(1), 0x99000000);   // readable on the glass and the photo
         label.setAlpha(circles ? NAME_DIM : 0f);
-        float under = circles ? CIRCLE_LABEL_GAP_DP : inDock ? DOCK_LABEL_GAP_DP : GRID_LABEL_GAP_DP;
+        float under = circles ? CIRCLE_LABEL_GAP_DP : inDock ? (newLook ? HomeLook.LABEL_GAP_DP : DOCK_LABEL_GAP_DP) : GRID_LABEL_GAP_DP;
         box.addView(label, llp(-1, -2, 0, dp(under), 0, 0));
         t.card = card;
         t.label = label;
@@ -773,17 +863,19 @@ public class MainActivity extends Activity {
         }
         for (int i = 0; i < d; i++) {
             View c = dockCards.get(i);
+            // «الجديد»: the row runs from the right (favourite i at HomeLook.viewIndex): LEFT goes on, RIGHT back
+            int before = i == 0 ? c.getId() : dockCards.get(i - 1).getId(), after = i == d - 1 ? c.getId() : dockCards.get(i + 1).getId();
             c.setNextFocusUpId(card != null ? card.getId() : topId);
-            c.setNextFocusLeftId(i == 0 ? c.getId() : dockCards.get(i - 1).getId());
-            c.setNextFocusRightId(i == d - 1 ? c.getId() : dockCards.get(i + 1).getId());
-            c.setNextFocusDownId(g > 0 ? gridCards.get(Math.min(i, g - 1)).getId() : c.getId());
+            c.setNextFocusLeftId(newLook ? after : before);
+            c.setNextFocusRightId(newLook ? before : after);
+            c.setNextFocusDownId(g > 0 ? gridCards.get(Math.min(newLook ? HomeLook.viewIndex(i, d) : i, g - 1)).getId() : c.getId());
         }
         int lastRow = (g - 1) / cols;
         for (int j = 0; j < g; j++) {
             View c = gridCards.get(j);
             int r = j / cols, col = j % cols;
             c.setNextFocusUpId(r == 0
-                    ? (d > 0 ? dockCards.get(Math.min(col, d - 1)).getId() : topId)
+                    ? (d > 0 ? dockCards.get(newLook ? HomeLook.viewIndex(Math.min(col, d - 1), d) : Math.min(col, d - 1)).getId() : topId)
                     : gridCards.get(j - cols).getId());
             c.setNextFocusDownId(j + cols < g ? gridCards.get(j + cols).getId()
                     : r < lastRow ? gridCards.get(g - 1).getId() : c.getId());
@@ -1124,6 +1216,11 @@ public class MainActivity extends Activity {
     static final int GOLD = 0xFFD6AF6B;
     // glass as the page's card: rgba(4,14,9,.60) over the photo, a 1px gold edge rgba(220,184,111,.16)
     static final int GLASS = 0x99040E09, GLASS_EDGE = 0x29DCB86F;
+    // «الجديد»'s pills (design/concepts/1-ambient-editorial): rgba(9,8,16,.55) with a white .14 edge, its ink #FBF6EC and
+    // gold #EBCB8B; focused, its paper #F6EFE1, ink #1C160F and dark gold #875A14; the VPN badge's green (amber, red)
+    static final int NX_GLASS = 0x8C090810, NX_EDGE = 0x24FFFFFF, NX_INK = 0xFFFBF6EC, NX_GOLD = 0xFFEBCB8B;
+    static final int NX_PAPER = 0xFFF6EFE1, NX_PAPER_INK = 0xFF1C160F, NX_PAPER_GOLD = 0xFF875A14;
+    static final int NX_VPN_ON = 0xFFA6EBB9, NX_VPN_WARN = 0xFFFFD27A, NX_VPN_OFF = 0xFFFFA394;
     // ---- the app tiles, from the approved mock-ups (design/focus/gen2.js: CSS px of a 1280-wide screen, DESIGN_DP dp
     // each). The dock band is HomePage.DOCK_H_DP tall (104: 138px); in it, for either shape and focus look, the
     // focused tile with its ring or lift fits under its top edge and its name clear under the tile, inside the band.
@@ -1180,9 +1277,12 @@ public class MainActivity extends Activity {
         return Math.round(v * getResources().getDisplayMetrics().density);
     }
 
-    /** the page's side margin in pixels (3.6vw), so the pills and the dock line up with its text */
+    /** the page's side margin in pixels (3.6vw), so the pills and the dock line up with its text; «الجديد»: its 40 of
+     *  960 x 540, scaled with the screen as the page is (HomeLook.marginDp) */
     private int side() {
-        return Math.round(getResources().getDisplayMetrics().widthPixels * HomePage.SIDE);
+        android.util.DisplayMetrics m = getResources().getDisplayMetrics();
+        if (newLook) return dp(HomeLook.marginDp(m.widthPixels / m.density, m.heightPixels / m.density));
+        return Math.round(m.widthPixels * HomePage.SIDE);
     }
 
     private static FrameLayout.LayoutParams lp(int w, int h, int gravity, int l, int t, int r, int b) {

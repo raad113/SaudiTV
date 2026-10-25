@@ -181,6 +181,28 @@ public class LogicTest {
             SetupState.initial(true, true) && SetupState.initial(true, false), "");
         check("setup: the pref is setupDone", SetupState.DONE.equals("setupDone"), SetupState.DONE);
 
+        // ---- «شكل الواجهة» (Look; the launcher's HomeLook): «الكلاسيكي» unless set, «الجديد» on a new install
+        check("look: none saved (an older build's settings) or anything unknown is «الكلاسيكي»", Look.of(null).equals(Look.CLASSIC)
+            && Look.of("").equals(Look.CLASSIC) && Look.of("modern").equals(Look.CLASSIC) && Look.of("new").equals(Look.NEW), "");
+        check("look: a new install's is «الجديد» (Prefs.migrate writes Look.FRESH)", Look.FRESH.equals(Look.NEW), Look.FRESH);
+        check("look: the page hears &look=new for «الجديد», nothing for «الكلاسيكي» (its address as before)",
+            Look.param("new").equals("&look=new") && Look.param("classic").isEmpty() && Look.param(null).isEmpty(), Look.param("new"));
+        check("look: ADB's values (classic, new; any case) and nothing else", "new".equals(Look.parse(" NEW ")) && "classic".equals(Look.parse("classic"))
+            && Look.parse("modern") == null && Look.parse(null) == null, "");
+        check("look: the settings' labels «الكلاسيكي», «الجديد», in that order", Look.LOOKS[0][1].equals("الكلاسيكي")
+            && Look.LOOKS[1][1].equals("الجديد") && Look.label("new").equals("الجديد") && Look.label("x").equals("الكلاسيكي"), "");
+        String frag = "city=x&lat=1&lon=2&panel=prayers&numerals=latn" + Look.param("new");
+        check("look: the launcher reads «الجديد» from the same fragment (HomeLook.isNew), not from a look=newer or a city named so",
+            com.raad.sauditv.home.HomeLook.isNew(frag) && !com.raad.sauditv.home.HomeLook.isNew("city=x&numerals=latn" + Look.param("classic"))
+            && !com.raad.sauditv.home.HomeLook.isNew("look=newer&city=look") && !com.raad.sauditv.home.HomeLook.isNew(null), frag);
+        check("look: «الجديد»'s apps row from the right (the first favourite rightmost) and its margin the page's 40 of 960",
+            com.raad.sauditv.home.HomeLook.viewIndex(0, 7) == 6 && com.raad.sauditv.home.HomeLook.viewIndex(6, 7) == 0
+            && Math.abs(com.raad.sauditv.home.HomeLook.marginDp(960, 540) - 40) < 1e-3
+            && Math.abs(com.raad.sauditv.home.HomeLook.marginDp(1280, 720) - 53.333f) < 1e-2, "");
+        check("look: «الجديد»'s apps row fits above the page's «الأسواق» line (12 + 28 from the bottom) and its banner, ring and name in it",
+            com.raad.sauditv.home.HomeLook.DOCK_B_DP >= 12 + 28 && com.raad.sauditv.home.HomeLook.TOP_DP + com.raad.sauditv.home.HomeLook.TILE_H_DP
+            + com.raad.sauditv.home.HomeLook.LABEL_GAP_DP + 15 <= com.raad.sauditv.home.HomeLook.DOCK_H_DP, "");
+
         // ---- the home screen's «تشغيل القرآن» / «إيقاف القرآن» (RadioChip)
         check("radio chip: «إيقاف القرآن» while it plays, loads or retries", RadioChip.label("1", "playing").equals("إيقاف القرآن")
             && RadioChip.label("1", "loading").equals(RadioChip.STOP) && RadioChip.label("1", "error").equals(RadioChip.STOP), "");
@@ -290,6 +312,28 @@ public class LogicTest {
         check("photos: an unknown size -> as it is", PhotoSize.target(0, 0, 1280, 720) == null && PhotoSize.target(1920, 1080, 0, 0) == null, "");
         check("photos: decode at full size for 1408 from 1920, at half from 3840 (inSampleSize)",
             PhotoSize.sample(1920, 1408) == 1 && PhotoSize.sample(3840, 1408) == 2 && PhotoSize.sample(5760, 1408) == 4, "");
+
+        // ---- the online photos (photos/online.json): a Commons thumbnail at the screen's width (one Commons keeps ready)
+        String th = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Al_Ula_%286749389063%29.jpg/1920px-Al_Ula_%286749389063%29.jpg";
+        String th2 = "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Name.JPG/1920px-Name.JPG";
+        check("online photos: a Commons thumbnail asked for at 1280 on a 1280 x 720 screen, 960 on 960 x 540",
+            PhotoSize.commonsWidth(th, 1280, 720).endsWith("/1280px-Al_Ula_%286749389063%29.jpg")
+                && PhotoSize.commonsWidth(th, 1280, 720).startsWith("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Al_Ula_%286749389063%29.jpg/")
+                && PhotoSize.commonsWidth(th2, 960, 540).endsWith("/960px-Name.JPG"), PhotoSize.commonsWidth(th, 1280, 720));
+        check("online photos: as listed (1920) on 1920 x 1080, 4K, 1600 x 900 and an unknown screen",
+            PhotoSize.commonsWidth(th, 1920, 1080).equals(th) && PhotoSize.commonsWidth(th, 3840, 2160).equals(th)
+                && PhotoSize.commonsWidth(th, 1600, 900).equals(th) && PhotoSize.commonsWidth(th, 0, 0).equals(th), "");
+        String orig = "https://upload.wikimedia.org/wikipedia/commons/a/a2/Exactly_1920.jpg", bing = "https://www.bing.com/th?id=OHR.SitovoWaterfall_EN-US7626867890_1920x1080.jpg";
+        check("online photos: an original file and Bing's as they are; never wider than asked",
+            PhotoSize.commonsWidth(orig, 1280, 720).equals(orig) && PhotoSize.commonsWidth(bing, 1280, 720).equals(bing)
+                && PhotoSize.commonsWidth(th.replace("/1920px-", "/960px-"), 1280, 720).equals(th.replace("/1920px-", "/960px-")), "");
+        check("online photos: Commons (upload, thumb) and Bing's photo of the day are kept; nothing else",
+            PhotoSize.online(th) && PhotoSize.online(th2) && PhotoSize.online(orig) && PhotoSize.online(bing)
+                && !PhotoSize.online("https://example.com/a.jpg") && !PhotoSize.online("https://upload.wikimedia.org/wikipedia/commons/a/a2/x.svg")
+                && !PhotoSize.online(th + "?x=1") && !PhotoSize.online("https://www.bing.com/search?q=x") && !PhotoSize.online(null), "");
+        check("online photos: a kept file's name is the address's SHA-1",
+            PhotoSize.cacheName("abc").equals("a9993e364706816aba3e25717850c26c9cd0d89d.jpg")
+                && !PhotoSize.cacheName(th).equals(PhotoSize.cacheName(PhotoSize.commonsWidth(th, 1280, 720))), PhotoSize.cacheName("abc"));
 
         System.out.println(failed == 0 ? "\nall logic tests passed" : "\n" + failed + " failed");
         System.exit(failed == 0 ? 0 : 1);

@@ -123,6 +123,16 @@ LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
   لما ترجع للواجهة. تحت الساعة «يُتلى الآن: …».
 - من ADB: `optimize/saver.sh radio on|off`، `radio-station saudi|cairo|<رقم>|https://…`، `radio-volume 50`،
   `radio-when both|saver|home`، `radio-stations [بحث]`، و `radio-test` (يجرّب روابط الإذاعتين من التلفاز نفسه، يعني من خلال الـ VPN).
+- **الأذان:** إعدادات سعودي TV ← «الأذان» (يعمل افتراضياً، الصلوات الخمس بالأذان كاملاً): لكل صلاة «الأذان كاملاً» أو «تنبيه
+  قصير» أو «بدون»، صوت المؤذن وصوت أذان الفجر (أو «صوت من عندي»: ملف أو رابط يُحفظ على التلفاز فقط)، مستواه، دعاء بعد
+  الأذان، تذكير قبله، «تجربة الأذان» و«حقوق التسجيلات». مواقيته هي اللي في الصفحة (Aladhan مرة في اليوم، وبدون إنترنت نفس
+  حساب الصفحة). ما يشتغل والتلفاز مطفي أو في وضع الاستعداد، وبعد التحديث يُضبط لحاله بدون فتح الإعدادات.
+- **إذن «الظهور فوق التطبيقات»** (ليظهر الأذان على كامل الشاشة فوق يوتيوب): `optimize/setup-new-tv.sh` و `optimize/install.sh`
+  يعطونه، أو `optimize/saver.sh athan on`، أو من أي كمبيوتر:
+  `adb shell appops set com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW allow`. وإذا ناقص يطلع أول صف في قسم «الأذان»:
+  «السماح بالظهور فوق التطبيقات» يفتح صفحة الإذن لو التلفاز فيه صفحة له، وإلا يشرح هالأمر. بدونه يُسمع الأذان بدون شاشته،
+  وتطلع رسالة «اضغط إيقاف مؤقت لإيقاف الأذان»: أزرار الإيقاف المؤقت / التشغيل / الإيقاف في الريموت توقفه، وتشغيل أي صوت ثاني
+  كمان (زر الرجوع ما يوصله). ومن ADB: `athan-test asr [full|short|reminder]` و `athan-show`.
 - **شريط الأسعار:** يتبع «دولة الأخبار» (مؤشرها وعملتها)، وإلا دولة المدينة. وتختار عناصره وترتيبها من الإعدادات ←
   «عناصر شريط الأسعار» (مثل البطاقات)، أو `optimize/saver.sh tape gold,btc,cur` (`auto`: قائمة الدولة).
 - **الماوس:** يشتغل في الواجهة والصفحات والإعدادات: التمرير فوق عنصر يحدده، والضغط = OK، والعجلة = ▲▼، والزر الأيمن = رجوع.
@@ -290,7 +300,28 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
   `optimize/saver.sh tape gold,btc,cur` (`auto` for the country's own list).
 - **A mouse** works on the home screen, its pages and the settings: hover moves the focus, a click is OK, the wheel is
   ▲▼, the right button is Back; the pointer hides after 3 s still, and never shows over the screensaver.
-- **The athan's hook** (for the athan, not built yet): in the screensaver app, `RadioService.hold(context, true)` before
+- **The athan** (settings > «الأذان»; on by default, every prayer the full athan): each prayer's alert («الأذان كاملاً»,
+  «تنبيه قصير» or «بدون»), the voice and the Fajr voice (bundled recordings, `assets/athan/CREDITS.txt`, or «صوت من عندي»:
+  a file or an address, copied into the app's own storage on that TV), its volume, a dua after it, a reminder before it,
+  «تجربة الأذان». The screensaver app keeps one exact alarm for the next one (AthanScheduler) at the times the page
+  shows: Aladhan's answer to the page's own request (AladhanTimes; AthanOnline, a job that waits for the network and is
+  retried with a growing back-off until today and tomorrow are answered; the page's 12 s limit; kept per day, city,
+  method and zone), else the page's offline formula (PrayerTimes), which can be a minute off Aladhan's (Los Angeles, 28 Oct
+  2026: Asr 15:40 against 15:41). `athan-show` says which one today's times are and how the last ask went. Set again after
+  a boot, an update (MY_PACKAGE_REPLACED: no need to open the settings), a new clock or time zone, and a new city or
+  method. A TV that is off or in standby stays silent and is never woken. Also `optimize/saver.sh athan off`,
+  `athan-test asr [full|short|reminder]` (now, as at its time), `athan-show` (today's times and their source, the next
+  alarm, the last one).
+- **The athan over other apps** needs SYSTEM_ALERT_WINDOW. `optimize/setup-new-tv.sh` and `optimize/install.sh`
+  (saver|all) grant it, as does `optimize/saver.sh athan on`; by hand:
+  `adb shell appops set com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW allow`. While it is missing, the «الأذان»
+  section's first row is «السماح بالظهور فوق التطبيقات»: it opens the TV's page for it when the TV has one (many TVs
+  don't), else it says the athan will only be heard and shows the command above. Exact alarms the same way
+  («السماح بالمنبّه الدقيق», `appops set … SCHEDULE_EXACT_ALARM allow`; only Android 12 can be without them). Without
+  the overlay the full athan plays with no screen: a toast «اضغط إيقاف مؤقت لإيقاف الأذان» (again every 30 s); the
+  remote's pause, play/pause, play and stop keys reach the athan's media session and stop it, and starting any other
+  sound (OK on the paused video) stops it too. Back cannot: without a window of ours it goes to the app in front.
+- **The athan's hook** (used by the full athan): in the screensaver app, `RadioService.hold(context, true)` before
   the athan and `hold(context, false)` after it; from the home app (same signing key), the broadcasts
   `com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN` / `RESUME_AFTER_ATHAN` to `com.raad.sauditv.screensaver/.RadioReceiver`;
   from ADB, `optimize/saver.sh radio-hold on|off`. A hold ends by itself after 15 minutes.

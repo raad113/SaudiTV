@@ -1,0 +1,434 @@
+{
+ "batchcomplete": true,
+ "query": {
+  "pages": [
+   {
+    "pageid": 3797411,
+    "ns": 6,
+    "title": "File:(S.A.W) grave.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "File Upload Bot (Magnus Manske)",
+      "size": 1793749,
+      "width": 2816,
+      "height": 2112,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/%28S.A.W%29_grave.jpg/1920px-%28S.A.W%29_grave.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1440,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/4/4b/%28S.A.W%29_grave.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/%28S.A.W%29_grave.jpg/1920px-%28S.A.W%29_grave.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1440,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/4/4b/%28S.A.W%29_grave.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4b/%28S.A.W%29_grave.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:(S.A.W)_grave.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=3797411",
+      "extmetadata": {
+       "Artist": {
+        "value": "<a href=\"https://en.wikipedia.org/wiki/User:Paki90\" class=\"extiw\" title=\"wikipedia:User:Paki90\">Paki90</a> at <a href=\"https://en.wikipedia.org/wiki/\" class=\"extiw\" title=\"wikipedia:\">English Wikipedia</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Al-Masjid an-Nabawi in 2008"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Domes of Al-Masjid an-Nabawi"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Exterior of Masjid al-Nabawi"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Minarets of Al-Masjid an-Nabawi"
+     }
+    ]
+   },
+   {
+    "pageid": 23509762,
+    "ns": 6,
+    "title": "File:Al-Masjed Al-Nabawi 3.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "بلال الدويك",
+      "size": 695901,
+      "width": 1944,
+      "height": 2592,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Al-Masjed_Al-Nabawi_3.jpg/1920px-Al-Masjed_Al-Nabawi_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 2560,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Al-Masjed_Al-Nabawi_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Al-Masjed_Al-Nabawi_3.jpg/1920px-Al-Masjed_Al-Nabawi_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 2560,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Al-Masjed_Al-Nabawi_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Al-Masjed_Al-Nabawi_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Al-Masjed_Al-Nabawi_3.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=23509762",
+      "extmetadata": {
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:%D8%A8%D9%84%D8%A7%D9%84_%D8%A7%D9%84%D8%AF%D9%88%D9%8A%D9%83\" title=\"User:بلال الدويك\">بلال الدويك</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Interior of Masjid al-Nabawi"
+     }
+    ]
+   },
+   {
+    "pageid": 32186113,
+    "ns": 6,
+    "title": "File:Al Ula (6749389063).jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "Ziad",
+      "size": 4101371,
+      "width": 4608,
+      "height": 2802,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Al_Ula_%286749389063%29.jpg/1920px-Al_Ula_%286749389063%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1168,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Al_Ula_%286749389063%29.jpg/3840px-Al_Ula_%286749389063%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Al_Ula_%286749389063%29.jpg/1920px-Al_Ula_%286749389063%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1168,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Al_Ula_%286749389063%29.jpg/3840px-Al_Ula_%286749389063%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/67/Al_Ula_%286749389063%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Al_Ula_(6749389063).jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=32186113",
+      "extmetadata": {
+       "Artist": {
+        "value": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/62088518@N08\">Sammy Six</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 2.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Landscapes of Al-'Ula"
+     }
+    ]
+   },
+   {
+    "pageid": 43924709,
+    "ns": 6,
+    "title": "File:The heart of Arabia, a record of travel and exploration (1922) (14749537136).jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "SteinsplitterBot",
+      "size": 404675,
+      "width": 2368,
+      "height": 1430,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/The_heart_of_Arabia%2C_a_record_of_travel_and_exploration_%281922%29_%2814749537136%29.jpg/1920px-The_heart_of_Arabia%2C_a_record_of_travel_and_exploration_%281922%29_%2814749537136%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1159,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/b/ba/The_heart_of_Arabia%2C_a_record_of_travel_and_exploration_%281922%29_%2814749537136%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/The_heart_of_Arabia%2C_a_record_of_travel_and_exploration_%281922%29_%2814749537136%29.jpg/1920px-The_heart_of_Arabia%2C_a_record_of_travel_and_exploration_%281922%29_%2814749537136%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1159,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/b/ba/The_heart_of_Arabia%2C_a_record_of_travel_and_exploration_%281922%29_%2814749537136%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/ba/The_heart_of_Arabia%2C_a_record_of_travel_and_exploration_%281922%29_%2814749537136%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:The_heart_of_Arabia,_a_record_of_travel_and_exploration_(1922)_(14749537136).jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=43924709",
+      "extmetadata": {
+       "Artist": {
+        "value": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/126377022@N07\">Internet Archive Book Images</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "No restrictions",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Ta’if"
+     },
+     {
+      "ns": 14,
+      "title": "Category:The heart of Arabia, a record of travel and exploration (1922)"
+     }
+    ]
+   },
+   {
+    "pageid": 60528702,
+    "ns": 6,
+    "title": "File:Masjid Nabwi 04.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "Tahir mq",
+      "size": 805071,
+      "width": 2048,
+      "height": 1152,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Masjid_Nabwi_04.jpg/1920px-Masjid_Nabwi_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1080,
+      "responsiveUrls": {
+       "2": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Masjid_Nabwi_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Masjid_Nabwi_04.jpg/1920px-Masjid_Nabwi_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1080,
+       "srcset": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Masjid_Nabwi_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Masjid_Nabwi_04.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Masjid_Nabwi_04.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=60528702",
+      "extmetadata": {
+       "Artist": {
+        "value": "<a href=\"//commons.wikimedia.org/wiki/User:Tahir_mq\" title=\"User:Tahir mq\">Tahir mq</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY-SA 4.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Al-Masjid an-Nabawi in 2017"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Al-Masjid an-Nabawi in 2019"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Exterior of Masjid al-Nabawi"
+     }
+    ]
+   },
+   {
+    "pageid": 94413412,
+    "ns": 6,
+    "title": "File:Craftsmen Market in al-Ahsa, Hofuf - Mar 7, 2020 03.jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "Ruwaym",
+      "size": 281635,
+      "width": 1920,
+      "height": 1080,
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/4/45/Craftsmen_Market_in_al-Ahsa%2C_Hofuf_-_Mar_7%2C_2020_03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "thumbwidth": 1920,
+      "thumbheight": 1080,
+      "thumbattribs": {
+       "src": "https://upload.wikimedia.org/wikipedia/commons/4/45/Craftsmen_Market_in_al-Ahsa%2C_Hofuf_-_Mar_7%2C_2020_03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1080
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/45/Craftsmen_Market_in_al-Ahsa%2C_Hofuf_-_Mar_7%2C_2020_03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Craftsmen_Market_in_al-Ahsa,_Hofuf_-_Mar_7,_2020_03.jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=94413412",
+      "extmetadata": {
+       "Artist": {
+        "value": "Saleh Abd al-Salam / صالح العبد السلام",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:2020 in Hofuf"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Al-Ahsa competition"
+     },
+     {
+      "ns": 14,
+      "title": "Category:People at work in Saudi Arabia"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Souqs in Hofuf"
+     }
+    ]
+   },
+   {
+    "pageid": 94482481,
+    "ns": 6,
+    "title": "File:10 معالم الأحساء.png",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "احمد سامي",
+      "size": 465725,
+      "width": 840,
+      "height": 446,
+      "thumburl": "https://upload.wikimedia.org/wikipedia/commons/c/c0/10_%D9%85%D8%B9%D8%A7%D9%84%D9%85_%D8%A7%D9%84%D8%A3%D8%AD%D8%B3%D8%A7%D8%A1.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "thumbwidth": 1920,
+      "thumbheight": 1019,
+      "thumbattribs": {
+       "src": "https://upload.wikimedia.org/wikipedia/commons/c/c0/10_%D9%85%D8%B9%D8%A7%D9%84%D9%85_%D8%A7%D9%84%D8%A3%D8%AD%D8%B3%D8%A7%D8%A1.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1019
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c0/10_%D9%85%D8%B9%D8%A7%D9%84%D9%85_%D8%A7%D9%84%D8%A3%D8%AD%D8%B3%D8%A7%D8%A1.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:10_%D9%85%D8%B9%D8%A7%D9%84%D9%85_%D8%A7%D9%84%D8%A3%D8%AD%D8%B3%D8%A7%D8%A1.png",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=94482481",
+      "extmetadata": {
+       "Artist": {
+        "value": "محمد الفهيد",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 3.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/png"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Al-Ahsa competition"
+     }
+    ]
+   },
+   {
+    "pageid": 181628103,
+    "ns": 6,
+    "title": "File:Sarawat Mountains, Asir Region, Saudi Arabia (8).jpg",
+    "imagerepository": "local",
+    "imageinfo": [
+     {
+      "user": "Ahad.F",
+      "size": 3396210,
+      "width": 4463,
+      "height": 2507,
+      "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg/1920px-Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "thumbwidth": 1920,
+      "thumbheight": 1079,
+      "responsiveUrls": {
+       "2": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg/3840px-Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail"
+      },
+      "thumbattribs": {
+       "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg/1920px-Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+       "decoding": "async",
+       "loading": "lazy",
+       "width": 1920,
+       "height": 1079,
+       "srcset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg/3840px-Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail 2x"
+      },
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Sarawat_Mountains%2C_Asir_Region%2C_Saudi_Arabia_%288%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "descriptionurl": "https://commons.wikimedia.org/wiki/File:Sarawat_Mountains,_Asir_Region,_Saudi_Arabia_(8).jpg",
+      "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=181628103",
+      "extmetadata": {
+       "Artist": {
+        "value": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/people/43714545@N06\">Richard Mortel</a>",
+        "source": "commons-desc-page"
+       },
+       "LicenseShortName": {
+        "value": "CC BY 2.0",
+        "source": "commons-desc-page",
+        "hidden": ""
+       }
+      },
+      "mime": "image/jpeg"
+     }
+    ],
+    "categories": [
+     {
+      "ns": 14,
+      "title": "Category:Asir Mountains"
+     },
+     {
+      "ns": 14,
+      "title": "Category:Sarawat Mountains"
+     }
+    ]
+   }
+  ]
+ },
+ "limits": {
+  "categories": 500
+ }
+}

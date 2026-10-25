@@ -1,0 +1,29 @@
+Athan recordings bundled with سعودي TV (the screensaver app's «الأذان»)
+=========================================================================
+
+Each file was trimmed, mixed down to mono, loudness-normalised (-16 LUFS) and encoded to Opus/OGG at 48 kbps by
+this project (optimize/run is where the originals were downloaded; they are not part of the repository). Nothing
+else was changed. The settings screen shows these same credits («الأذان» › «حقوق التسجيلات»).
+
+athan-wikimedia.ogg
+  Title:   Beautiful adhan
+  Author:  Adam-synagda (Wikimedia Commons user)
+  Licence: CC0 1.0 Universal (public domain dedication) - https://creativecommons.org/publicdomain/zero/1.0/
+  Source:  https://commons.wikimedia.org/wiki/File:Beautiful_adhan.ogg
+
+athan-asim-javed.ogg
+  Title:   ICR Friday Prayer 1st Adhan, 17 May 2024 (9 Dhul-Qadah 1445)
+  Author:  Asim Javed
+  Licence: CC0 1.0 Universal (public domain dedication) - https://creativecommons.org/publicdomain/zero/1.0/
+  Source:  https://archive.org/details/icr-friday-prayer-1st-adhan-17th-may-2024-9th-dhul-qadah-1445-by-asim-javed
+
+athan-malmo.ogg
+  Title:   Eid al-Fitr Fajr azan at Malmö Mosque - 19 August 2012 (audio track only, trimmed to the athan)
+  Author:  Islamic Center Malmö
+  Licence: Creative Commons Attribution 3.0 Unported (CC BY 3.0) - https://creativecommons.org/licenses/by/3.0/
+  Source:  https://commons.wikimedia.org/wiki/File:Eid_al-Fitr_Fajr_azan_at_Malm%C3%B6_Mosque_-_19_August_2012.webm
+  Changes: the audio was extracted from the video, cut to the athan (11.8 s to 237.0 s), mixed to mono,
+           loudness-normalised and re-encoded.
+
+«صوت من عندي» (a file or an address the user picks) is copied into the app's private storage on that TV only; it is
+never uploaded, shared or bundled.

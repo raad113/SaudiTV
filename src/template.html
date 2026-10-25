@@ -98,7 +98,8 @@
   .dv-pw .dv-tr{grid-template-columns:minmax(0,1fr) repeat(5,88px)}
   .dv-fd .dv-tr{grid-template-columns:110px minmax(0,1fr) 150px 80px 230px}
   .dv-mt .dv-tr{grid-template-columns:310px minmax(0,1fr) 230px}
-  .dv-mt .dv-tr > :last-child{text-align:right}
+  .dv-mt .dv-tr > :nth-child(3){text-align:right}
+  .dv-mt .dv-bc{grid-column:2 / -1}
   /* at 960 CSS px the fixed columns (40+8*80+gaps) took all 824px and left the club 0; keep it >=220px */
   .dv-st .dv-tr{grid-template-columns:32px minmax(220px,1fr) repeat(8,60px);column-gap:8px}
   .dv-st .dv-tr > :not(:nth-child(2)),.dv-pw .dv-tr > :not(:first-child){text-align:center}
@@ -162,12 +163,15 @@
       linear-gradient(180deg,rgba(3,10,7,.62) 0%,rgba(3,10,7,.30) 22%,rgba(3,10,7,.12) 46%,rgba(3,10,7,.42) 74%,rgba(2,6,4,.88) 100%),
       radial-gradient(120% 85% at 22% 34%,rgba(3,14,9,.42) 0%,rgba(3,14,9,0) 58%);
   }
-  /* photo credits live in PHOTO-CREDITS.md on GitHub, not on screen */
+  /* photo credits live in PHOTO-CREDITS.md on GitHub, not on screen; an online photo's is shown (.on), above the tape */
   #credit{display:none;
     position:fixed;left:26px;bottom:6px;z-index:4;
     font-size:10px;letter-spacing:.02em;
     color:rgba(246,239,224,.30);pointer-events:none;
   }
+  #credit.on{display:block;bottom:48px;font-size:clamp(13px,.95vw,26px);color:rgba(246,239,224,.70);
+    text-shadow:0 1px 3px rgba(0,0,0,.65),0 0 10px rgba(0,0,0,.4)}
+  html.home #credit.on{bottom:calc(var(--dock-b) + var(--dock-h) + 10px)}
   .grain{
     position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.05;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.55'/></svg>");
@@ -244,6 +248,10 @@
     .week ul.flip li{animation:none}
     .week .hd,.week.out .hd,.week.out ul{transition:none}
   }
+  /* a match's channel and commentator (bcastOf): one muted line under it, sized as a news item's source line */
+  .week li.bcl{flex-wrap:wrap;row-gap:0}
+  .week li .bc{flex:0 0 100%;min-width:0;font-size:max(14px,.62em);line-height:1.3;text-align:start;
+    overflow:hidden;text-overflow:ellipsis}
   /* a news item is a headline in up to two lines at the card's full width (0.8x the row font), with
      its source and age on one muted line under it (0.62x); li.news-item outranks the span:first-child and .dt
      rules above, so the other panels keep their rows */
@@ -593,6 +601,189 @@
     .p-match{grid-column:1/-1;text-align:right}
     .mrow{align-items:flex-start}
   }
+
+  /* ===== «الجديد» (#look=new, nxBoot): design/concepts/1-ambient-editorial. #nx is laid out in the mock-ups' CSS px
+     (960 x 540, the TV's own size) and scaled to the screen (nxLay sets its size, its scale and --z); the classic
+     stage's parts are hidden. The tokens are the concept's: ink, gold, the focused card's paper. No backdrop blur, no
+     animation but the focus (140 ms, transform and background) and the ticker tape as before. */
+  html.nx .stage>:not(#nx),html.nx .grain,html.nx .top-veil,html.nx .bottom-veil{display:none}
+  html.nxh .veil{background:linear-gradient(0deg,rgba(7,6,12,.95),rgba(7,6,12,.9) 34%,rgba(7,6,12,.55) 52%,rgba(7,6,12,0) 68%),
+    linear-gradient(270deg,rgba(7,6,16,.5),rgba(7,6,16,.18) 45%,rgba(7,6,16,0) 70%),
+    linear-gradient(180deg,rgba(7,6,16,.55),rgba(7,6,16,.42) 24%,rgba(7,6,16,0) 42%),
+    radial-gradient(67% 48% at 70% 26%,rgba(7,6,16,.45),rgba(7,6,16,0) 70%)}
+  html.nxs .veil{background:linear-gradient(0deg,rgba(8,6,4,.86),rgba(8,6,4,.62) 26%,rgba(8,6,4,0) 52%),
+    linear-gradient(180deg,rgba(8,6,4,.55),rgba(8,6,4,.25) 16%,rgba(8,6,4,0) 28%)}
+  #nx{position:absolute;left:0;top:0;width:960px;height:540px;transform-origin:0 0;font-size:13px;line-height:1.4;
+    font-family:'Thmanyah','NotoMarks',system-ui,sans-serif;color:var(--ink);
+    --ink:#FBF6EC;--i2:rgba(251,246,236,.82);--g:#EBCB8B;--gl:rgba(235,203,139,.45);--pp:#F6EFE1;--pi:#1C160F;--p2:#54473A;--pg:#875A14}
+  #nx svg{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  #nx :is(div,p,b,span,ul):empty{display:none}
+  #nx [dir=auto]{text-align:right}
+  #nx s{text-decoration:none;color:var(--g);font-weight:400}
+  #nx .k{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--g);white-space:nowrap}
+  #nx .k svg{font-size:14px}
+  #nx .m{font-size:13px;color:var(--i2)}
+  .nx-dl{position:absolute;top:16px;right:40px;left:var(--pe,40px);height:26px;line-height:26px;display:flex;flex-wrap:wrap;
+    column-gap:8px;overflow:hidden;font-size:14px;color:var(--i2);white-space:nowrap}
+  .nx-dl b{color:var(--ink);font-weight:500}
+  .nx-dl span+span::before{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--g);
+    vertical-align:middle;margin-inline-end:8px}
+  .nx-dl .r{color:var(--g);font-weight:500}
+  .nx-dl .r svg{margin-inline-end:5px;vertical-align:-.15em}
+  .nx-hero{position:absolute;top:50px;right:40px;height:108px;display:flex;align-items:flex-end;gap:26px}
+  .nx-ck{display:flex;align-items:flex-start;gap:8px;font:700 120px/.84 ThmanyahDisplay,serif;letter-spacing:-.02em;white-space:nowrap}
+  .nx-ck b{direction:ltr;unicode-bidi:isolate}
+  .nx-ck i{font:700 30px/1 ThmanyahDisplay,serif;color:var(--g);margin-top:10px;letter-spacing:0}
+  .nx-dk{width:300px;padding-inline-start:22px;padding-bottom:4px;border-inline-start:1px solid var(--gl)}
+  .nx-st{margin:5px 0 6px;font:700 21px/1.32 ThmanyahDisplay,serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .nx-rh{position:absolute;right:40px;left:40px;top:166px;display:flex;align-items:center;gap:12px;font-size:15px;font-weight:500}
+  .nx-rh i{flex:1;height:1px;background:linear-gradient(270deg,var(--gl),rgba(235,203,139,0))}
+  .nx-rh span{font-size:13px;font-weight:400;color:var(--i2)}
+  #nx-ah{top:var(--ah,374px)}
+  .nx-rail{position:absolute;top:196px;right:40px;display:flex;gap:12px;align-items:flex-start;
+    transition:transform 140ms cubic-bezier(.23,1,.32,1)}
+  .nx-c{flex:none;height:164px;padding:13px 16px;border-radius:14px;background:rgba(11,10,18,.66);border:1px solid rgba(255,255,255,.1);
+    overflow:hidden;transition:transform 140ms cubic-bezier(.23,1,.32,1),background-color 140ms cubic-bezier(.23,1,.32,1)}
+  /* a card the row leaves partly off the screen is not shown (nxFocus): no card is ever seen cut */
+  #nx .nx-c.o{visibility:hidden}
+  #nx .nx-c.f{background:var(--pp);color:var(--pi);border-color:transparent;transform:translateY(-4px);box-shadow:0 0 0 3px rgba(246,239,225,.24)}
+  #nx .f .k,#nx .f s,#nx .f .pt small,#nx .f .orn,#nx .nx-q.f .m{color:var(--pg)}
+  #nx .f .m{color:var(--p2)}
+  /* the next prayer, the news, the weather and the match together take the row's 880 (960 less the margins) with its
+     gaps: 268 + 264 + 104 + 208 + 3 x 12; the cards after them start off the screen */
+  .nx-p{width:268px}
+  .nx-p .pm{display:flex;align-items:baseline;justify-content:space-between;margin-top:3px}
+  .nx-p .pn{font:700 31px/1.05 ThmanyahDisplay,serif}
+  .nx-p .pt{font:700 27px/1.2 ThmanyahDisplay,serif}
+  .nx-p .pt small{font-size:15px;color:var(--g);margin-inline-start:3px}
+  .nx-p .m{margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nx-tl{list-style:none;display:flex;margin-top:14px;position:relative}
+  .nx-tl::before,.nx-tl::after{content:'';position:absolute;top:3.5px;right:10%;height:1.5px}
+  .nx-tl::before{left:10%;background:rgba(255,255,255,.2)}
+  .nx-tl::after{width:var(--w);background:var(--gl)}
+  .nx-tl li{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;font-size:11.5px;line-height:1.3;color:var(--i2)}
+  .nx-tl i{width:9px;height:9px;margin-bottom:5px;border-radius:50%;background:#17151f;border:1.5px solid rgba(235,203,139,.7)}
+  .nx-tl .p i{background:rgba(235,203,139,.7)}
+  .nx-tl .n{color:var(--ink);font-weight:500}
+  .nx-tl .n i{background:var(--g);border-color:var(--g);box-shadow:0 0 0 3px rgba(235,203,139,.22)}
+  .nx-tl b{font-size:12.5px;font-weight:500;direction:ltr}
+  .f .nx-tl::before{background:#D3C6B0}
+  .f .nx-tl::after{background:#8E7F69}
+  .f .nx-tl li{color:#5E5244}
+  .f .nx-tl i{background:var(--pp);border-color:#8E7F69}
+  .f .nx-tl .p i{background:#8E7F69}
+  .f .nx-tl .n{color:var(--pi)}
+  .f .nx-tl .n i{background:var(--pg);border-color:var(--pg);box-shadow:0 0 0 3px rgba(135,90,20,.2)}
+  .nx-n{width:264px;padding:12px 14px 10px}
+  .nx-n.ni .k span{display:none}
+  .nx-n .nh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .nx-ch{display:flex;gap:4px;min-width:0;overflow:hidden}
+  .nx-ch span{height:20px;line-height:18px;padding:0 7px;border-radius:10px;border:1px solid rgba(255,255,255,.16);font-size:11.5px;
+    color:var(--i2);white-space:nowrap}
+  .nx-ch .on{background:var(--g);color:var(--pi);border-color:transparent;font-weight:500}
+  .f .nx-ch span{color:var(--p2);border-color:rgba(28,22,15,.22)}
+  .f .nx-ch .on{background:var(--pi);color:var(--pp);border-color:transparent}
+  .nx-nl{list-style:none;margin-top:3px;min-width:0}
+  .nx-nl li{position:relative;padding:2px 0;border-top:1px solid rgba(255,255,255,.1)}
+  .nx-nl li:first-child{border-top:0}
+  .nx-nl b,.nx-nl li>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nx-nl b{font-size:13.5px;font-weight:500;line-height:1.38}
+  .nx-nl li>span{font-size:11.5px;line-height:1.35;color:var(--i2)}
+  .nx-nl em{font-style:normal;font-weight:500;color:var(--ink)}
+  .f .nx-nl li{border-top-color:rgba(28,22,15,.12)}
+  .f .nx-nl li>span{color:var(--p2)}
+  .f .nx-nl em{color:var(--pi)}
+  .nx-sm{display:none}
+  #nx .w{width:590px;display:grid;grid-template-columns:308px minmax(0,1fr);column-gap:18px}
+  .w .nh{grid-column:1/-1}
+  .w .nx-nl li:first-child{margin-inline:-8px;padding-inline:8px;border-radius:7px;background:rgba(135,90,20,.1)}
+  .w .nx-nl li:first-child::before{content:'';position:absolute;right:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--pg)}
+  .w .nx-nl li:nth-child(2){border-top-color:transparent}
+  #nx .w .nx-sm{display:flex;flex-direction:column;min-width:0;margin-top:6px;padding-bottom:3px;padding-inline-start:16px;
+    border-inline-start:1px solid rgba(28,22,15,.14)}
+  .nx-sm p{font-size:13px;line-height:1.62;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .nx-sm div{margin-top:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--p2)}
+  .nx-sm u{text-decoration:none;display:inline-grid;place-items:center;min-width:22px;height:18px;padding:0 5px;border-radius:5px;
+    border:1px solid;font-size:10.5px;direction:ltr;color:var(--pi)}
+  .nx-wx{width:104px}
+  .nx-wx .nb{margin-top:16px;font:700 46px/1 ThmanyahDisplay,serif;direction:ltr;text-align:right}
+  .nx-wx .sb{margin:7px 0 2px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nx-m{width:208px}
+  .nx-m .tm,.nx-m .wh,.nx-m .m{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nx-m .tm{margin-top:16px;font-size:16px;font-weight:500}
+  .nx-m .wh{margin:12px 0 2px;font:700 21px/1.3 ThmanyahDisplay,serif}
+  #nx .nx-m .bc{font-size:11.5px}
+  .nx-q{width:268px}
+  .nx-q.h{width:300px}
+  .nx-q p{margin:8px 0 4px;font-size:15px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  #nx .nx-q .m{color:var(--g)}
+  #nx :is(.orn,.saw){font-family:'NotoMarks',serif;color:var(--g)}
+  .nx-q .nar{font-size:.85em;opacity:.8}
+  .nx-s{width:236px}
+  .nx-s ol{list-style:none;margin-top:6px}
+  .nx-s li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-top:1px solid rgba(255,255,255,.08);white-space:nowrap}
+  .nx-s li:first-child{border-top:0}
+  #nx .nx-s .y{color:var(--g);font-weight:500}
+  #nx .f.nx-s .y{color:var(--pg)}
+  .nx-mk{position:absolute;right:40px;left:40px;bottom:12px;height:28px;line-height:26px;border-top:1px solid rgba(255,255,255,.1);
+    font-size:13px;font-weight:500;color:var(--g)}
+  html.nxh .tape{left:calc(var(--z)*40px + var(--cw,0px));right:calc(var(--z)*100px);bottom:calc(var(--z)*12px);height:calc(var(--z)*28px);padding:0;
+    background:none;border:0;box-shadow:none;font-size:calc(var(--z)*13px);color:rgba(251,246,236,.82)}
+  html.nxh .tape::after,html.nxh .tape-frost{display:none}
+  html.nxh .tape-v{color:#FBF6EC;font-weight:500}
+  html.nxh .tape-c{font-size:1em;color:rgba(251,246,236,.82)}
+  html.nxh .tape-c.up{color:#97E6AE}
+  html.nxh .tape-c.down{color:#FFA394}
+  html.nxh .tape-dot{width:3px;height:3px;margin:0 .9em;background:rgba(235,203,139,.45);opacity:1}
+  /* the home screen's photo credit: on the «الأسواق» line, at its left, the ticker starting after it (nxCredit: --cw);
+     the size and the opacity of the screensaver's, never cut (nxCredit shortens it) */
+  html.nxh #credit.on{left:calc(var(--z)*40px);bottom:calc(var(--z)*12px);height:calc(var(--z)*28px);
+    line-height:calc(var(--z)*28px);white-space:nowrap}
+  html.nxs #credit.on{left:calc(var(--z)*56px);bottom:calc(var(--z)*16px)}
+  html.nxs .tape{display:none}
+  /* the screensaver: the card top right in a quiet style (no glass; a verse or a hadith without its title), the place top
+     left, the dates and the clock bottom right, the facts bottom left; the hourly swap mirrors the corners */
+  #nx.s{text-shadow:0 1px 8px rgba(0,0,0,.45)}
+  #nx.s .week{position:absolute;top:40px;right:56px;width:auto;min-width:240px;max-width:420px;padding:0;background:none;border:0;border-radius:0}
+  /* a soft dark plate behind it (its text over a bright sky stays readable), feathered past its edges; behind the text,
+     never over it */
+  #nx.s .week::before{content:'';position:absolute;z-index:-1;inset:-36px -60px;pointer-events:none;
+    background:linear-gradient(90deg,rgba(8,6,4,0),rgba(8,6,4,.5) 60px,rgba(8,6,4,.5) calc(100% - 60px),rgba(8,6,4,0));
+    -webkit-mask-image:linear-gradient(rgba(0,0,0,0),#000 36px,#000 calc(100% - 36px),rgba(0,0,0,0))}
+  #nx .week .hd{margin-bottom:6px;font-size:12.5px;letter-spacing:0;color:var(--g)}
+  #nx .week .hd::after,#nx .week .rot,#nx .week:has(.quote) .hd{display:none}
+  #nx .week li{padding:4px 0;font-size:15px;border-bottom-color:rgba(255,255,255,.1)}
+  #nx .week li span:first-child{font-size:15px}
+  #nx .week li.quote{padding:0;font-size:17px;line-height:1.7;color:rgba(251,246,236,.9)}
+  #nx .week li.quote.hadith{font-size:15px}
+  #nx .week li.src{padding:2px 0 0;font-size:12.5px;color:var(--g)}
+  #nx .week .empty{font-size:14px}
+  #nx-pl{position:absolute;top:44px;left:56px;font-size:13px}
+  .nx-cv{position:absolute;right:56px;bottom:44px;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+  .nx-dt{display:flex;align-items:baseline;gap:12px;width:100%;padding-bottom:10px;border-bottom:1px solid var(--gl);white-space:nowrap}
+  .nx-dt b{font:700 24px/1.3 ThmanyahDisplay,serif}
+  .nx-dt span{font-size:14px;color:var(--i2)}
+  #nx.s .nx-ck{font-size:150px;line-height:.82;color:rgba(251,246,236,.94)}
+  #nx.s .nx-ck i{font-size:32px;margin-top:12px}
+  #nx .vpn{margin-inline-start:auto;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:#A6EBB9}
+  #nx .vpn[hidden]{display:none}
+  #nx .vpn.warn{color:#FFD27A}
+  #nx .vpn.off{color:#FFA394}
+  #nx .vpn::after{content:'VPN';order:1}
+  #nx .vpn-r{display:flex;align-items:center;gap:.35em;order:2}
+  /* the concept's shield (nxBoot puts it in): its check while the VPN works, ! when nothing gets through, ✕ when off */
+  #nx .vpn svg{width:.95em;height:.95em;stroke-width:1.9}
+  #nx .vpn b,#nx .vpn:not(.on) .ok,#nx .vpn:not(.warn) .wa,#nx .vpn:not(.off) .no{display:none}
+  #nx .vpn-f{font:400 1.2em/1 'Noto Color Emoji',sans-serif}
+  .nx-fx{position:absolute;left:56px;bottom:50px;width:300px;list-style:none}
+  .nx-fx li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-top:1px solid rgba(255,255,255,.14);
+    font-size:15px;white-space:nowrap}
+  .nx-fx li:first-child{border-top:0}
+  .nx-fx b{font-weight:500;overflow:hidden;text-overflow:ellipsis}
+  .nx-fx li>span{font-size:13px;color:var(--i2)}
+  html.ss-swap #nx.s .week,html.ss-swap .nx-cv{right:auto;left:56px}
+  html.ss-swap .nx-cv{align-items:flex-end}
+  html.ss-swap #nx-pl,html.ss-swap .nx-fx{left:auto;right:56px}
 </style>
 </head>
 <body>
@@ -667,6 +858,8 @@
 <!-- the market ticker tape (tapeRender); hidden until a first item has loaded -->
 <div class="tape" id="tape" hidden><div class="tape-frost" id="tape-frost"></div><div class="tape-run" id="tape-run"></div></div>
 
+<!-- the bundled list of online photos (build.py: online.js beside tv.html, inline in saudi-tv.html; ONLINE_BUNDLED) -->
+__ONLINE__
 <script>
 // script errors reach the console (the home card's WebView logs warnings and errors, tag SaudiTV-Card)
 addEventListener('error', e => console.error('SaudiTV: ' + e.message + ' (line ' + e.lineno + ':' + e.colno + ')'));
@@ -753,9 +946,15 @@ const CONFIG = {
   // (NEWS_SOURCES, newsSources)
   sources: {news: _list('src_news'), tech: _list('src_tech'), local: _list('src_local'), world: _list('src_world')},
   tape: _list('tape'),   // the ticker's items chosen in the settings, in order (tapeList); none = the country's own
+  // «مصادر الصور» (#photos=saudi,ours,bing,world, photoPools); none valid: saudi and ours
+  photos: (l => l.length ? l : ['saudi', 'ours'])(_list('photos').filter(x => ['saudi', 'ours', 'bing', 'world'].includes(x))),
+  // «شكل الواجهة» (#look=new): «الجديد», the home screen and the screensaver drawn by nxBoot; else «الكلاسيكي», as before
+  look: _Q.get('look') === 'new' ? 'new' : 'classic',
 };
 // in detail mode the loaders' own "redraw if this panel is shown" checks draw the detail page
 if(CONFIG.detail) CONFIG.panel = CONFIG.detail;
+// «الجديد»: on the home screen (NXH) or the screensaver (NXS); the card, detail and ticker pages keep their own look
+const NX = CONFIG.look === 'new' && !CONFIG.detail && !CONFIG.widget && !CONFIG.ticker, NXH = NX && CONFIG.home, NXS = NX && !CONFIG.home;
 
 // the numbers as the settings ask (#numerals): 0 1 2 3 with . and %, or ٠ ١ ٢ ٣ with ٫ and ٪. Every number the page
 // writes goes through ar() (digits in either form come out in the chosen one), NU (Intl's numbering system), DEC or PCT
@@ -1074,7 +1273,7 @@ function tickPrayer(){
 // an item of the home screen (#home=1), rewritten only when it changes (one repaint, not one per tick);
 // '' empties it, which hides it
 function homeLine(id, html, cls){
-  const el = CONFIG.home ? document.getElementById(id) : null;
+  const el = CONFIG.home || NX ? document.getElementById(id) : null;   // «الجديد» reads hi-ram (nxRam)
   if(!el) return;
   if(cls && el.className !== cls) el.className = cls;
   if(el.innerHTML !== html) el.innerHTML = html;
@@ -1345,7 +1544,8 @@ function homeMatch(m, now){
   const day = new Intl.DateTimeFormat('en-CA',{timeZone:CONFIG.timezone}).format(d)
            === new Intl.DateTimeFormat('en-CA',{timeZone:CONFIG.timezone}).format(new Date(now))
     ? 'اليوم' : new Intl.DateTimeFormat(GREG,{timeZone:CONFIG.timezone,weekday:'long'}).format(d);
-  return HI_ICON.match + `<b>${home} × ${away}</b><span class="m">· ${day} ${t12}</span>`;
+  const bc = bcastOf(ev, now);   // its channel, when known
+  return HI_ICON.match + `<b>${home} × ${away}</b><span class="m">· ${day} ${t12}${bc && bc.ch.length ? ' · ' + bcCh(bc.ch) : ''}</span>`;
 }
 
 function liveStatus(ev, t12){
@@ -1526,6 +1726,168 @@ function pruneEspn(){
 }
 // ---- end
 
+// ---- the channel and commentator of a followed team's match in the next 48 h (optimize/run/match-channel-research.md).
+// btolat's day page first; filgoal's day list only while btolat lacks a field of one of that day's matches (btolat wins
+// where both have one). Both sites name days in UTC+3. Only the days of those matches are asked, at most every 3 h (1 h
+// while a field of a match within 6 h of kick-off is missing; filgoal at most every 4 h), none once it has kicked off.
+// A source row is used when it is the one row with both teams (bcKey) within a day of the date, or else the one row of
+// the followed club that day whose kick-off agrees within 20 min (the opponent may be transliterated in our data);
+// each field is hidden while unknown; any failure only logs.
+const BC_URL = {
+  btolat: d => { const [y, m, dd] = d.split('-').map(Number); return `https://mobile.btolat.com/match-score?d=${m}.${dd}.${y}`; },
+  filgoal: d => 'https://www.filgoal.com/matches/ajaxlist?date=' + d,
+};
+const bcDay = t => new Date(t + 3*36e5).toISOString().slice(0, 10);
+// the sites' other spellings of a club (research), after bcRaw. The page's own names (TEAM_AR, via teamAr) are the other
+// side of the match; TEAM_AR's only pairs under one English key are different clubs (Al-Wehda / Al Wahda of the UAE,
+// Al-Faisaly / Al-Faisaly of Jordan), so no alias is made from it.
+const BC_ALIAS = {اتحادجده: 'اتحاد', اهليجده: 'اهلي', نيفتشي: 'نفتشي', نيفتشيفرغانه: 'نفتشي', نيفتشيفرجانه: 'نفتشي'};
+// «الأهلي السعودي», «أهلي جدة», «نادي الأهلي» -> «اهلي»: harakat, tatweel, alef/ya/ta-marbuta forms, a leading
+// «نادي|فريق», a trailing country, each word's «ال» and the spaces
+const bcRaw = s => String(s || '').replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي')
+  .replace(/ة/g, 'ه').trim().replace(/^(نادي|فريق)\s+/, '').replace(/\s+(السعودي|السعوديه|الاماراتي|القطري|الكويتي|المصري)$/, '')
+  .split(/\s+/).map(w => w.replace(/^ال(?=..)/, '')).join('');
+const bcKey = s => { const k = bcRaw(s); return BC_ALIAS[k] || k; };
+const bcName = s => String(s || '').replace(/\s+/g, ' ').trim();
+const bcChan = s => bcName(s).replace(/^bein(?=\s|$)/i, 'beIN');   // btolat writes «BEIN SPORTS 3»; beIN's own casing
+// a site's local time (UTC+3) on day -> ms; btolat writes «09:15 م», filgoal «2026-10-25T17:00:00»; none: null
+function bcTime(day, hm, pm){
+  const m = /(\d{1,2}):(\d\d)/.exec(String(hm || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+  if(!m) return null;
+  const h = +m[1] % 12 + (pm == null ? +m[1] - +m[1] % 12 : pm ? 12 : 0);
+  const t = Date.parse(day + 'T00:00:00Z') + (h * 60 + +m[2] - 180) * 60000;
+  return Number.isFinite(t) ? t : null;
+}
+// 'btolat|2026-10-26' -> {at: last try (ms), rows: [[home key, away key, day, [≤2 channels], commentator, kick-off ms|null]]}
+const BC = (() => { try{ return JSON.parse(localStorage.getItem('bcast') || '{}'); }catch(e){ return {}; } })();
+
+async function bcBtolat(day){
+  const r = await fetchT(BC_URL.btolat(day), 15000);
+  if(!r.ok) throw Error('HTTP ' + r.status);
+  const doc = new DOMParser().parseFromString(await r.text(), 'text/html'), [y, m, d] = day.split('-').map(Number);
+  // a redirect to today's page drops ?d=: the title must carry the asked day, «… 26-10-2026 - بطولات»
+  if(!new RegExp(`(^|\\D)0?${d}-0?${m}-${y}(\\D|$)`).test(doc.title)) throw Error('not the asked day');
+  const rows = [];
+  doc.querySelectorAll('li[id^="m_"].item').forEach(li => {
+    const names = [...li.querySelectorAll('a.team')].map(a => {
+      const s = [...a.children].filter(e => e.tagName === 'SPAN' && e.textContent.trim()).pop();
+      return bcName((s || a).textContent);
+    });
+    if(names.length !== 2 || !names[0] || !names[1]) return;
+    const tm = li.querySelector('.match-time'), tx = tm ? tm.textContent : '';
+    const t = /[صم]/.test(tx) ? bcTime(day, tx, /م/.test(tx)) : null;   // 12-hour, so ص/م must be there
+    // in the footer a TV icon (svg with a rect) comes before a channel, a microphone (svg with a line) before the commentator
+    const ch = [], com = [], all = [], f = li.querySelector('.match-footer');
+    let icon = '';
+    if(f) f.querySelectorAll('svg, .sc-interp').forEach(e => {
+      if(e.tagName.toLowerCase() === 'svg'){
+        const R = !!e.querySelector('rect'), L = !!e.querySelector('line');
+        icon = R && !L ? 'ch' : L && !R ? 'com' : '';
+        return;
+      }
+      const v = bcName(e.textContent);
+      if(!v) return;
+      all.push(v);
+      if(icon === 'ch') ch.push(v); else if(icon === 'com') com.push(v);
+    });
+    if(!ch.length && !com.length && all.length === 2){ ch.push(all[0]); com.push(all[1]); }
+    rows.push([bcKey(names[0]), bcKey(names[1]), day, [...new Set(ch.map(bcChan))].slice(0, 2), com[0] || '', t]);
+  });
+  if(!rows.length) throw Error('no matches on the page');
+  return rows;
+}
+async function bcFilgoal(day){
+  const r = await fetchT(BC_URL.filgoal(day), 15000);
+  if(!r.ok) throw Error('HTTP ' + r.status);
+  const j = await r.json(), rows = [];
+  const walk = (o, n) => {
+    if(!o || typeof o !== 'object' || n > 4) return;
+    if(Array.isArray(o)){ o.forEach(x => walk(x, n + 1)); return; }
+    if(o.HomeTeamName && o.AwayTeamName){
+      const tv = Array.isArray(o.TvCoverage) ? o.TvCoverage.filter(x => x && typeof x === 'object') : [];
+      const at = /^\d{4}-\d\d-\d\d/.test(o.Date || '') ? o.Date.slice(0, 10) : day;
+      rows.push([bcKey(o.HomeTeamName), bcKey(o.AwayTeamName), at, [...new Set(tv.map(x => bcChan(x.TvChannelName)).filter(Boolean))].slice(0, 2),
+                 tv.map(x => bcName(x.CommenterName)).find(Boolean) || '', bcTime(at, String(o.Date || '').slice(11, 16), null)]);
+      return;
+    }
+    Object.values(o).forEach(x => walk(x, n + 1));
+  };
+  walk(j, 0);
+  if(!rows.length) throw Error('no matches in the list');
+  return rows;
+}
+
+// the followed teams' matches that kick off in the next 48 h
+function bcTargets(now){
+  const out = [], seen = new Set();
+  CONFIG.teamIds.forEach(id => [MATCHES[id], ...(NEXT_LIST[id] || [])].forEach(ev => {
+    if(!ev || !ev.idEvent || seen.has(ev.idEvent)) return;
+    const t = toDate(ev).getTime();
+    if(t > now && t - now <= 48*36e5){ seen.add(ev.idEvent); out.push({ev, t, day: bcDay(t)}); }
+  }));
+  return out;
+}
+// the source's row for ev: the one row with both its teams (either way round) within a day of its date; else the one row
+// of a followed side that day, when its kick-off agrees within 20 min; none or several: null
+const bcFollowed = id => id != null && CONFIG.teamIds.some(f => f === String(id) || tsdbOf(f) === String(id));
+function bcRow(src, ev, t){
+  const h = bcKey(teamAr(ev.strHomeTeam)), a = bcKey(teamAr(ev.strAwayTeam)), d = Date.parse(bcDay(t)), near = [];
+  if(!h || !a || h === a) return null;
+  Object.keys(BC).forEach(k => { if(k.startsWith(src + '|')) (BC[k].rows || []).forEach(r => {
+    if(Math.abs(Date.parse(r[2]) - d) <= 864e5) near.push(r);
+  }); });
+  const both = near.filter(r => (r[0] === h && r[1] === a) || (r[0] === a && r[1] === h));
+  if(both.length) return both.length === 1 ? both[0] : null;
+  const hits = [[h, ev.idHomeTeam], [a, ev.idAwayTeam]].filter(([, id]) => bcFollowed(id)).map(([f]) => {
+    const rs = near.filter(r => r[0] === f || r[1] === f);
+    return rs.length === 1 && rs[0][5] != null && Math.abs(rs[0][5] - t) <= 20*60000 ? rs[0] : null;
+  }).filter(Boolean);
+  return hits.length && hits.every(r => r === hits[0]) ? hits[0] : null;
+}
+// {ch: [names], com} of an upcoming match in the next 48 h, btolat's where it has them; null when nothing is known
+function bcastOf(ev, now = Date.now()){
+  const t = toDate(ev).getTime();
+  if(!(t > now && t - now <= 48*36e5)) return null;
+  const b = bcRow('btolat', ev, t) || [], f = bcRow('filgoal', ev, t) || [];
+  const ch = (b[3] && b[3].length ? b[3] : f[3]) || [], com = b[4] || f[4] || '';
+  return ch.length || com ? {ch, com} : null;
+}
+// each name isolated (<bdi>), so «beIN SPORTS 1» does not reorder the Arabic line
+const bcCh = ch => ch.map(c => `<bdi>${esc(c)}</bdi>`).join(' / ');
+const bcLine = x => [x.ch.length ? 'القناة: ' + bcCh(x.ch) : '', x.com ? `المعلق: <bdi>${esc(x.com)}</bdi>` : ''].filter(Boolean).join(' · ');
+
+let BC_BUSY = false;
+async function bcastUpdate(){
+  if(BC_BUSY) return;
+  BC_BUSY = true;
+  try{
+    const now = Date.now(), days = {};
+    let dirty = false, changed = false;
+    Object.keys(BC).forEach(k => { if(!(now - (BC[k].at || 0) <= 3*864e5)){ delete BC[k]; dirty = true; } });
+    bcTargets(now).forEach(x => (days[x.day] = days[x.day] || []).push(x));
+    for(const [day, xs] of Object.entries(days)){
+      // every 4 h; hourly within 6 h of a kick-off while a field of that match is missing, not at all once both are known
+      const need = xs.map(x => { const b = bcastOf(x.ev, now); return x.t - now > 6*36e5 ? 4 : b && b.ch.length && b.com ? Infinity : 1; });
+      const every = Math.min(...need) * 36e5;
+      if(every === Infinity) continue;
+      for(const src of ['btolat', 'filgoal']){
+        // filgoal only while btolat lacks a field of one of that day's matches, at most every 4 h
+        if(src === 'filgoal' && xs.every(x => { const r = bcRow('btolat', x.ev, x.t); return r && r[3].length && r[4]; })) continue;
+        const k = src + '|' + day;
+        if(BC[k] && now - BC[k].at < (src === 'filgoal' ? 4*36e5 : every)) continue;
+        BC[k] = Object.assign(BC[k] || {rows: []}, {at: now});
+        dirty = true;
+        try{ BC[k].rows = await (src === 'btolat' ? bcBtolat(day) : bcFilgoal(day)); changed = true; }
+        catch(e){ console.warn('SaudiTV bcast ' + k + ': ' + ((e && e.message) || e)); }   // the last good rows stay
+      }
+    }
+    if(dirty) try{ localStorage.setItem('bcast', JSON.stringify(BC)); }catch(e){}
+    if(changed){ renderMatches(); if(CONFIG.panel === 'matches') renderPanel(false); }
+  }catch(e){ console.warn('SaudiTV bcast: ' + ((e && e.message) || e)); }
+  finally{ BC_BUSY = false; }
+}
+// ---- end
+
 async function loadMatches(){
   // the older builds' Saudi clubs need ESPN's Saudi table (their ESPN ids come from it); ESPN picks carry their id
   const legacy = Object.keys(TEAM_NAME_OF).length > 0;
@@ -1546,6 +1908,7 @@ async function loadMatches(){
   if(!answered && CONFIG.teamIds.length) return false;   // offline: keep what is shown (the saved panels)
   renderMatches();
   if(CONFIG.panel === 'matches' || CONFIG.panel === 'standings') renderPanel(false);   // standings marks followed teams
+  bcastUpdate();   // the channel and commentator of a match in the next 48 h (never throws)
   // answered (see firstLoad); without the Saudi table the older builds' clubs are not read from ESPN yet
   return !legacy || KSA_TABLE.length > 0;
 }
@@ -2074,7 +2437,9 @@ function matchRows(){
         : now >= t ? '<span class="live">مباشر</span>'
         : (new Intl.DateTimeFormat('en-CA', {timeZone:CONFIG.timezone}).format(d) === today ? 'اليوم' : day(d))
           + ' ' + fmt12(+p.hour % 24, +p.minute);
-      return `<li><span>${esc(teamAr(ev.strHomeTeam))}${mid}${esc(teamAr(ev.strAwayTeam))}</span><span class="dt">${when}</span></li>`;
+      const bc = bcastOf(ev, now);   // its channel and commentator on a muted line under it, when known
+      return `<li${bc ? ' class="bcl"' : ''}><span>${esc(teamAr(ev.strHomeTeam))}${mid}${esc(teamAr(ev.strAwayTeam))}</span><span class="dt">${when}</span>`
+           + (bc ? `<span class="dt bc">${bcLine(bc)}</span>` : '') + '</li>';
     });
 }
 
@@ -2278,7 +2643,6 @@ const NEWS_SOURCES = {
     {id: 'alarabiya', name: 'العربية', url: gnSearch('site:alarabiya.net'), site: 'alarabiya.net', on: true},
     {id: 'skynews', name: 'سكاي نيوز عربية', url: 'https://www.skynewsarabia.com/rss', on: true},
     {id: 'bbc', name: 'بي بي سي عربي', url: 'https://feeds.bbci.co.uk/arabic/rss.xml', on: true},
-    {id: 'cnn', name: 'CNN بالعربية', url: 'https://arabic.cnn.com/api/v1/rss/rss.xml', on: true},
     {id: 'aawsat', name: 'الشرق الأوسط', url: 'https://aawsat.com/feed'},
     {id: 'aljazeera', name: 'الجزيرة', url: 'https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9'},
     {id: 'france24', name: 'فرانس 24', url: 'https://www.france24.com/ar/rss'},
@@ -2463,7 +2827,7 @@ function newsFrom(items, feed){
     // the newest NEWS_POOL (the card shows NEWS_KEEP of them, NEWS_ROWS at a time: newsCardPages); the detail page keeps
     // NEWS_DETAIL_KEEP, each with its summary
     .slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_POOL)
-    .map(x => { const desc = x.desc; delete x.desc; if(CONFIG.detail) x.summary = newsSummary(x, desc); return x; });
+    .map(x => { const desc = x.desc; delete x.desc; if(CONFIG.detail || NXH) x.summary = newsSummary(x, desc); return x; });
 }
 // the item's <description> as plain text. Google's repeats the headline and the source only: no summary.
 function newsSummary(x, desc){
@@ -2540,7 +2904,7 @@ async function readFeed(feed, withDesc){
       const src = it.getElementsByTagName('source')[0];
       if(feed.site){ const h = host(src && src.getAttribute('url')); if(h !== feed.site && !h.endsWith('.' + feed.site)) continue; }
       items.push({title: txt(it, 'title'), pubDate: txt(it, 'pubDate'), source: src ? src.textContent : '',
-                  link: txt(it, 'link'), description: CONFIG.detail || withDesc ? txt(it, 'description') : ''});
+                  link: txt(it, 'link'), description: CONFIG.detail || NXH || withDesc ? txt(it, 'description') : ''});
     }
     return items;
   }catch(e){ return null; }
@@ -2550,7 +2914,7 @@ function bingItems(list){
   return list.filter(x => x.headline)
     .sort((a, b) => (Number.isFinite(b.t) ? b.t : -Infinity) - (Number.isFinite(a.t) ? a.t : -Infinity))
     .slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_POOL)
-    .map(x => { const desc = x.desc; delete x.desc; if(CONFIG.detail) x.summary = desc ? newsSummary(x, desc) : ''; return x; });
+    .map(x => { const desc = x.desc; delete x.desc; if(CONFIG.detail || NXH) x.summary = desc ? newsSummary(x, desc) : ''; return x; });
 }
 // one source of a news page -> its newest stories ([] when it did not answer, or too few matched its filter).
 // fallback (the country news): an outlet whose own feed or Google search gave nothing (Google News answers the TVs'
@@ -2858,7 +3222,7 @@ async function loadLocalNews(){
   if(how !== LOCAL_LOG){ LOCAL_LOG = how; console.warn('SaudiTV: local news from ' + how + ': ' + items.length + ' items'); }
   NEWS.local = items.slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_POOL).map(x => {
     const desc = x.desc; delete x.desc;
-    if(CONFIG.detail) x.summary = desc ? newsSummary(x, desc) : '';
+    if(CONFIG.detail || NXH) x.summary = desc ? newsSummary(x, desc) : '';
     return x;
   });
   if(CONFIG.panel === 'local') renderPanel(false);
@@ -2992,7 +3356,7 @@ async function loadWeather(){
   const U = CONFIG.units === 'f' ? '&temperature_unit=fahrenheit&wind_speed_unit=mph' : '';
   try{
     const r = await fetchT(`https://api.open-meteo.com/v1/forecast?${q}${U}&current=temperature_2m,weather_code`
-                         + (DX ? ',apparent_temperature,relative_humidity_2m,wind_speed_10m' : '')
+                         + (DX ? ',apparent_temperature,relative_humidity_2m,wind_speed_10m' : NXH ? ',relative_humidity_2m' : '')
                          + `&daily=temperature_2m_max,temperature_2m_min,weather_code`
                          + (DX ? ',precipitation_probability_max,sunrise,sunset&hourly=temperature_2m,precipitation_probability&forecast_days=7'
                                : '&forecast_days=5'), 12000);
@@ -3005,6 +3369,7 @@ async function loadWeather(){
     const hi = j.daily?.temperature_2m_max?.[0], lo = j.daily?.temperature_2m_min?.[0];
     document.getElementById('wx-range').textContent =
       (hi != null && lo != null) ? `${ar(Math.round(hi))}° / ${ar(Math.round(lo))}°` : '';
+    if(NX) NX_WX = {t: j.current.temperature_2m, code: j.current.weather_code, hum: j.current.relative_humidity_2m, hi, lo};
     const dl = j.daily || {};
     FORECAST = (dl.time || []).map((t, i) => ({date:t, code:dl.weather_code?.[i],
       hi:dl.temperature_2m_max?.[i], lo:dl.temperature_2m_min?.[i],
@@ -3031,6 +3396,7 @@ async function loadWeather(){
       d.textContent = pm >= 400 ? 'غبار كثيف' : 'غبار';
       d.classList.add('dust');
       if(DX && WX_NOW){ WX_NOW.dust = d.textContent; renderDetail(); }
+      if(NX_WX) NX_WX.dust = d.textContent;
     }
   }catch(e){}
   return true;   // answered (see firstLoad)
@@ -3151,21 +3517,26 @@ function ssStart(){
 }
 // ---- end: the screensaver against image retention
 
-// Background photos: the hosted set in photos/ (photos/index.json in the repo). A hosted photo is used only
+// Background photos: the hosted set in photos/ (photos/index.json in the repo) and the online ones of
+// photos/online.json (tools/online_photos.py: saudi, world, bing), as picked (#photos). A photo is used only
 // once it has loaded; offline, or if it fails, a bundled one is shown, so the screen is never empty.
 const PHOTO_BASE = 'https://raw.githubusercontent.com/raad113/SaudiTV/main/photos/';
-let REMOTE_BGS = (()=>{ try{ return JSON.parse(localStorage.getItem('photoIndex') || '[]'); }catch(e){ return []; } })();
+const lsJSON = (k, d) => { try{ return JSON.parse(localStorage.getItem(k)) || d; }catch(e){ return d; } };
+// photos/online.json as it was when the page was built (build.py: dist/online.js beside tv.html, inline in saudi-tv.html;
+// window.SAUDITV_ONLINE): a new or offline TV has the Saudi photos and their places at once, until a fetch of the list
+// succeeds (that one is kept, photoOnline, and used from then on)
+const ONLINE_BUNDLED = (j => j && Array.isArray(j.saudi) ? j : null)(window.SAUDITV_ONLINE);
+let REMOTE_BGS = lsJSON('photoIndex', []), ONLINE = lsJSON('photoOnline', null) || ONLINE_BUNDLED || {};
 
 async function loadPhotoIndex(){
-  try{
-    const r = await fetchT(PHOTO_BASE + 'index.json', 15000);
-    if(!r.ok) return;
-    const list = (await r.json()).filter(p => p && p.f);
-    if(list.length){
-      REMOTE_BGS = list;
-      try{ localStorage.setItem('photoIndex', JSON.stringify(list)); }catch(e){}
-    }
-  }catch(e){}
+  await Promise.all([['index.json', 'photoIndex', j => Array.isArray(j) && (j = j.filter(p => p && p.f)).length ? (REMOTE_BGS = j) : 0],
+                     ['online.json', 'photoOnline', j => j && Array.isArray(j.saudi) ? (ONLINE = j) : 0]].map(async ([f, k, use]) => {
+    try{
+      const r = await fetchT(PHOTO_BASE + f, 15000);
+      const j = r.ok && use(await r.json());
+      if(j) try{ localStorage.setItem(k, JSON.stringify(j)); }catch(e){}
+    }catch(e){}
+  }));
 }
 
 let REVEALED = false;
@@ -3196,8 +3567,13 @@ function showBackground(url, b){
   const fr = CONFIG.detail || CONFIG.widget ? null : document.getElementById('tape-frost');   // the ticker tape's frost
   if(fr){ fr.style.backgroundImage = next; fr.style.setProperty('--dim', ph.style.getPropertyValue('--dim')); }
   const cr = document.getElementById('credit');
-  if(cr) cr.textContent = b.c ? 'الصورة: ' + b.c : '';
+  // an online photo's credit on screen (its licence asks for it): «العُلا · تصوير <author> · CC BY-SA 4.0»
+  if(cr){ cr.innerHTML = b.on ? photoCredit(b) : esc(b.c ? 'الصورة: ' + b.c : ''); cr.classList.toggle('on', !!b.on); }
 }
+// the author and the licence in <bdi>: a Latin name keeps its place in the Arabic line
+const photoCredit = b => [b.p && esc(b.p), b.a && 'تصوير <bdi>' + esc(b.a) + '</bdi>', b.l && '<bdi>' + esc(b.l) + '</bdi>'].filter(Boolean).join(' · ');
+// an online photo's darkening from its brightness (b, 0..1): the brighter, the stronger, so the text stays readable
+const photoDim = b => Number.isFinite(b) ? Math.min(.32, Math.max(.05, (b - .35) * .8)) : .05;
 
 // Every 4 days a new random set of 12 hosted photos (same draw as the launcher: Park-Miller generator seeded
 // by the 4-day period), rotating every 5 minutes. Only the photo on screen is downloaded.
@@ -3219,6 +3595,23 @@ function photoSet(n){
   }
   return pick;
 }
+// the picked sources (#photos) in turn, one per slot: ours the 12-photo set above, an online list in an order shuffled
+// by the same 4-day period; a source with nothing at hand is left out, none at all: the bundled ones
+function photoPools(){
+  const seed0 = Math.floor(riyadhDayNumber() / PHOTO_PERIOD_DAYS) % 2147483646 + 1;
+  return CONFIG.photos.map(s => {
+    if(s === 'ours') return REMOTE_BGS.length ? photoSet(REMOTE_BGS.length).map(k => ({u: PHOTO_BASE + REMOTE_BGS[k].f, c: REMOTE_BGS[k].c, d: REMOTE_BGS[k].d})) : [];
+    const L = (Array.isArray(ONLINE[s]) ? ONLINE[s] : []).filter(x => x && /^https:\/\//.test(x.u))
+      .map(x => Object.assign({}, x, {on: 1, d: 1 - photoDim(x.b)}));
+    for(let i = L.length - 1, seed = seed0; i > 0; i--){ seed = seed * 48271 % 2147483647; const k = seed % (i + 1); [L[i], L[k]] = [L[k], L[i]]; }
+    return L;
+  }).filter(L => L.length);
+}
+function photoFor(slot, P){
+  if(!P.length) return null;
+  const L = P[slot % P.length];
+  return L[Math.floor(slot / P.length) % L.length];
+}
 let BG_SLOT = -1, PREFETCHED = false;
 function applyBackground(force){
   try {
@@ -3226,10 +3619,12 @@ function applyBackground(force){
     const slot = riyadhDayNumber() * PHOTO_SLOTS_PER_DAY + Math.floor((p.h * 60 + p.mi) / PHOTO_SLOT_MIN);
     if(slot === BG_SLOT && !force) return;
     BG_SLOT = slot;
-    const set = REMOTE_BGS.length ? photoSet(REMOTE_BGS.length).map(k => REMOTE_BGS[k]) : [];
-    const local = BGS[slot % BGS.length];
-    if(!set.length){ showBackground(local.u, local); return; }
-    const b = set[slot % set.length], url = PHOTO_BASE + b.f;
+    const set = REMOTE_BGS.length && CONFIG.photos.includes('ours') ? photoSet(REMOTE_BGS.length).map(k => REMOTE_BGS[k]) : [];
+    const local = BGS[slot % BGS.length], P = photoPools(), b = photoFor(slot, P);
+    if(!b){ showBackground(local.u, local); return; }
+    const url = b.u;
+    // the next few online ones ahead of their turn, so the app has them on disk (PhotoCache keeps the last 30)
+    if(!CONFIG.detail) setTimeout(() => [1, 2, 3].forEach(i => { const x = photoFor(slot + i, P); if(x && x.on) new Image().src = x.u; }), 20000);
     // First photo: wait briefly for the hosted one (the app serves it from disk at once) so the screen
     // doesn't flash a bundled photo first; slow network → bundled one, swapped when the hosted one arrives.
     let done = false;
@@ -3363,6 +3758,9 @@ function dvForecast(){
 
 // the competition, in Arabic when it is the Saudi league
 const dvComp = s => /saudi|roshn/i.test(s || '') && /pro|league|دوري/i.test(s || '') ? 'دوري روشن السعودي' : String(s || '');
+// a match's channel and commentator, each a labelled row under its teams; an unknown one is left out
+const dvBcast = x => x ? (x.ch.length ? `<span class="dv-meta dv-bc">القناة: ${bcCh(x.ch)}</span>` : '')
+  + (x.com ? `<span class="dv-meta dv-bc">المعلق: <bdi>${esc(x.com)}</bdi></span>` : '') : '';
 function dvMatches(){
   const now = Date.now(), seen = new Set(), evs = [];
   const add = ev => { if(ev && ev.idEvent && !seen.has(ev.idEvent)){ seen.add(ev.idEvent); evs.push(ev); } };
@@ -3388,7 +3786,8 @@ function dvMatches(){
       : new Intl.DateTimeFormat(GREG, {timeZone:CONFIG.timezone, weekday:'long', day:'numeric', month:'long'}).format(d) + ' · ' + t12;
     const mid = fin || (live && scored) ? ` <span class="dv-sc">${ar(+ev.intHomeScore)} - ${ar(+ev.intAwayScore)}</span> ` : ' × ';
     return `<div class="dv-tr"><span>${when}</span><span>${esc(teamAr(ev.strHomeTeam))}${mid}${esc(teamAr(ev.strAwayTeam))}</span>`
-         + `<span class="dv-meta" dir="auto">${esc(dvComp(ev.strLeague))}</span></div>`;   // English names keep their start
+         + `<span class="dv-meta" dir="auto">${esc(dvComp(ev.strLeague))}</span>`   // English names keep their start
+         + dvBcast(fin ? null : bcastOf(ev, now)) + '</div>';
   }).join('') + '</div></div>';
 }
 
@@ -3661,8 +4060,9 @@ function boot(){
   if(CONFIG.tapeTest) setTimeout(tapeTest, 3000);   // tests only (#tapetest=1)
   if(CONFIG.ticker){ bootTicker(); return; }
   if(CONFIG.detail){ bootDetail(); return; }
-  if(CONFIG.home){ bootHome(); return; }
+  if(CONFIG.home){ if(NXH) nxHome(); else bootHome(); return; }
   if(CONFIG.widget){ bootWidget(); return; }
+  if(NXS) nxBoot();   // «الجديد»: its layer over this screensaver (the card moves into it; no ticker tape)
   restoreSnap();
   setTimeout(saveSnap, 15*1000);   // the dream can be killed before pagehide
   setInterval(saveSnap, 60*1000);
@@ -3677,7 +4077,7 @@ function boot(){
   loadPhotoIndex().then(() => applyBackground(true));
   setInterval(() => applyBackground(false), 60*1000);
   tickClock(); tickDates(); tickRamadan();
-  tapeStart();   // the ticker tape at the bottom edge (was the three markets under the weather)
+  if(!NXS) tapeStart();   // the ticker tape at the bottom edge (was the three markets under the weather)
   const ROT = CONFIG.panels.length > 1 ? CONFIG.panels : null;   // rotating card on the screensaver too
   if(ROT) CONFIG.panel = ROT[0];
   if(CONFIG.panel === 'none') document.querySelector('.week').style.display = 'none';
@@ -3931,6 +4331,286 @@ function bootRotatingWidget(){
     if(riyadhDayNumber() !== lastDay){ lastDay = riyadhDayNumber(); if(L.includes('prayers') && own) loadPrayers(); renderPanel(false); }
   }, 60*1000);
 }
+
+// ---- «الجديد» (#look=new, the settings' «شكل الواجهة»): design/concepts/1-ambient-editorial. A layer (#nx) in the
+// stage, laid out in the mock-ups' CSS px (960 x 540: the TV's own size) and scaled to any other screen (nxLay). Its data
+// are the classic loaders' (none is asked twice): nxBoot wraps the few that bring new data, so the layer is redrawn when
+// they answer (nxSoon), each part rewritten only when its text changes (nxSet).
+// Home (nxHome): the dateline, the clock and a standfirst from the weather and the next prayer (nxLine), the «اليوم» row
+// (the next prayer; the news, its tabs the enabled news cards; the weather; the next match; then the other enabled cards
+// in their order) and the ticker tape as the «الأسواق» line. The launcher keeps its pills and its apps row; its invisible
+// card view covers the row (cardRect): ◀ ▶ step through the cards (sauditvStep), OK opens the focused one
+// (sauditvCurrentPanel), the detail window's ◀ ▶ go through the row (sauditvDetailList).
+// Screensaver (boot, then nxBoot): the rotating card top right in a quiet style, the photo's place top left, the dates
+// and the clock bottom right, four facts bottom left (nxDraw); pixelShift, the hourly swap (mirrored corners), the
+// photo-only minute and the night dimming as before; no ticker tape.
+let NX_WX = null;   // the weather now (loadWeather): {t, code, hum, hi, lo, dust}
+let NX_T = 0, NX_K = '', NX_F = false, NX_Z = 1, NX_TAB = '', NX_RECT = '';   // timer, focused card, focus on, scale, news tab
+let NX_PHOTO = null, NX_CW = -1;   // the photo shown (showBackground) and its credit's room on the «الأسواق» line (nxCredit)
+const NX_H = {};
+const nxEl = id => document.getElementById(id);
+const nxSet = (id, h) => { const e = nxEl(id); if(e && NX_H[id] !== h){ NX_H[id] = h; e.innerHTML = h; } };
+const nxSoon = () => { if(!NX_T) NX_T = setTimeout(nxDraw, 50); };
+const nxFmt = (o, loc) => { try{ return new Intl.DateTimeFormat(loc || GREG, Object.assign({timeZone: CONFIG.timezone}, o)).format(new Date()); }catch(e){ return ''; } };
+const nxT12 = (h, mi) => ar(h % 12 || 12) + ':' + ar(pad(mi));
+// a number with its ° or %, or «33° / 19°», kept left to right in the Arabic line
+const nxL = s => '<bdi dir="ltr">' + s + '</bdi>', nxDeg = v => nxL(ar(Math.round(v)) + '°');
+const nxHiLo = W => W.hi != null && W.lo != null ? nxL(`${ar(Math.round(W.hi))}° / ${ar(Math.round(W.lo))}°`) : '';
+const nxCount = (n, one, two, few) => n === 1 ? one : n === 2 ? two : ar(n) + ' ' + (n <= 10 ? few : one);
+// «ساعة و47 دقيقة», «ساعتين», «5 دقائق»
+function nxDur(s){
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), a = [];
+  if(h) a.push(nxCount(h, 'ساعة', 'ساعتين', 'ساعات'));
+  if(m || !h) a.push(nxCount(Math.max(1, m), 'دقيقة', 'دقيقتين', 'دقائق'));
+  return a.join(' و');
+}
+// the home screen's cards: the enabled news cards as the news card's tabs (none: the country's news), the other cards
+const NX_LIST = CONFIG.panels.length ? CONFIG.panels : [CONFIG.panel];
+const NX_TABS = (L => L.length ? L : ['news'])(NX_LIST.filter(isNewsPanel));
+const NX_MORE = NX_LIST.filter(p => ['verse', 'hadith', 'standings'].includes(p));
+const NX_TAB_NAME = {news: CONFIG.newsName, world: 'العالم', tech: 'التقنية', local: 'مدينتك'};
+// the next prayer, or the one between its adhan and its iqama (now): its index, seconds to it (to the iqama), the
+// timeline's line (w, percent: the dots are 20% apart, 10% in from the ends)
+function nxPrayer(){
+  if(!PRAYERS.length) return null;
+  const p = placeParts(), m = p.h * 60 + p.mi + p.s / 60, at = x => x.h * 60 + x.mi;
+  const gap = x => x.key === 'Dhuhr' && isFriday() ? 0 : CONFIG.iqama[x.key] || 0;
+  let i = PRAYERS.findIndex(x => m >= at(x) && m < at(x) + gap(x));
+  const now = i >= 0;
+  if(!now) i = PRAYERS.findIndex(x => at(x) > m);
+  const late = i < 0, x = PRAYERS[late ? 0 : i], t = at(x) + (late ? 1440 : 0), prev = i > 0 ? at(PRAYERS[i - 1]) : 0;
+  return {i: late ? 0 : i, x, now, name: prayerName(x), iq: gap(x) ? at(x) + gap(x) : -1,
+          left: Math.max(0, Math.round(((now ? t + gap(x) : t) - m) * 60)),
+          w: now ? 20 * i : late || !i ? 0 : 20 * (i - 1) + 20 * Math.min(1, Math.max(0, (m - prev) / (t - prev)))};
+}
+// the standfirst: «سماء صافية و31°، والمغرب بعد ساعة و47 دقيقة.»; a half without its data is left out, none: ''
+function nxLine(P, W){
+  const sky = W && (W.dust || (W.code < 2 ? 'سماء صافية' : WX_CODES[W.code]));
+  const a = W ? (sky ? sky + ' و' : 'الحرارة ') + nxDeg(W.t) : '';
+  const b = P ? (P.now ? 'حان وقت ' + P.name : P.name + ' بعد ' + nxDur(P.left)) : '';
+  return a && b ? a + '، و' + b + '.' : a || b ? (a || b) + '.' : '';
+}
+// the Ramadan countdown as the classic strip has it (hi-ram): [«رمضان», «بعد 107 يوم»], [«الإفطار 6:09 م», «بعد 2 س»]
+function nxRam(){
+  const e = nxEl('hi-ram'), b = e && e.querySelector('b');
+  return b ? [b.textContent, e.textContent.slice(b.textContent.length).replace(/^\s*·?\s*/, '')] : null;
+}
+// the picked match (pickMatch): its teams (the score once it has one), when, the time left and its channel line
+function nxMatch(M, now){
+  const ev = M.ev, d = toDate(ev), on = ev.intHomeScore != null && ev.intAwayScore != null && (M.done || d <= now);
+  const t = esc(teamAr(ev.strHomeTeam)) + (on ? ` <span class="sc">${ar(+ev.intHomeScore)} - ${ar(+ev.intAwayScore)}</span> ` : ' <s>×</s> ') + esc(teamAr(ev.strAwayTeam));
+  const p = new Intl.DateTimeFormat('en-GB', {timeZone: CONFIG.timezone, hour: '2-digit', minute: '2-digit', hour12: false})
+    .formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {}), t12 = fmt12(+p.hour % 24, +p.minute);
+  if(M.done) return {t, w: 'النتيجة النهائية', m: ''};
+  if(d <= now) return {t, w: '<span class="live">مباشر</span> · ' + liveStatus(ev, t12), m: ''};
+  const day = x => new Intl.DateTimeFormat('en-CA', {timeZone: CONFIG.timezone}).format(x), bc = bcastOf(ev, now);
+  return {t, w: (day(d) === day(new Date(now)) ? 'اليوم' : new Intl.DateTimeFormat(GREG, {timeZone: CONFIG.timezone, weekday: 'long'}).format(d)) + ' ' + t12,
+          m: 'بعد ' + shortRemaining(d - now), bc: bc ? bcLine(bc) : ''};
+}
+// the «اليوم» row: [key, class, html] of each card that has its data, in the row's order
+function nxCards(P, W, M, now){
+  const out = [], N = (NEWS[NX_TAB] || []).slice(0, 3), k = (i, t) => `<div class="k">${DV_ICON[i]}${t}</div>`;
+  if(P) out.push(['prayers', 'nx-p', k('prayers', P.now ? 'حان الآن' : 'الصلاة القادمة')
+    + `<div class="pm"><b class="pn">${P.name}</b><span class="pt">${nxT12(P.x.h, P.x.mi)}<small>${P.x.h < 12 ? 'ص' : 'م'}</small></span></div>`
+    + `<div class="m">${P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left) + (P.iq < 0 ? '' : ' · الإقامة ' + nxT12(Math.floor(P.iq / 60) % 24, P.iq % 60))}</div>`
+    + `<ol class="nx-tl" style="--w:${P.w.toFixed(1)}%">` + PRAYERS.map((y, j) => `<li class="${j < P.i ? 'p' : j === P.i ? 'n' : ''}"><i></i>${prayerName(y)}<b>${nxT12(y.h, y.mi)}</b></li>`).join('') + '</ol>']);
+  if(N.length){
+    const x = N[0], b = (s, t) => `<${t}${bidiAttr(NX_TAB, s)}>${esc(s)}</${t}>`;
+    out.push(['news', 'nx-n', `<div class="nh">${k('news', '<span>الأخبار</span>')}<div class="nx-ch">`
+      + NX_TABS.map(t => `<span${t === NX_TAB ? ' class="on"' : ''}>${esc(NX_TAB_NAME[t])}</span>`).join('') + '</div></div><ol class="nx-nl">'
+      + N.map(y => `<li>${b(y.headline, 'b')}<span>${[y.source && '<em>' + newsSource(NX_TAB, y.source) + '</em>', Number.isFinite(y.t) && agoAr(now - y.t)].filter(Boolean).join(' · ')}</span></li>`).join('')
+      + `</ol><div class="nx-sm">${x.summary ? b(x.summary, 'p') : '<p class="m">لا يوجد ملخص</p>'}<div><u>OK</u>اقرأ الخبر كاملاً</div></div>`]);
+  }
+  if(W) out.push(['forecast', 'nx-wx', k('forecast', 'الطقس') + `<div class="nb">${ar(Math.round(W.t))}°</div><div class="sb">${esc(W.dust || WX_CODES[W.code] || '')}</div>`
+    + `<div class="m">${nxHiLo(W)}</div>`]);
+  if(M){ const x = nxMatch(M, now); out.push(['matches', 'nx-m', k('matches', M.done ? 'آخر نتيجة' : 'المباراة القادمة')
+    + `<div class="tm">${x.t}</div><div class="wh">${x.w}</div><div class="m">${x.m}</div>` + (x.bc ? `<div class="m bc">${x.bc}</div>` : '')]); }
+  NX_MORE.forEach(p => {
+    if(p === 'verse'){ const v = VERSES[riyadhDayNumber() % VERSES.length];
+      if(v) out.push([p, 'nx-q', k(p, PANEL_TITLE.verse) + `<p><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></p><div class="m">${esc(v.surah)} · ${ar(v.ayah)}</div>`]); }
+    if(p === 'hadith'){ const h = HADITH_DAY;
+      if(h && h.day !== riyadhDayNumber()) loadHadith();
+      if(h && h.matn) out.push([p, 'nx-q h', k(p, PANEL_TITLE.hadith) + `<p><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</p><div class="m">صحيح البخاري، رقم ${ar(h.n)}</div>`]); }
+    if(p === 'standings' && STANDINGS.length){ const f = standFollowed(), n = v => ar(Number.isFinite(v) ? Math.round(v) : 0);
+      out.push([p, 'nx-s', k(p, esc(PANEL_TITLE.standings)) + '<ol>' + pickStandings(STANDINGS, f, 5).map(x =>
+        `<li${f(x) ? ' class="y"' : ''}><span>${n(x.rank)}. ${esc(standAr(x.name))}</span><b>${n(x.pts)}</b></li>`).join('') + '</ol>']); }
+  });
+  if(!out.some(c => c[0] === NX_K) && out.length) NX_K = out[0][0];
+  return out.map(([key, cls, h]) => `<article class="nx-c ${cls}${NX_F && key === NX_K ? ' f' + (key === 'news' ? ' w' : '') : ''}" data-k="${key}">${h}</article>`).join('');
+}
+function nxDraw(){
+  NX_T = 0;
+  const now = Date.now(), P = nxPrayer(), W = NX_WX && Number.isFinite(NX_WX.t) ? NX_WX : null, M = pickMatch(now), R = nxRam();
+  if(NXS){   // the facts, each only with its data
+    const f = [], x = M && nxMatch(M, now);
+    if(P) f.push([P.name + ' ' + fmt12(P.x.h, P.x.mi), P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left)]);
+    if(x) f.push([x.t, x.w]);
+    if(W) f.push([`${nxDeg(W.t)} ${esc(W.dust || WX_CODES[W.code] || '')}`, esc(CONFIG.city) + (nxHiLo(W) && ' · ' + nxHiLo(W))]);
+    if(R) f.push([esc(R[0]), esc(R[1])]);
+    nxSet('nx-fx', f.map(([b, s]) => `<li><b>${b}</b><span>${s}</span></li>`).join(''));
+    return;
+  }
+  const wd = nxFmt({weekday: 'long'}), ram = R ? esc(R[0] + (R[1] ? ' ' + R[1] : '')) : '';
+  nxSet('nx-dl', `<span><b>${wd}</b> ${nxFmt({day: 'numeric', month: 'long'}, HIJRI)}</span><span>${nxFmt({day: 'numeric', month: 'long'})}</span>`
+    + (R ? `<span class="r">${HI_ICON.ram}${ram}</span>` : ''));
+  // the dateline keeps what fits beside the launcher's pills (the rest wraps to its hidden second line); Ramadan's
+  // countdown, if it is left out there, goes to the line over the standfirst
+  const rs = nxEl('nx-dl').querySelector('.r'), lost = rs && rs.offsetTop > 4;
+  nxSet('nx-kk', DV_ICON.local + esc(CONFIG.city) + ' · ' + (riyadhParts().h < 12 ? 'صباح ' : 'مساء ') + wd + (lost ? ' · ' + ram : ''));
+  nxSet('nx-st', nxLine(P, W));
+  nxSet('nx-mt', W ? [W.hi != null && 'العظمى ' + nxDeg(W.hi), W.lo != null && 'الصغرى ' + nxDeg(W.lo),
+    Number.isFinite(W.hum) && 'رطوبة ' + nxL(ar(Math.round(W.hum)) + PCT)].filter(Boolean).join(' · ') : '');
+  nxSet('nx-rail', nxCards(P, W, M, now));
+  nxEl('nx-mk').hidden = !TAPE_HTML;
+  nxFocus(); nxRect();
+}
+// the focused card in paper (the news card wider, with its first story's summary), and wholly in view: the row starts
+// at the right margin and runs off the left edge; it moves right just enough. A card it leaves partly off the screen is
+// not shown (.o) until the focus brings it in: no card is ever seen cut
+function nxFocus(){
+  const rail = nxEl('nx-rail');
+  if(!rail) return;
+  const cs = [...rail.children], c = cs.find(e => e.dataset.k === NX_K) || cs[0];
+  NX_K = c ? c.dataset.k : '';
+  cs.forEach(e => { const on = NX_F && e === c; e.classList.toggle('f', on); if(e.dataset.k === 'news'){ e.classList.toggle('w', on); nxFit(e); } });
+  const W = nxEl('nx').offsetWidth, base = W - 40 - rail.offsetWidth, left = c ? base + c.offsetLeft : 40, x = left < 40 ? 40 - left : 0;
+  rail.style.transform = x ? `translateX(${x}px)` : '';
+  cs.forEach(e => { const l = base + x + e.offsetLeft; e.classList.toggle('o', l < -.5 || l + e.offsetWidth > W + .5); });
+}
+// the news card's header in its width: its tabs whole, else without the word «الأخبار» (its icon stays), then without
+// the tabs from the last one (never the one shown)
+function nxFit(c){
+  const ch = c.querySelector('.nx-ch'), tabs = ch ? [...ch.children] : [], over = () => ch.scrollWidth > ch.clientWidth + .5;
+  c.classList.remove('ni');
+  tabs.forEach(t => { t.hidden = false; });
+  if(!ch || !over()) return;
+  c.classList.add('ni');
+  for(let i = tabs.length - 1; i >= 0 && over(); i--) if(!tabs[i].classList.contains('on')) tabs[i].hidden = true;
+}
+// the row's box for the launcher's view over it (CSS px; 0 x 0 with no card)
+function nxRect(){
+  const N = window.SaudiTVNative, z = NX_Z, rail = nxEl('nx-rail');
+  if(!NXH || !N || typeof N.cardRect !== 'function' || !rail) return;
+  const v = (rail.children.length ? [0, 188 * z, innerWidth - 40 * z, 176 * z] : [0, 0, 0, 0]).concat(innerWidth).map(Math.round);
+  if(v.join() === NX_RECT) return;
+  NX_RECT = v.join();
+  try{ N.cardRect(...v); }catch(e){}
+}
+function nxLay(){
+  const z = NX_Z = Math.min(innerWidth / 960, innerHeight / 540), nx = nxEl('nx'), R = CONFIG.homeRoom;
+  document.documentElement.style.setProperty('--z', z);
+  Object.assign(nx.style, {width: innerWidth / z + 'px', height: innerHeight / z + 'px', transform: z === 1 ? '' : `scale(${z})`});
+  // «التطبيقات» just above the launcher's apps row (dockh tall, dockb from the bottom, in CSS px; «الجديد»'s 100 and 44)
+  if(NXH) nx.style.setProperty('--ah', (innerHeight - (R['--dock-b'] >= 0 ? R['--dock-b'] : 44) - (R['--dock-h'] >= 0 ? R['--dock-h'] : 100)) / z - 22 + 'px');
+  nxFocus(); nxRect();
+  if(NXH && NX_PHOTO) nxCredit(NX_PHOTO);
+}
+// the home screen's photo credit (an online photo's: its licence asks for it) on the «الأسواق» line, at its left; the
+// ticker starts after it (--cw). Whole, or, when it would take more than 40% of the line, without the licence's version
+// («CC BY-SA»), then without the author too; the place is never cut. Again when the fonts arrive and the size changes.
+function nxCredit(b){
+  const cr = nxEl('credit'), z = NX_Z, ver = s => String(s || '').replace(/\s*\d+(\.\d+)*$/, '');
+  NX_PHOTO = b;
+  let w = 0;
+  if(cr && b && b.on){
+    for(const x of [b, Object.assign({}, b, {l: ver(b.l)}), Object.assign({}, b, {l: ver(b.l), a: ''})]){
+      cr.innerHTML = photoCredit(x);
+      if(cr.scrollWidth <= 880 * .4 * z) break;
+    }
+    w = Math.ceil(cr.scrollWidth + 16 * z);
+  }
+  if(w === NX_CW) return;
+  NX_CW = w;
+  document.documentElement.style.setProperty('--cw', w + 'px');
+  if(TAPE_HTML) tapeLay();   // the run again for the tape's new width, on from where it was
+}
+// the news card's tab: the news page last read in the detail window (its 'sauditv-card-pos'), else the one shown, else the first
+function nxTab(){
+  let s = null;
+  try{ s = JSON.parse(localStorage.getItem('sauditv-card-pos') || 'null'); }catch(e){}
+  NX_TAB = s && NX_TABS.includes(s.panel) ? s.panel : NX_TABS.includes(NX_TAB) ? NX_TAB : NX_TABS[0];
+}
+function nxClock(){
+  const p = riyadhParts(), key = p.h + ':' + p.mi;
+  if(key === nxClock.k) return;
+  nxClock.k = key;
+  nxSet('nx-ck', `<b>${nxT12(p.h, p.mi)}</b><i>${p.h < 12 ? 'ص' : 'م'}</i>`);
+  if(NXS){ nxSet('nx-hj', nxFmt({weekday: 'long', day: 'numeric', month: 'long'}, HIJRI).replace('،', '')); nxSet('nx-gr', nxFmt({day: 'numeric', month: 'long', year: 'numeric'})); }
+  nxSoon();   // the countdowns and the news' ages
+}
+function nxBoot(){
+  const nx = document.createElement('div');
+  document.documentElement.classList.add('nx', NXH ? 'nxh' : 'nxs');
+  nx.id = 'nx';
+  nx.innerHTML = NXH ? '<div class="nx-dl" id="nx-dl"></div><section class="nx-hero"><div class="nx-ck" id="nx-ck"></div><div class="nx-dk">'
+      + '<div class="k" id="nx-kk"></div><p class="nx-st" id="nx-st"></p><div class="m" id="nx-mt"></div></div></section>'
+      + '<h2 class="nx-rh">اليوم<i></i></h2><div class="nx-rail" id="nx-rail"></div>'
+      + '<h2 class="nx-rh" id="nx-ah">التطبيقات<i></i><span>كل التطبيقات ‹</span></h2><div class="nx-mk" id="nx-mk" hidden>الأسواق</div>'
+    : '<div id="nx-pl"></div><div class="nx-cv"><div class="nx-dt"><b id="nx-hj"></b><span id="nx-gr"></span></div><div class="nx-ck" id="nx-ck"></div></div><ul class="nx-fx" id="nx-fx"></ul>';
+  document.querySelector('.stage').appendChild(nx);
+  if(NXS){   // the card top right; the VPN badge after the dates, with the concept's shield (and its check, ! or ✕)
+    nx.className = 's'; nx.prepend(document.querySelector('.week')); nx.querySelector('.nx-dt').appendChild(nxEl('vpn'));
+    nxEl('vpn').insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>'
+      + '<path class="ok" d="m8.8 12 2.2 2.2 4.4-4.4"/><path class="wa" d="M12 8v4.2m0 3.3h.01"/><path class="no" d="m9.6 9.6 4.8 4.8m0-4.8-4.8 4.8"/></svg>');
+  }
+  // what brings new data redraws the layer; the clock its minute
+  ['tickPrayer', 'tickRamadan', 'loadWeather', 'loadNews', 'loadLocalNews', 'loadStandings', 'renderMatches', 'hadithDrawn', 'tapeRender']
+    .forEach(n => { const o = window[n]; window[n] = function(){ const r = o.apply(this, arguments); Promise.resolve(r).then(nxSoon, nxSoon); return r; }; });
+  const tc = tickClock, sb = showBackground;
+  tickClock = () => { tc(); nxClock(); };
+  // the online photo's place, top left of the screensaver («العُلا»); on the home screen its credit's place (nxCredit)
+  showBackground = (u, b) => { sb(u, b); if(NXS) nxSet('nx-pl', b && b.on && b.p ? esc(b.p) : ''); else nxCredit(b); };
+  nxLay();
+  addEventListener('resize', nxLay);
+  if(NXH && document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if(NX_PHOTO) nxCredit(NX_PHOTO); nxFocus(); });   // measured in its fonts
+}
+// #home=1 in «الجديد»: bootHome's loaders, the «اليوم» row and its bridge for the launcher
+function nxHome(){
+  const root = document.documentElement, cards = [...new Set(NX_TABS.concat(NX_MORE))];
+  root.classList.add('home');
+  Object.entries(CONFIG.homeRoom).forEach(([k, v]) => { if(Number.isFinite(v) && v >= 0) root.style.setProperty(k, v + 'px'); });
+  CONFIG.panel = 'none'; CONFIG.panels = [];   // the classic card is not drawn
+  nxBoot(); nxTab();
+  window.sauditvCurrentPanel = () => NX_K === 'news' ? NX_TAB : NX_K || 'prayers';
+  window.sauditvDetailList = () => [...nxEl('nx-rail').children].flatMap(e => e.dataset.k === 'news' ? NX_TABS : [e.dataset.k]).join(',');
+  window.sauditvSetFocused = on => { NX_F = !!on; nxFocus(); };
+  window.sauditvStep = d => {   // ◀ (+1) the next card to the left, ▶ (-1) back; no wrapping
+    const cs = [...nxEl('nx-rail').children], i = cs.findIndex(e => e.dataset.k === NX_K);
+    const c = cs[Math.max(0, Math.min(cs.length - 1, i + (Number(d) < 0 ? -1 : 1)))];
+    if(c){ NX_K = c.dataset.k; nxFocus(); }
+  };
+  window.sauditvHold = on => { if(!on){ nxTab(); nxSoon(); } };   // back from the detail window: the tab last read
+  window.sauditvPoint = (x, y) => {   // the mouse over the row (the launcher's view): the card under it
+    const c = document.elementFromPoint(x, y), e = c && c.closest('.nx-c');
+    if(e && e.dataset.k !== NX_K){ NX_K = e.dataset.k; nxFocus(); }
+  };
+  // the launcher's pills end here (px from the left): the dateline keeps clear of them
+  window.sauditvPillsEnd = px => { nxEl('nx').style.setProperty('--pe', Math.max(40, px / (devicePixelRatio || 1) / NX_Z + 14) + 'px'); nxSoon(); };
+  document.title = 'سعودي TV';
+  applyBackground(true);
+  loadPhotoIndex().then(() => applyBackground(true));
+  setInterval(() => applyBackground(false), 60*1000);
+  try{ buildPrayers(computePrayers()); }catch(e){}   // at once, offline; Aladhan's when it answers
+  tickClock(); tickDates(); tickRamadan(); tickPrayer();
+  tapeStart();
+  firstLoad(loadPrayers, 'prayers'); firstLoad(loadWeather, 'weather'); firstLoad(loadMatches, 'matches');
+  startPanelData(cards, true);
+  homeQrRect();
+  setInterval(tickClock, 1000);
+  setInterval(() => { tickDates(); tickPrayer(); tickRamadan(); }, 15000);
+  setInterval(renderMatches, 60000);
+  setInterval(loadLive, 2*60000);
+  setInterval(loadMatches, 30*60*1000);
+  setInterval(loadPrayers, 6*3600*1000);
+  setInterval(loadWeather, 30*60*1000);
+  let lastDay = riyadhDayNumber();
+  setInterval(() => {
+    if(riyadhDayNumber() === lastDay) return;
+    lastDay = riyadhDayNumber();
+    loadPhotoIndex().then(() => applyBackground(true)); tickDates(); tickRamadan(); loadPrayers(); loadWeather();
+  }, 60*1000);
+}
+// ---- end: «الجديد»
 
 document.addEventListener('keydown', e=>{
   if(e.key === 'f' || e.key === 'F'){

@@ -151,7 +151,7 @@ final class AppInstaller {
             if (!dir.isDirectory() && !dir.mkdirs()) throw new Fail("تعذّر حفظ التحديث على التلفاز");
             List<AppUpdate.Apk> need = m.needed(app);
             if (need.isEmpty()) {
-                finish(app, "محدّث · النسخة " + AppUpdate.digits(app, AppUpdate.installedName(app)));
+                finish(app, "محدّث · النسخة " + AppUpdate.version(app, AppUpdate.installedName(app)));
                 return;
             }
             long total = 0;
@@ -280,7 +280,7 @@ final class AppInstaller {
     private static void next(final Context app) {
         if (!running) return;
         if (queue.isEmpty()) {
-            finish(app, "تم التحديث إلى " + AppUpdate.digits(app, manifest.versionName));
+            finish(app, "تم التحديث إلى " + AppUpdate.version(app, manifest.versionName));
             return;
         }
         final Step s = queue.get(0);

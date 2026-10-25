@@ -49,8 +49,8 @@ import java.util.Set;
  * the settings) and a new try after 5, 15, 30, 60, 120, then every 300 s. A stream that never starts within 25 s, or
  * plays nothing for 40 s, counts as an error.
  *
- * The athan's hook (none is built yet): RadioService.hold(context, true) before the athan and hold(context, false)
- * after it, in this app; from the home app (same key) the broadcasts ACTION_PAUSE_FOR_ATHAN / ACTION_RESUME_AFTER_ATHAN
+ * The athan's hook (AthanService uses it for the full athan): RadioService.hold(context, true) before the athan and
+ * hold(context, false) after it, in this app; from the home app (same key) the broadcasts ACTION_PAUSE_FOR_ATHAN / ACTION_RESUME_AFTER_ATHAN
  * to RadioReceiver; from ADB the same actions to SaverReceiver (optimize/saver.sh radio-hold on|off). A hold ends by
  * itself after HOLD_MAX_MS, so a lost «resume» never leaves the radio silent.
  *

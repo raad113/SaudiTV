@@ -38,6 +38,9 @@
 - **أي مدينة في العالم:** الدولة ثم المدينة (قائمة مدمجة في التطبيق من GeoNames، مع البحث)، ومواقيت الصلاة بتوقيت المدينة
   وبطريقة حساب بلدها (أم القرى، ISNA، الهيئة المصرية…) أو اللي تختارها، والحرارة بالمئوية أو الفهرنهايت. الفرق: الدولة ثم الدوري ثم
   النادي، أو المنتخبات.
+- **الأذان:** في وقت كل صلاة (بمواقيت الصفحة نفسها) الأذان كاملاً على كامل الشاشة فوق أي تطبيق، يوقف الفيديو والإذاعة ثم
+  يرجّعهم، أو تنبيه قصير (شريط وتكبيرة)، أو بدون، لكل صلاة. أصوات مدمجة برخص حرة أو صوت من عندك، وتذكير قبل الأذان.
+  ما يشتغل والتلفاز مطفي.
 - **يشتغل بدون إنترنت:** الساعة والتاريخ والمواقيت ورمضان تشتغل، وآخر بيانات تبقى على الشاشة.
 - **تحديث الصفحة تلقائياً** من هذا المستودع كل ٦ ساعات، بدون إعادة تركيب.
 - **تسريع التلفزيون:** إطفاء التتبّع والإعلانات والعروض (يمكن التراجع عنه)، تجميد التطبيقات المقفلة، حركة أسرع.
@@ -119,6 +122,9 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
 - **Any city in the world:** the country, then the city (a list bundled in the app, from GeoNames, with a search); prayer
   times in the city's own time zone, with its country's method (Umm al-Qura, ISNA, Egyptian…) or the one you pick; °C or
   °F. Teams: the country, then the league, then the club, or the national teams.
+- **The athan:** at each prayer time (the page's own times) the full athan full screen over any app, pausing the video and
+  the Quran radio and resuming them after; or a short alert (a banner and the opening takbir); or nothing, per prayer.
+  Bundled free-licence voices or your own, and a reminder before it. Silent while the TV is off.
 - **Works offline:** clock, dates, prayer times and Ramadan keep going; the last good data stays on screen.
 - **The page updates itself** from this repository every 6 hours, without a reinstall.
 - **A safe TV speed-up:** telemetry, ads and demos off (reversible), closed apps frozen, faster animations.
@@ -183,7 +189,7 @@ tests/                checks: build, data, fonts, scripts, private data, the pag
 **Data** (free, no keys): Aladhan (prayer times), Open-Meteo (weather), Yahoo and CoinGecko (markets), ESPN
 (clubs, matches and the table of any league it carries) and TheSportsDB (the leagues ESPN does not
 carry), GeoNames and CLDR (the bundled countries and cities), Open-Meteo's geocoding (a city's search), news feeds (Asharq Al-Awsat, Okaz, Al-Watan, Sky News
-Arabia, BBC Arabic, CNN Arabic, Al Jazeera, France 24, Tech-WD, AIT News; Google News for the sites without a feed
+Arabia, BBC Arabic, Al Jazeera, France 24, Tech-WD, AIT News; Google News for the sites without a feed
 that answers, Bing for the city's news). Verse and hadith texts are never typed by hand: verses come from the Quran API
 (`.github/tools/fetch_verses.py`), the hadith from Sahih al-Bukhari in fawazahmed0/hadith-api
 (`.github/tools/fetch_bukhari.py`: the day's one from jsDelivr, about 60 bundled for offline).
@@ -198,6 +204,8 @@ that answers, Bing for the city's news). Verse and hadith texts are never typed 
   license). Made by `.github/tools/gen_geo.py`.
 - Fonts: Thmanyah (by Thmanyah), and Noto Naskh Arabic for ﷺ ﴿﴾ (SIL Open Font License,
   `assets/fonts/NotoNaskhArabic-OFL.txt`).
+- Athan recordings: CC0 and CC BY 3.0, each with its author, licence and source in
+  [assets/athan/CREDITS.txt](assets/athan/CREDITS.txt) (and in the settings' «الأذان» › «حقوق التسجيلات»).
 - Package safety ratings from [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation).
 
 ## License

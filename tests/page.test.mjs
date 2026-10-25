@@ -8,7 +8,7 @@
 // Ramadan, an even hour, so the screensaver's sides are not swapped and its photo-only minute is not running): every
 // run sees the same day, the same verse and hadith, the same layout, whatever the time it is run.
 import { chromium } from 'playwright';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -26,11 +26,14 @@ const LATIN = /[0-9]/, ARABIC = /[٠-٩]/;
 const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
 
 // feeds: {url regex source: RSS text} answered instead of the network; init: a script run before the page's own
-async function open(file, hash, { width = 1920, height = 1080, seed = true, at = FIXED, feeds = {}, init = null } = {}) {
+// route: (url, route) => a promise when it answers that request itself (else the usual answers below)
+async function open(file, hash, { width = 1920, height = 1080, seed = true, at = FIXED, feeds = {}, init = null, route = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height } });
   if (at) await ctx.clock.setFixedTime(at);
   await ctx.route(/^https?:/, r => {
     const u = r.request().url(), i = u.indexOf('/main/'), rel = i > 0 ? u.slice(i + 6) : '';
+    const own = route && route(u, r);
+    if (own) return own;
     for (const [re, body] of Object.entries(feeds))
       if (new RegExp(re).test(u)) return r.fulfill({ body, contentType: 'application/rss+xml; charset=utf-8' });
     if (/^(assets\/(backgrounds|fonts)|photos)\//.test(rel))
@@ -181,19 +184,19 @@ for (const [panel, [rows, title]] of Object.entries(EXPECT)) {
     + (src ? `<source url="${url}">${src}</source>` : '') + '</item>').join('')}</channel></rss>`;
   const feeds = {
     'skynewsarabia\\.com/rss': rss([['خبر سكاي الأحدث', 1], ['خبر مشترك', 5]]),
-    'arabic\\.cnn\\.com': rss([['خبر سي إن إن', 3], ['خبر مشترك', 4]]),
+    'feeds\\.bbci\\.co\\.uk/arabic': rss([['خبر بي بي سي', 3], ['خبر مشترك', 4]]),
     'news\\.google\\.com/rss/search\\?q=site%3Aalarabiya\\.net': rss([['خبر العربية - العربية', 2, 'العربية', 'https://www.alarabiya.net'],
                                                                       ['خبر من موقع آخر - موقع', 0.5, 'موقع', 'https://other.example']]),
   };
-  const { p, ctx, errors } = await open('tv.html', 'panel=world&src_world=skynews,cnn,alarabiya,bogus', { feeds });
+  const { p, ctx, errors } = await open('tv.html', 'panel=world&src_world=skynews,bbc,alarabiya,cnn', { feeds });
   await p.waitForFunction(() => NEWS.world.length > 0, null, { timeout: 20000 }).catch(() => {});
   const r = await p.evaluate(() => NEWS.world.map(x => x.headline + ' | ' + x.source));
   check('world news: the picked sources together, each story once, newest first, labelled; Google kept to the site',
     !errors.length && JSON.stringify(r) === JSON.stringify(['خبر سكاي الأحدث | سكاي نيوز عربية', 'خبر العربية | العربية',
-      'خبر سي إن إن | CNN بالعربية', 'خبر مشترك | CNN بالعربية']), JSON.stringify(r) + errors.join('; '));
+      'خبر بي بي سي | بي بي سي عربي', 'خبر مشترك | بي بي سي عربي']), JSON.stringify(r) + errors.join('; '));
   const d = await p.evaluate(() => [newsSources('world').map(x => x.id).join(','), (CONFIG.sources.world = [], newsSources('world').map(x => x.id).join(','))]);
-  check('news sources: the picks from the settings; none valid = the page\'s defaults', d[0] === 'alarabiya,skynews,cnn'
-    && d[1] === 'alarabiya,skynews,bbc,cnn', JSON.stringify(d));
+  check('news sources: the picks from the settings; none valid = the page\'s defaults', d[0] === 'alarabiya,skynews,bbc'
+    && d[1] === 'alarabiya,skynews,bbc', JSON.stringify(d));
   await ctx.close();
 }
 
@@ -623,22 +626,22 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
     await ctx.close();
     return { ...r, errors };
   };
-  let r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=SA');
+  let r = await tape('city=Los%20Angeles&lat=34.0522&lon=-118.2437&cc=US&newscc=SA');
   check('ticker: country US, news SA: «تاسي» and «الدولار/الريال» (SAR=X), as at home', !r.errors.length
     && r.ids.join() === '^TASI.SR,^GSPC,^IXIC,^DJI,GC=F,BZ=F,SAR=X,bitcoin,ethereum', JSON.stringify(r));
-  r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=US');
+  r = await tape('city=Los%20Angeles&lat=34.0522&lon=-118.2437&cc=US&newscc=US');
   check('ticker: country US, news US: as the US (no index, «اليورو/الدولار»)', r.ids[0] === '^GSPC' && r.ids.includes('EURUSD=X') && r.ids.length === 8, JSON.stringify(r));
   r = await tape('city=القاهرة&lat=30.04&lon=31.24&cc=EG&newscc=EG');
   check('ticker: Egypt with its news: EGX30 and EGP=X', r.ids[0] === '^CASE30' && r.ids[6] === 'EGP=X', JSON.stringify(r));
   r = await tape('city=أبو ظبي&lat=24.45&lon=54.38&cc=AE&newscc=AE');
   check('ticker: Abu Dhabi with its news: Abu Dhabi\'s index', r.ids[0] === 'FADGI.FGI', JSON.stringify(r));
-  r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=SA&tape=gold,btc,cur');
+  r = await tape('city=Los%20Angeles&lat=34.0522&lon=-118.2437&cc=US&newscc=SA&tape=gold,btc,cur');
   check('ticker, chosen items: gold, bitcoin, the country\'s currency, in that order', r.ids.join() === 'GC=F,bitcoin,SAR=X'
     && r.names.join() === 'الذهب,بيتكوين,الدولار/الريال', JSON.stringify(r));
   r = await tape('city=القاهرة&lat=30.04&lon=31.24&cc=EG&newscc=EG&tape=cur,idx,silver,i:SA,c:AED,eurusd,bogus,gold,gold,c:XYZ');
   check('ticker, chosen items: «عملة/مؤشر الدولة» follow the country (EG), more items, unknown ones and repeats left out',
     r.ids.join() === 'EGP=X,^CASE30,SI=F,^TASI.SR,AED=X,EURUSD=X,GC=F', JSON.stringify(r));
-  r = await tape('city=Upland&lat=34.09&lon=-117.64&cc=US&newscc=US&tape=idx,cur,i:AD');
+  r = await tape('city=Los%20Angeles&lat=34.0522&lon=-118.2437&cc=US&newscc=US&tape=idx,cur,i:AD');
   check('ticker, chosen items in the US: no index of its own, the euro; Abu Dhabi\'s by id', r.ids.join() === 'EURUSD=X,FADGI.FGI', JSON.stringify(r));
   r = await tape('city=جدة&lat=21.5&lon=39.2&tape=bogus');
   check('ticker: only unknown items chosen: the country\'s own list', r.ids.length === 9 && r.ids[0] === '^TASI.SR', JSON.stringify(r));
@@ -799,6 +802,699 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
     await p.waitForTimeout(3700);
     r = await p.evaluate(() => window.__asks);
     check(`radio chip, ${tag}: asked every 3 s as before`, r >= 2, r);
+    await ctx.close();
+  }
+}
+
+// ---- the channel and commentator of a followed team's match in the next 48 h (bcastOf): btolat's day page first, filgoal
+// only for a field btolat lacks; both teams must match; any failure shows nothing. FIXED is 12 May in Riyadh (UTC+3).
+// SHOTS=1 also saves the card and the home strip to optimize/run/shots/m_channel_card.png and m_channel_strip.png.
+{
+  const btolat = (title, rows) => `<html><head><title>${title}</title></head><body><ul>` + rows.map(([h, a, ch, com, tm = '09:15 م'], i) =>
+    `<li id='m_${i + 1}' class="item NotStarted" title="مباراة ${h} و ${a} فى الدوري السعودي"><a href="/team/${i}" class="team">`
+    + `<img src="x.png"><span>${h}</span></a><span class="match-time"> ${tm} </span><a href="/team/${i + 50}" class="team"><span>${a}</span></a>`
+    + '<div class="match-footer">'
+    + (ch ? `<span data-dc-tpl="42"><svg><rect x="2" y="7" width="20" height="13" rx="2"/><path d="m17 2-5 5-5-5"/></svg>`
+      + `<span data-dc-tpl="44"><span class="sc-interp"> ${ch} </span></span></span>` : '')
+    + (com ? `<span data-dc-tpl="83"></span><svg data-dc-tpl="84"><path d="M12 2a3 3 0 0 0-3 3v7"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`
+      + `<span data-dc-tpl="44"><span class="sc-interp">${com}</span></span>` : '')
+    + '</div></li>').join('') + '</ul></body></html>';
+  const DAY = 'جدول مباريات الثلاثاء 12-05-2026 - بطولات';
+  const BT = 'mobile\\.btolat\\.com/match-score\\?d=5\\.12\\.2026$', FG = 'filgoal\\.com/matches/ajaxlist\\?date=2026-05-12$';
+  const filgoal = (h, a, ch, com) => JSON.stringify([{ Id: 1, HomeTeamName: h, AwayTeamName: a, Date: '2026-05-12T18:20:00',
+    TvCoverage: ch ? [{ TvChannelId: 59, TvChannelName: ch, CommenterName: com || null }] : [] }]);
+  // the followed team's next match `hrs` from now (النصر × away; 10 h = 18:20 in Riyadh), one bcastUpdate; cache: BC
+  // entries to start with ({key: {ago: hours, rows}}); again: a second update right after
+  const run = async (feeds, { hrs = 10, hash = 'teams=136013&panel=matches', cache = null, again = false, away = 'الخلود' } = {}) => {
+    const { p, ctx, errors } = await open('tv.html', hash, { feeds });
+    const asked = [];
+    p.on('request', r => { if (/btolat|filgoal/.test(r.url())) asked.push(r.url()); });
+    const once = c => p.evaluate(async ({ hrs, c, away }) => {
+      if (c) Object.entries(c).forEach(([k, v]) => { BC[k] = { at: Date.now() - v.ago * 36e5, rows: v.rows.map(r => [bcKey(r[0]), bcKey(r[1]), ...r.slice(2)]) }; });
+      MATCHES['136013'] = { idEvent: 'bc1', strHomeTeam: 'النصر', strAwayTeam: away, idHomeTeam: '136013', idAwayTeam: '999', strLeague: 'Saudi Pro League',
+        strTimestamp: new Date(Date.now() + hrs * 36e5).toISOString().slice(0, 19), intHomeScore: null, intAwayScore: null, strStatus: 'NS' };
+      NEXT_LIST = {};
+      await bcastUpdate();
+      renderPanel(false);
+      const ev = MATCHES['136013'], bc = document.querySelector('#week-list li .bc');
+      return { x: bcastOf(ev), line: bc ? bc.textContent : '', html: bc ? bc.innerHTML : '',
+               strip: homeMatch({ ev, done: false }, Date.now()), dv: dvMatches(), saved: localStorage.getItem('bcast') || '',
+               awayKey: bcKey(teamAr(away)) };
+    }, { hrs, c, away });
+    const r = await once(cache);
+    if (again) r.second = await once(null);
+    return { r, asked, p, ctx, errors };
+  };
+
+  let { r, asked, p, ctx, errors } = await run({ [BT]: btolat(DAY, [['النصر السعودي', 'الخلود', 'BEIN SPORTS 3', 'أحمد البلوشي'],
+                                                               ['الهلال السعودي', 'الشباب السعودي', 'ثمانية 1', '']]) }, { again: true });
+  check('channel: both teams match on btolat -> «القناة: X · المعلق: Y» («BEIN» written «beIN») under the match, « · X» in the home strip, rows in the detail view; filgoal not asked',
+    !errors.length && r.line === 'القناة: beIN SPORTS 3 · المعلق: أحمد البلوشي' && r.strip.endsWith(' · <bdi>beIN SPORTS 3</bdi></span>')
+    && r.dv.includes('<span class="dv-meta dv-bc">القناة: <bdi>beIN SPORTS 3</bdi></span><span class="dv-meta dv-bc">المعلق: <bdi>أحمد البلوشي</bdi></span>')
+    && asked.length === 1 && /btolat/.test(asked[0]), JSON.stringify({ r, asked }) + errors.join('; '));
+  check('channel: cache honoured: a second update within 3 h asks nothing; the day is saved', r.second.line === r.line && asked.length === 1
+    && r.saved.includes('btolat|2026-05-12'), JSON.stringify({ asked, s: r.second }));
+  // a Latin name in an <bdi> isolate, so the Arabic line keeps its order (label on the right, the channel left of it)
+  const iso = await p.evaluate(() => {
+    const bc = document.querySelector('#week-list .bc'), b = bc && bc.querySelector('bdi');
+    if (!b) return null;
+    const label = document.createRange(); label.setStart(bc.firstChild, 0); label.setEnd(bc.firstChild, 6);
+    return { iso: getComputedStyle(b).unicodeBidi, text: b.textContent, left: b.getBoundingClientRect().right <= label.getBoundingClientRect().left + 1 };
+  });
+  check('channel: a Latin channel name stays isolated (<bdi>) and left of «القناة:» in the RTL line', iso && iso.iso === 'isolate'
+    && iso.text === 'beIN SPORTS 3' && iso.left && r.html.includes('<bdi>beIN SPORTS 3</bdi>'), JSON.stringify(iso));
+  if (process.env.SHOTS) await p.locator('.week').screenshot({ path: path.join(ROOT, 'optimize/run/shots/m_channel_card.png') });
+  await ctx.close();
+
+  if (process.env.SHOTS) {
+    ({ p, ctx } = await run({ [BT]: btolat(DAY, [['النصر السعودي', 'الخلود', 'BEIN SPORTS 3', 'أحمد البلوشي']]) },
+      { hash: 'city=جدة&lat=21.5433&lon=39.1728&home=1&teams=136013' }));
+    await p.evaluate(() => renderMatches());
+    await p.locator('.hinfo').screenshot({ path: path.join(ROOT, 'optimize/run/shots/m_channel_strip.png') });
+    await ctx.close();
+  }
+
+  ({ r, errors, ctx } = await run({ [BT]: btolat(DAY, [['النصر السعودي', 'الوصل', 'BEIN SPORTS 3', 'أحمد البلوشي'],
+                                                    ['الهلال', 'الخلود', 'ثمانية 2', 'فارس عوض']]) }));
+  check('channel: only one team matches (النصر × الوصل, الهلال × الخلود) -> nothing shown', !errors.length && !r.x && !r.line
+    && !r.strip.includes('bdi') && !r.dv.includes('dv-bc'), JSON.stringify(r));
+  await ctx.close();
+
+  ({ r, asked, errors, ctx } = await run({ [BT]: btolat(DAY, [['النصر السعودي', 'الخلود', 'BEIN SPORTS 3', '']]),
+                                          [FG]: filgoal('النصر', 'الخلود', 'beIN SPORTS 3 HD', 'فهد العتيبي') }));
+  check('channel: btolat lacks the commentator, filgoal has it -> filled; the channel stays btolat\'s', !errors.length
+    && r.line === 'القناة: beIN SPORTS 3 · المعلق: فهد العتيبي' && asked.length === 2, JSON.stringify({ r, asked }));
+  await ctx.close();
+
+  ({ r, errors, ctx } = await run({ [BT]: btolat(DAY, [['النصر السعودي', 'الخلود', 'ثمانية 1', '']]),
+                                   [FG]: filgoal('الخلود', 'النصر', 'ثمانية 2', 'جعفر الصليح') }));
+  check('channel: btolat and filgoal conflict -> btolat\'s value (home/away swapped on filgoal still matches)', !errors.length
+    && r.line === 'القناة: ثمانية 1 · المعلق: جعفر الصليح', JSON.stringify(r));
+  await ctx.close();
+
+  ({ r, asked, errors, ctx } = await run({ [BT]: btolat(DAY, [['النصر السعودي', 'الخلود', 'BEIN SPORTS 3', 'أحمد البلوشي']]) }, { hrs: 60 }));
+  check('channel: no followed match within 48 h -> no request at all, nothing shown', !errors.length && asked.length === 0 && !r.x && !r.line,
+    JSON.stringify({ r, asked }));
+  await ctx.close();
+
+  const cached = ago => ({ 'btolat|2026-05-12': { ago, rows: [['النصر', 'الخلود', '2026-05-12', ['SSC 1'], 'محمد البكر']] },
+                           'btolat|2026-05-08': { ago: 80, rows: [] } });
+  ({ r, asked, errors, ctx } = await run({}, { cache: cached(3.5) }));
+  check('channel: a cached day 3.5 h old (kick-off 10 h away) -> shown from the cache, nothing asked; a 3-day-old entry dropped',
+    !errors.length && asked.length === 0 && r.line === 'القناة: SSC 1 · المعلق: محمد البكر' && !r.saved.includes('2026-05-08'),
+    JSON.stringify({ r, asked }));
+  await ctx.close();
+  ({ r, asked, errors, ctx } = await run({}, { cache: cached(4.2) }));
+  check('channel: cached 4.2 h ago -> btolat asked again once; down: the last good values stay, no errors', !errors.length
+    && asked.length === 1 && /btolat/.test(asked[0]) && r.line === 'القناة: SSC 1 · المعلق: محمد البكر', JSON.stringify({ r, asked }));
+  await ctx.close();
+  ({ asked, ctx } = await run({}, { cache: cached(1.2), hrs: 5 }));
+  check('channel: within 6 h of kick-off with both fields known -> nothing asked any more', asked.length === 0, JSON.stringify(asked));
+  await ctx.close();
+  const noCom = { 'btolat|2026-05-12': { ago: 1.2, rows: [['النصر', 'الخلود', '2026-05-12', ['SSC 1'], '']] } };
+  ({ asked, ctx } = await run({}, { cache: noCom, hrs: 5 }));
+  check('channel: within 6 h of kick-off, the commentator missing -> btolat asked again after 1 h, filgoal (never asked) too',
+    asked.length === 2 && /btolat/.test(asked[0]) && /filgoal/.test(asked[1]), JSON.stringify(asked));
+  await ctx.close();
+  ({ asked, ctx } = await run({}, { cache: Object.assign({ 'filgoal|2026-05-12': { ago: 1.2, rows: [] } }, noCom), hrs: 5 }));
+  check('channel: filgoal at most every 4 h, even within 6 h of kick-off', asked.length === 1 && /btolat/.test(asked[0]), JSON.stringify(asked));
+  await ctx.close();
+
+  // the opponent transliterated in our data (Al Sadd): the followed club alone, when the kick-off agrees within 20 min
+  const sadd = rows => run({ [BT]: btolat(DAY, rows) }, { away: 'Al Saad' });
+  ({ r, errors, ctx } = await sadd([['النصر السعودي', 'السد القطري', 'BEIN SPORTS 2', '', '06:20 م'], ['الهلال السعودي', 'الشباب', 'ثمانية 1', '', '06:20 م']]));
+  check('channel: Al Nassr × Al Sadd (opponent transliterated, «Al Saad») -> matched by the followed club and the kick-off time',
+    !errors.length && r.awayKey !== 'سد' && r.line === 'القناة: beIN SPORTS 2', JSON.stringify(r));
+  await ctx.close();
+  ({ r, errors, ctx } = await sadd([['النصر السعودي', 'السد القطري', 'BEIN SPORTS 2', '', '06:45 م']]));
+  check('channel: the followed club alone with a kick-off 25 min off -> nothing shown', !errors.length && !r.x && !r.line, JSON.stringify(r));
+  await ctx.close();
+  ({ r, errors, ctx } = await sadd([['النصر السعودي', 'السد القطري', 'BEIN SPORTS 2', '', '06:20 م'], ['النصر', 'الوصل', 'BEIN SPORTS 4', '', '06:20 م']]));
+  check('channel: the followed club in two rows of the day -> nothing shown', !errors.length && !r.x && !r.line, JSON.stringify(r));
+  await ctx.close();
+  ({ r, errors, ctx } = await sadd([['النصر السعودي', 'السد القطري', 'BEIN SPORTS 2', '', 'قريباً']]));
+  check('channel: no kick-off time on the row -> both names needed, nothing shown', !errors.length && !r.x && !r.line, JSON.stringify(r));
+  await ctx.close();
+
+  ({ r, asked, errors, ctx } = await run({}));
+  check('channel: both sources down -> nothing shown, no script errors (console only)', !errors.length && !r.x && !r.line
+    && !r.strip.includes('bdi') && asked.length === 2, JSON.stringify({ r, asked }) + errors.join('; '));
+  await ctx.close();
+
+  ({ r, errors, ctx } = await run({ [BT]: btolat('جدول مباريات اليوم - بطولات', [['النصر السعودي', 'الخلود', 'BEIN SPORTS 3', 'أحمد البلوشي']]),
+                                   [FG]: '<html>Just a moment...</html>' }));
+  check('channel: btolat answers with today\'s page (not the asked day), filgoal with a challenge page -> nothing shown',
+    !errors.length && !r.x && !r.line, JSON.stringify(r));
+  await ctx.close();
+}
+
+// ---- online background photos (photos/online.json, #photos=saudi,ours,bing,world): picked in turn, an online one's
+// credit on screen and its darkening from its brightness, the bundled ones offline
+{
+  const ONLINE_SAMPLE = { v: 1,
+    saudi: [{ u: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Al_Ula.jpg/1920px-Al_Ula.jpg',
+              page: 'https://commons.wikimedia.org/wiki/File:Al_Ula.jpg', a: 'Sammy Six', l: 'CC BY-SA 4.0', p: 'العُلا', b: 0.8 }],
+    world: [{ u: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/World.jpg', page: 'https://commons.wikimedia.org/wiki/File:World.jpg',
+              a: 'Diego Delso', l: 'CC BY-SA 4.0', p: '', b: 0.3 }],
+    bing: [{ u: 'https://www.bing.com/th?id=OHR.Hegra_EN-US1_1920x1080.jpg', page: 'https://www.bing.com/', a: 'Getty Images',
+             l: 'Bing', p: 'Hegra, AlUla' }] };
+  const JPG = path.join(ROOT, 'photos/9hWJs7iblh8.jpg');
+  // online: the list the page is given (null: online.json unreachable); images: the online photos load (else they fail)
+  const photos = (hash, { online = ONLINE_SAMPLE, images = true, cached = online, width = 1920, height = 1080 } = {}) => open('tv.html', hash, { width, height,
+    init: cached ? `try{ localStorage.setItem('photoOnline', ${JSON.stringify(JSON.stringify(cached))}); }catch(e){}` : null,
+    route: (u, r) => /\/photos\/online\.json$/.test(u) ? (online ? r.fulfill({ body: JSON.stringify(online), contentType: 'application/json' }) : r.abort())
+      : /^https:\/\/((upload|thumb)\.wikimedia\.org|www\.bing\.com\/th)/.test(u) ? (images ? r.fulfill({ path: JPG }) : r.abort()) : null });
+  const shown = () => {
+    const ph = document.querySelector('.photo'), cr = document.getElementById('credit'), b = cr.getBoundingClientRect(), cs = getComputedStyle(cr);
+    // what the credit would cover: the ticker tape, the bottom bar's and the home strip's text, the stage's
+    const hit = e => { const x = e.getBoundingClientRect(); return x.width && x.height && getComputedStyle(e).visibility !== 'hidden'
+      && x.left < b.right && x.right > b.left && x.top < b.bottom && x.bottom > b.top; };
+    const clash = [...document.querySelectorAll('.tape, .stage *, .hinfo *')]
+      .filter(e => getComputedStyle(e).display !== 'none' && (e.matches('.tape') || (!e.children.length && e.textContent.trim())) && hit(e))
+      .map(e => e.className || e.id || e.tagName).slice(0, 5);
+    return { bg: ph.style.backgroundImage, dim: ph.style.getPropertyValue('--dim'), credit: cr.textContent,
+             visible: cs.display !== 'none', bottom: b.bottom, left: b.left, h: innerHeight, photos: CONFIG.photos,
+             size: parseFloat(cs.fontSize), alpha: (cs.color.match(/[\d.]+/g) || [])[3], shadow: cs.textShadow,
+             bdi: [...cr.querySelectorAll('bdi')].map(x => x.textContent), clash };
+  };
+  const settled = p => p.waitForFunction(() => document.querySelector('.photo').style.backgroundImage, null, { timeout: 4000 }).catch(() => {});
+
+  let { p, ctx, errors } = await photos('photos=saudi');
+  await settled(p); await p.waitForTimeout(300);
+  let r = await p.evaluate(shown);
+  check('photos: #photos=saudi -> a Saudi photo from online.json, its credit «المكان · تصوير المصوّر · الرخصة» on screen, above the tape',
+    !errors.length && r.bg.includes('thumb.wikimedia.org') && r.credit === 'العُلا · تصوير Sammy Six · CC BY-SA 4.0' && r.visible
+    && r.bottom <= r.h - 42, JSON.stringify(r) + errors.join('; '));
+  check('photos: the credit readable on a TV: at least 18 px at 1080p, 70% opaque, a soft shadow; author and licence in <bdi>',
+    r.size >= 18 && r.alpha === '0.7' && r.shadow !== 'none' && JSON.stringify(r.bdi) === '["Sammy Six","CC BY-SA 4.0"]', JSON.stringify(r));
+  check('photos: the credit bottom left, over nothing (the tape, the bottom bar)', r.left < 100 && !r.clash.length, JSON.stringify(r));
+  await ctx.close();
+  for (const [w, h] of [[1920, 1080], [1280, 720]]) {
+    ({ p, ctx, errors } = await photos('photos=saudi&home=1&dockh=104&dockb=72&pillsh=40', { width: w, height: h }));
+    await settled(p); await p.waitForTimeout(300);
+    const rh = await p.evaluate(shown);
+    check(`photos: home ${w}x${h}: the credit above the apps row (dock), bottom left, over nothing`, !errors.length && rh.visible
+      && rh.bottom <= rh.h - 72 - 104 && rh.left < 100 && !rh.clash.length, JSON.stringify(rh) + errors.join('; '));
+    await ctx.close();
+  }
+  ({ p, ctx, errors } = await photos('photos=saudi'));
+  await settled(p); await p.waitForTimeout(300);
+  check('photos: a bright one (b 0.8) gets the strongest darkening (0.32); the default is 0.05',
+    r.dim === '0.32' && await p.evaluate(() => photoDim(undefined) === .05 && photoDim(.3) === .05 && Math.abs(photoDim(.6) - .2) < 1e-9), r.dim);
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos(''));
+  r = await p.evaluate(() => { const P = photoPools(); return { photos: CONFIG.photos, turn: [0, 1, 2, 3].map(s => photoFor(s, P).on ? 'saudi' : 'ours') }; });
+  check('photos: by default saudi and ours, in turn (one each 5-minute slot)',
+    JSON.stringify(r) === JSON.stringify({ photos: ['saudi', 'ours'], turn: ['saudi', 'ours', 'saudi', 'ours'] }), JSON.stringify(r));
+  await ctx.close();
+
+  // (no list fetched or kept: the bundled one, dist/online.js, picks the photo; offline its picture fails too)
+  ({ p, ctx, errors } = await photos('photos=saudi', { online: null, cached: null, images: false }));
+  await settled(p); await p.waitForTimeout(1500);
+  r = await p.evaluate(shown);
+  check('photos: offline (no online.json, none kept, the pictures unreachable) -> a bundled photo, no credit', !errors.length
+    && r.bg.includes('/assets/backgrounds/') && !r.visible, JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos('photos=saudi', { online: null, cached: ONLINE_SAMPLE }));
+  await settled(p); await p.waitForTimeout(300);
+  r = await p.evaluate(shown);
+  check('photos: online.json unreachable -> the list kept from before (localStorage)', !errors.length && r.bg.includes('thumb.wikimedia.org'),
+    JSON.stringify(r));
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos('photos=saudi', { images: false }));
+  await settled(p); await p.waitForTimeout(1500);
+  r = await p.evaluate(shown);
+  check('photos: the online photo does not load -> a bundled one, no credit', !errors.length
+    && r.bg.includes('/assets/backgrounds/') && !r.visible && !r.credit.includes('Sammy'), JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos('photos=ours'));
+  await settled(p); await p.waitForTimeout(300);
+  r = await p.evaluate(shown);
+  check('photos: #photos=ours -> the repo\'s own photos (photos/), their credit kept off screen', !errors.length
+    && r.bg.includes('/main/photos/') && !r.visible, JSON.stringify(r));
+  await ctx.close();
+
+  // the Saudi list switched off (tools/online_photos.py SAUDI = False: an empty saudi list): #photos= with saudi still
+  // copes, no errors and no credit line; with ours too, our own photos every slot
+  const NO_SAUDI = Object.assign({}, ONLINE_SAMPLE, { saudi: [] });
+  ({ p, ctx, errors } = await photos('photos=saudi,ours', { online: NO_SAUDI, cached: NO_SAUDI }));
+  await settled(p); await p.waitForTimeout(300);
+  r = await p.evaluate(shown);
+  const turnNS = await p.evaluate(() => { const P = photoPools(); return [0, 1, 2, 3].map(s => photoFor(s, P).on ? 'online' : 'ours'); });
+  check('photos: an empty saudi list, #photos=saudi,ours -> our own photos every slot, no credit, no errors', !errors.length
+    && r.bg.includes('/main/photos/') && !r.visible && !r.credit.includes('تصوير') && JSON.stringify(turnNS) === '["ours","ours","ours","ours"]',
+    JSON.stringify(r) + JSON.stringify(turnNS) + errors.join('; '));
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos('photos=saudi', { online: NO_SAUDI, cached: NO_SAUDI }));
+  await settled(p); await p.waitForTimeout(1500);
+  r = await p.evaluate(shown);
+  check('photos: an empty saudi list, #photos=saudi alone -> a bundled photo, no credit, no errors', !errors.length
+    && r.bg.includes('/assets/backgrounds/') && !r.visible && !r.credit.includes('تصوير'), JSON.stringify(r) + errors.join('; '));
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos('photos=bing'));
+  await settled(p); await p.waitForTimeout(300);
+  r = await p.evaluate(shown);
+  check('photos: #photos=bing -> Bing\'s photo of the day, «المكان · تصوير … · Bing»', !errors.length && r.bg.includes('bing.com')
+    && r.credit === 'Hegra, AlUla · تصوير Getty Images · Bing' && r.visible && r.dim === '0.05', JSON.stringify(r));
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos('photos=world,nonsense'));
+  await settled(p); await p.waitForTimeout(300);
+  r = await p.evaluate(shown);
+  check('photos: #photos=world -> Commons\' picture of the day, no place in its credit; an unknown id ignored',
+    !errors.length && JSON.stringify(r.photos) === '["world"]' && r.credit === 'تصوير Diego Delso · CC BY-SA 4.0', JSON.stringify(r));
+  await ctx.close();
+
+  ({ p, ctx, errors } = await photos('photos=nonsense'));
+  r = await p.evaluate(() => CONFIG.photos);
+  check('photos: nothing known in #photos -> the defaults (saudi, ours)', JSON.stringify(r) === '["saudi","ours"]', JSON.stringify(r));
+  await ctx.close();
+
+  // a real one from photos/online.json, for a look (SHOTS=1; optimize/run/photos-check/shot.jpg: its photo, if downloaded)
+  if (process.env.SHOTS) {
+    const real = JSON.parse(readFileSync(path.join(ROOT, 'photos/online.json'), 'utf8'));
+    const pick = real.saudi.find(x => x.p === (process.env.SHOT_PLACE || 'العُلا')) || real.saudi[0];
+    const shotJpg = path.join(ROOT, 'optimize/run/photos-check/shot.jpg');
+    for (const [hash, shot] of [['photos=saudi', 'bg_saudi.png'], ['photos=saudi&home=1&dockh=104&dockb=72&pillsh=40', 'bg_saudi_home.png']]) {
+      ({ p, ctx, errors } = await open('tv.html', hash, {
+        init: `try{ localStorage.setItem('photoOnline', ${JSON.stringify(JSON.stringify({ v: 1, saudi: [pick], world: [], bing: [] }))}); }catch(e){}`,
+        route: (u, r) => /\/photos\/online\.json$/.test(u) ? r.abort()
+          : /^https:\/\/(upload|thumb)\.wikimedia\.org/.test(u) ? r.fulfill({ path: existsSync(shotJpg) ? shotJpg : JPG }) : null }));
+      await settled(p); await p.waitForTimeout(1500);
+      await p.screenshot({ path: path.join(ROOT, 'optimize/run/shots', shot) });
+      await ctx.close();
+    }
+  }
+}
+
+// ---- «الجديد» (#look=new, the settings' «شكل الواجهة»): the home screen and the screensaver in the new look (nxBoot),
+// with sample data at the mock-ups' time (Saturday 3:24 pm in Riyadh): what it shows, nothing overlapping or cut at
+// 1280 x 720 and 1920 x 1080, the standfirst without some of its data, the news tabs from the enabled news cards, the
+// launcher's bridge over the «اليوم» row, a switch of look (a new address, as the launcher reloads), the screensaver
+{
+  const AT = new Date('2026-10-24T12:24:00Z');
+  const NXH = 'city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&teams=136013&home=1&look=new';
+  // the room the launcher's own views take at that size (its dp are the page's CSS px times the scale: 1 at 960 x 540)
+  const room = (w, h) => { const z = Math.min(w / 960, h / 540); return { dockh: Math.round(100 * z), dockb: Math.round(44 * z) }; };
+  const SAMPLE = () => {
+    const now = Date.now(), it = (headline, source, h, summary) => ({ headline, source, t: now - h * 36e5, link: 'https://example.com/' + h, summary });
+    NX_WX = { t: 31, code: 0, hum: 12, hi: 33, lo: 19 };
+    NEWS.news = [it('انطلاق موسم الرياض 2026 بـ11 منطقة ترفيهية', 'واس', 1, 'يبدأ الموسم الليلة في بوليفارد سيتي بعروض وحفلات وبطولات، ومنطقة جديدة للعائلات قرب وادي حنيفة.'),
+      it('أمطار رعدية على مرتفعات عسير والباحة حتى الثلاثاء', 'الشرق الأوسط', 2, ''), it('تاسي يغلق منخفضاً 2.3% بضغط من أسهم البنوك', 'العربية', 3, '')];
+    NEWS.world = [it('قمة المناخ تتفق على تمويل جديد للدول النامية', 'سكاي نيوز عربية', 1, 'اتفق المشاركون على صندوق جديد.')];
+    NEWS.tech = [it('آبل تكشف عن جيل جديد من رقائقها', 'عالم التقنية', 2, '')];
+    const t = now + 5.6 * 36e5, ev = { idEvent: 'x1', strHomeTeam: 'Al-Hilal', strAwayTeam: 'Al-Nassr', strTimestamp: new Date(t).toISOString().slice(0, 19), idHomeTeam: '136013' };
+    MATCHES = { '136013': ev }; NEXT_LIST = { '136013': [ev] };
+    BC['btolat|' + bcDay(t)] = { at: now, rows: [[bcKey(teamAr('Al-Hilal')), bcKey(teamAr('Al-Nassr')), bcDay(t), ['beIN SPORTS 1'], 'فهد العتيبي', t]] };
+    if (!NXS) { TAPE.forEach((x, i) => { TAPE_Q[i] = mkTapeHtml(x.fmt === 'fx' ? 3.75 : 9696.4, i % 3 ? 1.21 : -2.32, x.fmt); }); tapeRender(); }
+    renderMatches(); tickPrayer(); tickRamadan(); nxDraw();
+  };
+  const nxOpen = async (hash, o = {}) => {
+    const r = await open('tv.html', hash, Object.assign({ at: AT }, o));
+    await r.p.evaluate(SAMPLE);
+    await r.p.waitForTimeout(400);   // the tape's layout waits for the fonts
+    return r;
+  };
+  // the parts' boxes, top to bottom, and anything cut inside a card
+  const layout = () => {
+    const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+    const q = s => document.querySelector(s), shown = e => e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0;
+    const dlBox = R(q('#nx-dl')), dl = [...q('#nx-dl').children].map(R).filter(x => x.t < dlBox.b - 1);
+    const cards = [...q('#nx-rail').children].map(c => ({ k: c.dataset.k, ...R(c), sh: c.scrollHeight, ch: c.clientHeight }));
+    // (the news card's headlines and sources end in «…» by design: not counted)
+    const cut = [...document.querySelectorAll('.nx-c *')].filter(e => shown(e) && !e.closest('.bc, .nx-nl') && !e.closest('svg')
+      && e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow === 'hidden').map(e => e.className || e.tagName);
+    const tape = q('#tape');
+    return { W: innerWidth, H: innerHeight, dl, dlBox, deck: R(q('.nx-dk')), clock: R(q('.nx-ck')), hero: R(q('.nx-hero')),
+             today: R(q('.nx-rh')), cards, apps: R(q('#nx-ah')), mk: R(q('#nx-mk')), mkShown: shown(q('#nx-mk')),
+             tape: tape.hidden ? null : R(tape), cut, credit: shown(q('#credit')) ? R(q('#credit')) : null,
+             classic: [...document.querySelectorAll('.stage > :not(#nx)')].filter(shown).length,
+             stand: q('#nx-st').textContent, keys: cards.map(c => c.k).join(),
+             chips: [...document.querySelectorAll('.nx-ch span')].map(x => x.textContent + (x.className ? '*' : '')).join() };
+  };
+  const apart = (a, b) => a.r <= b.l + 1 || b.r <= a.l + 1 || a.b <= b.t + 1 || b.b <= a.t + 1;
+  // 960 x 540 too: the TV's own CSS px (1280 x 720 at 1.33 dp a px), the launcher's apps row exactly HomeLook's 100 / 44
+  for (const [w, h] of [[1920, 1080], [1280, 720], [960, 540]]) {
+    const { dockh, dockb } = room(w, h);
+    for (const focus of [0, 1]) {   // the next prayer focused (as the row starts), then the news (wider, its summary)
+      const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&panels=prayers,news,world,tech,verse,hadith&rotate=30&dockh=${dockh}&dockb=${dockb}`, { width: w, height: h });
+      // the cards as seen: a card shown (not hidden by nxFocus) and at least partly on the screen must be wholly on it
+      const seen = () => [...document.querySelectorAll('#nx-rail > .nx-c')].map(c => { const b = c.getBoundingClientRect();
+        return { k: c.dataset.k, l: Math.round(b.left), r: Math.round(b.right), shown: getComputedStyle(c).visibility !== 'hidden' }; })
+        .filter(c => c.shown && c.r > 0 && c.l < innerWidth);
+      const whole = s => s.every(c => c.l >= 0 && c.r <= w);
+      if (!focus) {   // at rest (nothing focused yet), with a match on a long weekday name («الأربعاء 4:24 م», not cut)
+        await p.evaluate(() => { const ev = MATCHES['136013']; ev.strTimestamp = new Date(Date.now() + 97 * 36e5).toISOString().slice(0, 19); NEXT_LIST['136013'] = [ev]; renderMatches(); nxDraw(); });
+        await p.waitForTimeout(200);
+        const s = await p.evaluate(seen), wh = await p.evaluate(() => { const e = document.querySelector('.nx-m .wh'); return [e.textContent, e.scrollWidth <= e.clientWidth + 1]; });
+        check(`new look home ${w}x${h} at rest: the next prayer, the news, the weather and the match whole on the screen, nothing seen cut; the cards after them off it`,
+          s.map(c => c.k).join() === 'prayers,news,forecast,matches' && whole(s) && wh[1] && wh[0].startsWith('الأربعاء'), JSON.stringify({ s, wh }));
+        await p.evaluate(() => { const ev = MATCHES['136013']; ev.strTimestamp = new Date(Date.now() + 5.6 * 36e5).toISOString().slice(0, 19); NEXT_LIST['136013'] = [ev]; renderMatches(); nxDraw(); });
+      }
+      await p.evaluate(k => { window.sauditvSetFocused(true); for (let i = 0; i < k; i++) window.sauditvStep(1); }, focus);
+      await p.waitForTimeout(300);
+      const seenNow = await p.evaluate(seen);
+      check(`new look home ${w}x${h}${focus ? ', the news focused (wider)' : ', the next prayer focused'}: every card seen is wholly on the screen`,
+        whole(seenNow) && seenNow.some(c => c.k === (focus ? 'news' : 'prayers')), JSON.stringify(seenNow));
+      if (focus) {   // the focus on to the last card: the row moves, still nothing seen cut
+        await p.evaluate(() => { for (let i = 0; i < 9; i++) window.sauditvStep(1); });
+        await p.waitForTimeout(300);
+        const last = await p.evaluate(seen);
+        check(`new look home ${w}x${h}: the focus on the last card (the hadith) brings it in whole, nothing seen cut`,
+          whole(last) && last.some(c => c.k === 'hadith'), JSON.stringify(last));
+        await p.evaluate(() => { window.sauditvStep(-9); for (let i = 0; i < 9; i++) window.sauditvStep(-1); window.sauditvStep(1); });
+        await p.waitForTimeout(300);
+      }
+      const r = await p.evaluate(layout), tag = `new look home ${w}x${h}${focus ? ', the news focused' : ''}`;
+      const band = h - dockb - dockh, cardsTop = Math.min(...r.cards.map(c => c.t)), cardsBottom = Math.max(...r.cards.map(c => c.b));
+      if (!focus) {
+        check(`${tag}: no errors; the classic stage hidden; the row: the next prayer, the news, the weather, the match, then the verse and the hadith`,
+          !errors.length && r.classic === 0 && /^prayers,news,forecast,matches,verse(,hadith)?$/.test(r.keys), JSON.stringify(r.keys) + errors.join('; '));
+        check(`${tag}: the dateline, the clock and the standfirst from the data`, r.dl.length === 3 && r.stand.startsWith('سماء صافية و31°، والمغرب بعد ')
+          && r.stand.endsWith('.'), JSON.stringify([r.dl.length, r.stand]));
+      }
+      check(`${tag}: top to bottom without overlap: the dateline, the clock and its standfirst, «اليوم», the cards, «التطبيقات», the launcher's apps row, «الأسواق»`,
+        r.dlBox.t >= 0 && r.dl.every(x => x.l >= 0 && x.r <= r.W) && r.deck.t >= r.dlBox.b - 1 && r.clock.t >= r.dlBox.b - 1
+        && r.hero.l >= 0 && r.hero.r <= r.W && Math.max(r.deck.b, r.clock.b) <= r.today.t + 1 && r.today.b <= cardsTop + 1
+        && cardsBottom <= r.apps.t + 1 && r.apps.b <= band + 1 && r.mk.t >= h - dockb - 1 && r.mk.b <= h && r.mkShown
+        && r.tape && r.tape.t >= r.mk.t - 1 && r.tape.b <= h && r.tape.l >= 0 && r.tape.r <= r.W,
+        JSON.stringify({ band, cardsTop, cardsBottom, dl: r.dlBox, deck: r.deck, clock: r.clock, today: r.today, apps: r.apps, mk: r.mk, tape: r.tape }));
+      check(`${tag}: nothing cut in the cards (their text whole, no card taller than its box), the photo's credit clear of the clock`,
+        !r.cut.length && r.cards.every(c => c.sh <= c.ch + 1) && (!r.credit || (apart(r.credit, r.hero) && apart(r.credit, r.dlBox))),
+        JSON.stringify({ cut: r.cut, cards: r.cards.map(c => [c.k, c.sh, c.ch]), credit: r.credit }));
+      if (focus) {
+        const f = await p.evaluate(() => { const n = document.querySelector('.nx-c.f'); return n && { k: n.dataset.k, wide: n.classList.contains('w'),
+          w: n.getBoundingClientRect().width, sum: n.querySelector('.nx-sm p').textContent, ok: n.querySelector('.nx-sm div').textContent,
+          bg: getComputedStyle(n).backgroundColor, panel: window.sauditvCurrentPanel() }; });
+        check(`${tag}: the news card in paper, wider, the first story's summary and «OK اقرأ الخبر كاملاً»; OK opens the news`,
+          f && f.k === 'news' && f.wide && Math.abs(f.w - 590 * Math.min(w / 960, h / 540)) < 2 && f.sum.startsWith('يبدأ الموسم الليلة')
+          && f.ok === 'OKاقرأ الخبر كاملاً' && f.bg === 'rgb(246, 239, 225)' && f.panel === 'news', JSON.stringify(f));
+      }
+      await ctx.close();
+    }
+  }
+
+  // the standfirst with some of its data missing: that half left out, nothing put in its place
+  {
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=news`);
+    const r = await p.evaluate(() => {
+      const P = nxPrayer(), W = NX_WX, out = {};
+      out.both = nxLine(P, W);
+      out.noWeather = nxLine(P, null);
+      out.noPrayer = nxLine(null, W);
+      out.none = nxLine(null, null);
+      out.dust = nxLine(null, Object.assign({}, W, { dust: 'غبار' }));
+      out.cloudy = nxLine(null, Object.assign({}, W, { code: 3 }));
+      const keep = PRAYERS; PRAYERS = []; NX_WX = null; nxDraw();
+      out.shown = getComputedStyle(document.getElementById('nx-st')).display; out.meta = getComputedStyle(document.getElementById('nx-mt')).display;
+      out.cards = [...document.querySelectorAll('#nx-rail > *')].map(c => c.dataset.k).join();
+      PRAYERS = keep;
+      return out;
+    });
+    const txt = s => s.replace(/<[^>]+>/g, '');
+    check('new look: the standfirst «سماء صافية و31°، والمغرب بعد ساعة و…» with both halves',
+      !errors.length && /^سماء صافية و.*31°.*، والمغرب بعد ساعة و\d+ دقيقة\.$/.test(txt(r.both)), JSON.stringify(r));
+    check('new look: without the weather only the prayer («المغرب بعد ….»), without the prayers only the weather («سماء صافية و31°.»)',
+      /^المغرب بعد ساعة و\d+ دقيقة\.$/.test(txt(r.noWeather)) && txt(r.noPrayer) === 'سماء صافية و31°.' && txt(r.dust) === 'غبار و31°.'
+      && txt(r.cloudy) === 'غائم و31°.', JSON.stringify(r));
+    check('new look: with neither, no standfirst at all (hidden, no placeholder), no weather line, no prayer or weather card',
+      r.none === '' && r.shown === 'none' && r.meta === 'none' && !/prayers|forecast/.test(r.cards) && !/[—…]|undefined|NaN/.test(JSON.stringify(r)),
+      JSON.stringify(r));
+    await ctx.close();
+  }
+
+  // the news card's tabs: the news cards enabled on the home screen (#panel/#panels), in their order; none: the country's
+  for (const [hash, want, tag] of [['&panel=prayers&panels=prayers,world,tech&rotate=30', 'العالم*,التقنية', 'world and tech'],
+                                   ['&panel=local&panels=local,news,hadith&rotate=30', 'مدينتك*,مصر', 'the city and the country (Egypt)'],
+                                   ['&panel=none', 'مصر*', 'none enabled: the country\'s news'],
+                                   ['&panel=tech', 'التقنية*', 'one news card']]) {
+    const { p, ctx, errors } = await nxOpen(NXH + '&newscc=EG&newsname=' + encodeURIComponent('مصر') + hash);
+    await p.evaluate(() => { NEWS.local = NEWS.news.slice(); NEWS.world = NEWS.news.slice(); NEWS.tech = NEWS.news.slice(); nxDraw(); });
+    const r = await p.evaluate(layout);
+    check(`new look: the news tabs follow the enabled news cards (${tag})`, !errors.length && r.chips === want, r.chips + errors.join('; '));
+    await ctx.close();
+  }
+
+  // the launcher's bridge over the «اليوم» row: its box (cardRect), ◀ ▶ from card to card without wrapping, the panel OK
+  // opens and the row's panels for the detail window, the news tab last read there, the mouse over a card
+  {
+    const init = () => { window.__rects = []; window.SaudiTVNative = { cardRect: (...a) => window.__rects.push(a), qrRect: () => {} }; };
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&panels=prayers,news,world,hadith&rotate=30&dockh=200&dockb=88`, { init });
+    const r = await p.evaluate(() => {
+      const out = { rect: window.__rects[window.__rects.length - 1] };
+      window.sauditvSetFocused(true);
+      out.first = window.sauditvCurrentPanel();
+      window.sauditvStep(-1); out.right = window.sauditvCurrentPanel();
+      window.sauditvStep(1); out.news = window.sauditvCurrentPanel();
+      for (let i = 0; i < 9; i++) window.sauditvStep(1);
+      out.last = window.sauditvCurrentPanel();
+      out.keys = [...document.querySelectorAll('#nx-rail > *')].map(c => c.dataset.k);
+      out.list = window.sauditvDetailList();
+      localStorage.setItem('sauditv-card-pos', JSON.stringify({ panel: 'world', at: Date.now() }));
+      window.sauditvHold(false);
+      return out;
+    });
+    await p.waitForTimeout(300);   // the row's move (140 ms)
+    r.inView = await p.evaluate(() => { const c = document.querySelector('.nx-c.f').getBoundingClientRect(); return c.left >= 0 && c.right <= innerWidth; });
+    const tab = await p.evaluate(() => { const b = document.querySelector('.nx-n').getBoundingClientRect();
+      window.sauditvPoint(b.left + 20, b.top + 20);
+      return { chips: [...document.querySelectorAll('.nx-ch span')].map(x => x.textContent + (x.className ? '*' : '')).join(), panel: window.sauditvCurrentPanel() }; });
+    check('new look: the row\'s box goes to the launcher (cardRect: the screen\'s left edge to the right margin, CSS px)',
+      !errors.length && r.rect && r.rect[0] === 0 && r.rect[1] === 376 && r.rect[2] === 1920 - 80 && r.rect[3] === 352 && r.rect[4] === 1920,
+      JSON.stringify(r.rect) + errors.join('; '));
+    check('new look: ◀ ▶ from card to card, no wrapping (the next prayer first; ▶ there stays), the last card brought into view',
+      r.first === 'prayers' && r.right === 'prayers' && r.news === 'news' && r.last === r.keys[r.keys.length - 1] && r.keys.length >= 4 && r.inView,
+      JSON.stringify(r));
+    check('new look: the detail window goes through the row (the news tabs in its place)',
+      r.list === r.keys.flatMap(k => k === 'news' ? ['news', 'world'] : [k]).join() && r.list.startsWith('prayers,news,world,forecast,matches'), r.list);
+    check('new look: the news tab last read in the detail window is the one shown; the mouse over the news card focuses it',
+      tab.chips === 'السعودية,العالم*' && tab.panel === 'world', JSON.stringify(tab));
+    // the launcher's pills end at 1300 px (its window's px; this page's devicePixelRatio is 1)
+    const pe = await p.evaluate(async () => {
+      window.sauditvPillsEnd(1300);
+      await new Promise(r => setTimeout(r, 200));
+      const dl = document.getElementById('nx-dl'), b = dl.getBoundingClientRect();
+      return { left: b.left, kicker: document.getElementById('nx-kk').textContent,
+               shown: [...dl.children].filter(s => s.getBoundingClientRect().top < b.bottom - 1).map(s => s.textContent) };
+    });
+    check('new look: the dateline keeps clear of the launcher\'s pills (sauditvPillsEnd); Ramadan\'s countdown left out there goes over the standfirst',
+      pe.left >= 1300 && pe.shown.length >= 1 && !pe.shown.some(t => t.includes('رمضان')) && pe.kicker.endsWith('· رمضان بعد 107 يوم'), JSON.stringify(pe));
+    await ctx.close();
+  }
+
+  // a switch of look: the launcher gives the page a new address (the settings fragment's look=new or not) and reloads it
+  {
+    const { p, ctx, errors } = await open('tv.html', 'city=الرياض&home=1&panel=prayers', { at: AT });
+    const look = () => ({ look: CONFIG.look, nx: !!document.getElementById('nx'), html: document.documentElement.className,
+      week: getComputedStyle(document.querySelector('.week')).display, tape: getComputedStyle(document.getElementById('tape')).left });
+    const a = await p.evaluate(look);
+    await p.evaluate(() => { location.hash = location.hash + '&look=new'; });
+    await p.reload();
+    await p.waitForFunction(() => document.documentElement.classList.contains('ready'), null, { timeout: 5000 }).catch(() => errors.push('never revealed'));
+    const b = await p.evaluate(look);
+    await p.evaluate(() => { location.hash = location.hash.replace('&look=new', ''); });
+    await p.reload();
+    await p.waitForFunction(() => document.documentElement.classList.contains('ready'), null, { timeout: 5000 }).catch(() => errors.push('never revealed'));
+    const c = await p.evaluate(look);
+    check('switching looks: «الكلاسيكي» (no #look) as before, «الجديد» after the reload with look=new, then «الكلاسيكي» again',
+      !errors.length && a.look === 'classic' && !a.nx && a.week !== 'none' && !/\bnx/.test(a.html)
+      && b.look === 'new' && b.nx && /\bnxh\b/.test(b.html) && c.look === 'classic' && !c.nx && c.week !== 'none' && c.tape === a.tape,
+      JSON.stringify({ a, b, c }) + errors.join('; '));
+    const d = await open('tv.html', 'city=الرياض&look=bogus', { at: AT });
+    check('switching looks: an unknown #look is «الكلاسيكي»', await d.p.evaluate(() => CONFIG.look === 'classic' && !document.getElementById('nx')), '');
+    await d.ctx.close();
+    await ctx.close();
+  }
+
+  // the screensaver in «الجديد»: the card top right, the photo's place top left, the dates and the clock bottom right,
+  // the four facts bottom left (each only with its data), no ticker tape; the hourly swap mirrors the corners
+  const saverCredit = {};   // its photo credit's size and colour, for the home screen's (below)
+  for (const [w, h] of [[1920, 1080], [1280, 720], [960, 540]]) {
+    const online = { v: 1, saudi: [{ u: 'https://thumb.wikimedia.org/x/alula.jpg', page: '', a: 'Heritage Commission', l: 'CC BY-SA 4.0', p: 'العُلا', b: 0.5 }], world: [], bing: [] };
+    const { p, ctx, errors } = await nxOpen('city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&teams=136013&panel=verse&look=new&photos=saudi', {
+      width: w, height: h, init: `try{ localStorage.setItem('photoOnline', ${JSON.stringify(JSON.stringify(online))}); }catch(e){}`
+        + "window.SaudiTVNative = {vpn: () => true, vpnApp: () => true, vpnState: () => 1, vpnCountry: () => ''};",
+      route: (u, r) => /thumb\.wikimedia\.org/.test(u) ? r.fulfill({ path: path.join(ROOT, 'photos/-RlktmDy3Ec.jpg') }) : /online\.json$/.test(u) ? r.abort() : null });
+    await p.evaluate(() => window.sauditvSaver.swap(false));
+    await p.waitForTimeout(1800);
+    const saver = () => {
+      const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+      const q = s => document.querySelector(s);
+      return { W: innerWidth, H: innerHeight, card: R(q('#nx .week')), place: q('#nx-pl').textContent, placeBox: R(q('#nx-pl')),
+               cover: R(q('.nx-cv')), facts: [...document.querySelectorAll('.nx-fx li')].map(li => li.textContent), factsBox: R(q('.nx-fx')),
+               dates: q('.nx-dt').textContent, clock: q('#nx-ck').textContent, quote: !!q('#nx .week .quote'),
+               tape: getComputedStyle(q('#tape')).display, classic: [...document.querySelectorAll('.stage > :not(#nx)')].filter(e => getComputedStyle(e).display !== 'none').length };
+    };
+    const r = await p.evaluate(saver), tag = `new look screensaver ${w}x${h}`;
+    check(`${tag}: no errors; the verse top right, the place top left, the dates and the clock bottom right, the facts bottom left; no tape`,
+      !errors.length && r.quote && r.card.r > r.W * .8 && r.card.t < r.H * .2 && r.place === 'العُلا' && r.placeBox.l < r.W * .1
+      && r.cover.r > r.W * .9 && r.cover.b > r.H * .85 && r.factsBox.l < r.W * .1 && r.factsBox.b > r.H * .85 && r.tape === 'none'
+      && r.classic === 0 && r.dates.startsWith('السبت 13 جمادى الأولى') && /^3:24م$/.test(r.clock),
+      JSON.stringify(r) + errors.join('; '));
+    check(`${tag}: four facts: the next prayer, the match, the weather, Ramadan; nothing overlapping`,
+      r.facts.length === 4 && r.facts[0].startsWith('المغرب') && r.facts[1].includes('×') && r.facts[2].includes('31°') && r.facts[3].startsWith('رمضان')
+      && apart(r.factsBox, r.cover) && apart(r.card, r.placeBox) && r.card.b < r.cover.t, JSON.stringify(r));
+    await p.evaluate(() => { MATCHES = {}; NEXT_LIST = {}; NX_WX = null; nxDraw(); });
+    const f = await p.evaluate(() => [...document.querySelectorAll('.nx-fx li')].map(li => li.textContent));
+    check(`${tag}: a fact without data is left out`, f.length === 2 && f[0].startsWith('المغرب') && f[1].startsWith('رمضان'), JSON.stringify(f));
+    // the VPN badge: the concept's shield and its check (an inline SVG in the badge's green), about the cap height of «VPN»
+    const v = await p.evaluate(() => {
+      const el = document.getElementById('vpn'), svg = el.querySelector('svg'), cs = getComputedStyle(el);
+      const shown = [...el.querySelectorAll('svg path')].filter(x => getComputedStyle(x).display !== 'none').map(x => x.getAttribute('class') || 'shield');
+      return { hidden: el.hidden, cls: el.className, shown, glyph: getComputedStyle(el.querySelector('b')).display, stroke: svg && getComputedStyle(svg).stroke,
+               h: svg && svg.getBoundingClientRect().height, font: parseFloat(cs.fontSize) * Math.min(innerWidth / 960, innerHeight / 540), text: el.innerText };
+    });
+    check(`${tag}: the VPN badge is the shield with its check in green (no «✓» glyph), about the text's cap height`,
+      !v.hidden && v.cls === 'vpn on' && v.shown.join() === 'shield,ok' && v.glyph === 'none' && v.stroke === 'rgb(166, 235, 185)'
+      && v.h >= v.font * .7 && v.h <= v.font * 1.05 && !v.text.includes('✓'), JSON.stringify(v));
+    saverCredit[w] = await p.evaluate(() => { const cs = getComputedStyle(document.getElementById('credit')); return [cs.fontSize, cs.color]; });
+    await p.evaluate(() => window.sauditvSaver.swap(true));
+    await p.waitForTimeout(1800);
+    const s = await p.evaluate(saver);
+    check(`${tag}: the hourly swap mirrors the corners (the clock left, the facts right, the card left, the place right)`,
+      s.cover.l < s.W * .1 && s.factsBox.r > s.W * .9 && s.card.l < s.W * .2 && s.placeBox.r > s.W * .9, JSON.stringify(s));
+    const shift = await p.evaluate(() => { pixelShift(); return document.querySelector('.stage').style.transform; });
+    check(`${tag}: pixelShift still moves it all (the stage)`, /^translate\(-?\d+px, ?-?\d+px\)$/.test(shift), shift);
+    await ctx.close();
+  }
+
+  // the home screen's photo credit in «الجديد»: on the «الأسواق» line at its left, the ticker after it; clear of the
+  // launcher's pills (the top 110 px at 1080p), its apps row and the ticker's text; the screensaver's size and opacity;
+  // shortened, never cut: without the licence's version, then without the author, the place always whole
+  const credit = async (w, h, photo) => {
+    const { dockh, dockb } = room(w, h);
+    const online = { v: 1, saudi: [Object.assign({ u: 'https://thumb.wikimedia.org/x/alula.jpg', page: '', a: 'Heritage Commission', l: 'CC BY-SA 4.0', p: 'العُلا', b: 0.5 }, photo)], world: [], bing: [] };
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&photos=saudi&dockh=${dockh}&dockb=${dockb}`, {
+      width: w, height: h, init: `try{ localStorage.setItem('photoOnline', ${JSON.stringify(JSON.stringify(online))}); }catch(e){}`,
+      route: (u, r) => /thumb\.wikimedia\.org/.test(u) ? r.fulfill({ path: path.join(ROOT, 'photos/01u4zLK54tE.jpg') }) : /online\.json$/.test(u) ? r.abort() : null });
+    await p.waitForFunction(() => document.getElementById('credit').classList.contains('on'), null, { timeout: 4000 }).catch(() => errors.push('no credit'));
+    await p.waitForTimeout(600);   // the tape laid out again after it
+    const r = await p.evaluate(() => {
+      const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+      const cr = document.getElementById('credit'), cs = getComputedStyle(cr), tape = document.getElementById('tape');
+      const items = [...document.querySelectorAll('.tape-i')].map(R).filter(x => x.r > tape.getBoundingClientRect().left + 1);
+      return { text: cr.textContent, box: R(cr), cut: cr.scrollWidth > cr.clientWidth + 1, size: cs.fontSize, color: cs.color,
+               tape: R(tape), items: items.length, mk: R(document.getElementById('nx-mk')) };
+    });
+    await ctx.close();
+    return { r, errors, dockh, dockb };
+  };
+  for (const [w, h] of [[1920, 1080], [1280, 720], [960, 540]]) {
+    const { r, errors, dockh, dockb } = await credit(w, h, {}), tag = `new look home ${w}x${h}`;
+    check(`${tag}: the photo's credit whole, bottom left on the «الأسواق» line, the ticker after it`,
+      !errors.length && r.text === 'العُلا · تصوير Heritage Commission · CC BY-SA 4.0' && !r.cut && r.box.l >= 0 && r.box.b <= h
+      && r.box.t >= r.mk.t - 1 && r.tape.l >= r.box.r && r.items > 0, JSON.stringify(r) + errors.join('; '));
+    check(`${tag}: the credit clear of the pills (the top ${Math.round(110 * h / 1080)} px), the apps row and the ticker's text`,
+      r.box.t >= 110 * h / 1080 && r.box.t >= h - dockb - 1 && apart(r.box, r.tape), JSON.stringify({ box: r.box, tape: r.tape, dockb, dockh }));
+    check(`${tag}: the credit in the screensaver's size and opacity`, saverCredit[w] && r.size === saverCredit[w][0] && r.color === saverCredit[w][1],
+      JSON.stringify([r.size, r.color, saverCredit[w]]));
+  }
+  {
+    const long = 'Studio of the Photographers of the Kingdom of Saudi Arabia and Their Many Friends, Assistants and Archivists';
+    let { r, errors } = await credit(1920, 1080, { a: long });
+    check('new look home: a credit too long for the line: without the licence\'s version, then without the author («العُلا · CC BY-SA»)',
+      !errors.length && r.text === 'العُلا · CC BY-SA' && !r.cut && r.tape.l >= r.box.r, JSON.stringify(r) + errors.join('; '));
+    const place = 'محمية الإمام عبدالعزيز بن محمد الملكية ووادي حنيفة والدرعية التاريخية وروضة خريم ومتنزه الثمامة البري';
+    ({ r, errors } = await credit(960, 540, { p: place, a: long }));
+    check('new look home: the place is never cut, whatever its length', !errors.length && r.text.startsWith(place) && !r.cut, JSON.stringify(r) + errors.join('; '));
+  }
+
+  // the screensaver's card top right, each kind it rotates through (prayers, the verse, the hadith, the weather, the
+  // matches, the news), at the three sizes: no wider than its 420, its text whole inside it, its plate behind it (never
+  // over it), clear of the place, the dates and clock, and the facts
+  {
+    const more = {
+      forecast: () => { FORECAST = [0, 1, 2, 3, 4].map(i => ({ date: new Date(Date.now() + i * 864e5).toISOString().slice(0, 10), code: i ? 2 : 96, hi: 37 - i, lo: 24 - i })); },
+      matches: () => {
+        const ev = (id, a, b, hrs) => ({ idEvent: id, strHomeTeam: a, strAwayTeam: b, strTimestamp: new Date(Date.now() + hrs * 36e5).toISOString().slice(0, 19), idHomeTeam: '136013' });
+        const first = MATCHES['136013'];
+        NEXT_LIST = { '136013': [first, ev('b', 'Al-Ahli', 'Al-Hilal', 80), ev('c', 'Al-Hilal', 'Al-Ittihad', 150), ev('d', 'Al-Shabab', 'Al-Hilal', 160)] };
+      },
+      news: () => { NEWS.news.unshift({ headline: 'وزارة الموارد البشرية تعلن عن حزمة جديدة من البرامج لدعم توظيف الشباب في القطاع الخاص في جميع مناطق المملكة', source: 'واس', t: Date.now() - 6e5, link: '' }); },
+    };
+    for (const [w, h] of [[1920, 1080], [1280, 720], [960, 540]]) for (const panel of ['prayers', 'verse', 'hadith', 'forecast', 'matches', 'news']) {
+      const { p, ctx, errors } = await nxOpen(`city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&teams=136013&look=new&panel=${panel}`, { width: w, height: h });
+      if (more[panel]) await p.evaluate(`(${more[panel]})()`);
+      if (panel === 'hadith') await p.waitForFunction(() => !!HADITH_DAY, null, { timeout: 40000 }).catch(() => {});
+      await p.evaluate(() => { window.sauditvSaver.swap(false); renderPanel(false); });
+      await p.waitForTimeout(1600);
+      const r = await p.evaluate(() => {
+        const R = e => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width }; };
+        const card = document.querySelector('#nx .week'), c = R(card), z = Math.min(innerWidth / 960, innerHeight / 540);
+        const leaves = [...card.querySelectorAll('*')].filter(e => !e.children.length && e.textContent.trim() && getComputedStyle(e).display !== 'none');
+        const out = leaves.filter(e => { const b = R(e); return b.l < c.l - 1 || b.r > c.r + 1 || b.t < c.t - 1 || b.b > c.b + 1; }).map(e => e.textContent.slice(0, 20));
+        const cut = leaves.filter(e => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).textOverflow !== 'ellipsis').map(e => e.textContent.slice(0, 20));
+        const covered = leaves.filter(e => { const b = R(e), x = document.elementFromPoint((b.l + b.r) / 2, (b.t + b.b) / 2);
+          return !x || !(e.contains(x) || x.contains(e)); }).map(e => e.textContent.slice(0, 20));
+        return { c, max: 420 * z, rows: leaves.length, out, cut, covered, plate: getComputedStyle(card, '::before').zIndex, title: document.getElementById('week-hd').textContent,
+                 others: ['#nx-pl', '.nx-cv', '.nx-fx'].map(q => R(document.querySelector(q))), W: innerWidth };
+      });
+      const clear = r.others.every(o => o.w === 0 || r.c.r <= o.l + 1 || o.r <= r.c.l + 1 || r.c.b <= o.t + 1 || o.b <= r.c.t + 1);
+      check(`new look screensaver ${w}x${h}, card ${panel}: within its ${Math.round(r.max)} px, its text whole inside it, nothing over it, clear of the other corners`,
+        !errors.length && r.rows > 0 && r.c.w <= r.max + 1 && r.c.r <= r.W && r.c.l >= 0 && !r.out.length && !r.cut.length && !r.covered.length
+        && r.plate === '-1' && clear, JSON.stringify(r) + errors.join('; '));
+      await ctx.close();
+    }
+  }
+
+  // a new or offline TV: the online photos' list bundled with the page (dist/online.js), until a fetch of it succeeds
+  {
+    const offline = (u, r) => /\/photos\/(online|index)\.json$|wikimedia\.org/.test(u) ? r.abort() : null;
+    // the bundled list as built: its saudi list is empty while tools/online_photos.py's SAUDI is off (2026-10-25); then
+    // the bundled world list (Commons' Picture of the Day) stands in for the online photo tests below
+    const BUNDLED = JSON.parse(readFileSync(path.join(ROOT, 'dist/online.js'), 'utf8').replace(/^window\.SAUDITV_ONLINE = /, '').replace(/;\s*$/, ''));
+    const SRC = BUNDLED.saudi.length ? 'saudi' : 'world';
+    let { p, ctx, errors } = await open('tv.html', 'photos=saudi', { seed: false, route: offline });
+    let r = await p.evaluate(() => { const b = photoFor(BG_SLOT, photoPools());
+      return { bundled: !!ONLINE_BUNDLED && ONLINE === ONLINE_BUNDLED, n: ONLINE.saudi.length, pick: b && { on: b.on, p: b.p, u: b.u }, credit: b ? photoCredit(b) : '',
+               shown: document.querySelector('.photo').style.backgroundImage, creditOn: document.getElementById('credit').classList.contains('on') }; });
+    if (BUNDLED.saudi.length)
+      check('online photos: a new TV offline picks a Saudi photo from the bundled list (dist/online.js), with its place and credit',
+        !errors.length && r.bundled && r.n >= 100 && r.pick && r.pick.on && r.pick.p && /^https:\/\/(thumb|upload)\.wikimedia\.org\//.test(r.pick.u)
+        && r.credit.startsWith(r.pick.p + ' · '), JSON.stringify(r) + errors.join('; '));
+    else
+      check('online photos: the bundled list (dist/online.js) has no Saudi photos (switched off): #photos=saudi picks none, no errors',
+        !errors.length && r.bundled && r.n === 0 && !r.pick && !r.credit, JSON.stringify(r) + errors.join('; '));
+    check('online photos: offline its picture cannot load: a bundled background shows, without a credit', /assets\/backgrounds\//.test(r.shown) && !r.creditOn, JSON.stringify(r));
+    await ctx.close();
+    // the picture at hand (the app has it on disk): it shows with its place and credit
+    ({ p, ctx, errors } = await open('tv.html', 'photos=' + SRC, { seed: false,
+      route: (u, r) => /wikimedia\.org/.test(u) ? r.fulfill({ path: path.join(ROOT, 'photos/-RlktmDy3Ec.jpg') }) : /\/photos\/(online|index)\.json$/.test(u) ? r.abort() : null }));
+    await p.waitForFunction(() => document.getElementById('credit').classList.contains('on'), null, { timeout: 4000 }).catch(() => {});
+    r = await p.evaluate(() => ({ credit: document.getElementById('credit').textContent, place: photoFor(BG_SLOT, photoPools()).p, bg: document.querySelector('.photo').style.backgroundImage }));
+    check(`online photos: the bundled list's photo (${SRC}) shows, its credit «المكان · تصوير … · الرخصة» on screen`, !errors.length && /wikimedia/.test(r.bg)
+      && (r.place ? r.credit.startsWith(r.place + ' · ') : r.credit.startsWith('تصوير ')), JSON.stringify(r) + errors.join('; '));
+    await ctx.close();
+    // a fetch of the list succeeds: it is used and kept; offline later, the kept one (not the bundled one)
+    const fresh = { v: 1, saudi: [{ u: 'https://thumb.wikimedia.org/x/fresh.jpg', a: 'A', l: 'CC BY 4.0', p: 'جديد', b: 0.5 }], world: [], bing: [] };
+    let serve = true;
+    ({ p, ctx, errors } = await open('tv.html', 'photos=saudi', { seed: false,
+      route: (u, r) => serve && /\/photos\/online\.json$/.test(u) ? r.fulfill({ body: JSON.stringify(fresh), contentType: 'application/json' }) : offline(u, r) }));
+    await p.waitForFunction(() => ONLINE.saudi.length === 1, null, { timeout: 4000 }).catch(() => {});
+    r = await p.evaluate(() => ({ n: ONLINE.saudi.length, kept: JSON.parse(localStorage.getItem('photoOnline') || 'null') }));
+    serve = false;   // offline now
+    await p.reload();
+    await p.waitForTimeout(500);
+    const again = await p.evaluate(() => ({ n: ONLINE.saudi.length, bundled: ONLINE === ONLINE_BUNDLED }));
+    check('online photos: a fetched list is used and kept, and offline afterwards the kept one, not the bundled one',
+      !errors.length && r.n === 1 && r.kept && r.kept.saudi.length === 1 && again.n === 1 && !again.bundled, JSON.stringify({ r, again }));
+    await ctx.close();
+  }
+
+  // «توفير الطاقة» in «الجديد»: the «الأسواق» line is the ticker tape, in steps as before
+  {
+    const { p, ctx, errors } = await nxOpen(`${NXH}&panel=prayers&lowpower=1`);
+    await p.waitForFunction(() => !!TAPE_ANIM, null, { timeout: 3000 }).catch(() => errors.push('no tape animation'));
+    const r = await p.evaluate(() => ({ easing: TAPE_ANIM ? TAPE_ANIM.effect.getTiming().easing : '', label: getComputedStyle(document.getElementById('nx-mk')).display,
+      bg: getComputedStyle(document.getElementById('tape')).backgroundColor, frost: getComputedStyle(document.getElementById('tape-frost')).display }));
+    check('new look: low power keeps the tape in steps; it is the «الأسواق» line (no glass, no frost)',
+      !errors.length && /^steps\(/.test(r.easing) && r.label !== 'none' && r.bg === 'rgba(0, 0, 0, 0)' && r.frost === 'none', JSON.stringify(r) + errors.join('; '));
     await ctx.close();
   }
 }

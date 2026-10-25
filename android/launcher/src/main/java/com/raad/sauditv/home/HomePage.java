@@ -45,6 +45,12 @@ import java.util.function.Consumer;
  * panels; the page draws the focus ring and scale (window.sauditvSetFocused). The WebView never takes key focus.
  * The same for «يُتلى الآن» under the clock (qrView, SaudiTVNative.qrRect, window.sauditvQrFocused): OK or a click on it
  * stops the radio (setOnQr).
+ *
+ * «شكل الواجهة» «الجديد» (#look=new in the settings fragment, HomeLook): the page draws its «اليوم» row of cards instead
+ * of the card; the same invisible view covers the row: LEFT/RIGHT (held too) step from card to card (sauditvStep), the
+ * mouse points at one (sauditvPoint), OK opens the focused one with the row's cards for the detail window's LEFT/RIGHT
+ * (sauditvDetailList). Its apps row is HomeLook's size (sent as dockh/dockb); the page keeps its dateline clear of the
+ * pills (setPillsEnd, window.sauditvPillsEnd).
  */
 final class HomePage {
     private static final Uri CONFIG = Uri.parse("content://com.raad.sauditv.screensaver.config");
@@ -77,6 +83,9 @@ final class HomePage {
     private boolean appsOpen;    // the launcher's apps grid is open (window.sauditvAppsOpen)
     // the app tiles' look from the same settings read (ConfigProvider's tile_shape, focus_style; absent: the defaults)
     private volatile boolean circles, apple;
+    private volatile boolean newLook;   // «شكل الواجهة» «الجديد» (HomeLook.isNew of the settings fragment)
+    private float cardL, cardT, cardK = 1;   // where the card view is (CSS px) and the page's px per CSS px (place)
+    private int pillsEnd = -1;   // the pills' right edge in px (setPillsEnd), sent again to a (re)loaded page
     private Runnable onFocus;
     private Consumer<Boolean> onCardChanged;
 
@@ -91,11 +100,19 @@ final class HomePage {
         card.setDefaultFocusHighlightEnabled(false);   // the page draws the focus
         card.setVisibility(View.GONE);   // until the page says where its card is
         card.setOnClickListener(v -> open());
-        // LEFT/RIGHT on the focused card step through its panels (RTL: left = next); focus stays here
+        // LEFT/RIGHT on the focused card step through its panels (RTL: left = next); focus stays here. «الجديد»: from
+        // card to card of its row, a held key too
         card.setOnKeyListener((v, code, e) -> {
             if (code != KeyEvent.KEYCODE_DPAD_LEFT && code != KeyEvent.KEYCODE_DPAD_RIGHT) return false;
-            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) step(code == KeyEvent.KEYCODE_DPAD_LEFT ? 1 : -1);
+            if (e.getAction() == KeyEvent.ACTION_DOWN && (e.getRepeatCount() == 0 || newLook)) step(code == KeyEvent.KEYCODE_DPAD_LEFT ? 1 : -1);
             return true;
+        });
+        // «الجديد»: the mouse over the row focuses the card under it (the page finds it: window.sauditvPoint, CSS px)
+        card.setOnHoverListener((v, e) -> {
+            if (newLook && web != null && e.getActionMasked() == android.view.MotionEvent.ACTION_HOVER_MOVE)
+                web.evaluateJavascript("window.sauditvPoint && window.sauditvPoint(" + (cardL + e.getX() / cardK) + ","
+                    + (cardT + e.getY() / cardK) + ")", null);
+            return false;
         });
         card.setOnFocusChangeListener((v, has) -> {
             setPageFocused(has);
@@ -142,6 +159,24 @@ final class HomePage {
 
     /** «شكل التحديد»: Apple TV's lift and shadow (else Google TV's ring), as of the last settings read */
     boolean apple() { return apple; }
+
+    /** «شكل الواجهة» «الجديد», as of the last settings read */
+    boolean newLook() { return newLook; }
+
+    /** the apps row's height and its distance from the bottom edge (dp) in the current look */
+    int dockH() { return newLook ? HomeLook.DOCK_H_DP : DOCK_H_DP; }
+    int dockB() { return newLook ? HomeLook.DOCK_B_DP : DOCK_B_DP; }
+
+    /** the launcher's pills end at px from the left edge: «الجديد»'s dateline keeps clear of them (window.sauditvPillsEnd) */
+    void setPillsEnd(int px) {
+        if (px == pillsEnd) return;
+        pillsEnd = px;
+        sendPillsEnd();
+    }
+
+    private void sendPillsEnd() {
+        if (web != null && pillsEnd >= 0) web.evaluateJavascript("window.sauditvPillsEnd && window.sauditvPillsEnd(" + pillsEnd + ")", null);
+    }
 
     /** onResume: follow the current settings (a changed choice gets a fresh page), run again, release the card. */
     void resume() {
@@ -207,6 +242,7 @@ final class HomePage {
         }
         circles = "circle".equals(shape);
         apple = "apple".equals(focus);
+        newLook = HomeLook.isNew(frag);
         // a comma list ("prayers,forecast,matches") = one card that shows each in turn, 30 s each
         String[] panels = panel.replace(" ", "").split(",");
         panel = panels[0].isEmpty() ? "none" : panels[0];
@@ -217,7 +253,7 @@ final class HomePage {
         panelList = "none".equals(panel) ? "" : String.join(",", panels);
         String rotate = panels.length > 1 ? "&panels=" + String.join(",", panels) + "&rotate=30" : "";
         return "file:///android_asset/web/tv.html#" + frag + "&panel=" + panel + rotate
-                + "&home=1&pillsh=" + PILLS_H_DP + "&dockh=" + DOCK_H_DP + "&dockb=" + DOCK_B_DP
+                + "&home=1&pillsh=" + PILLS_H_DP + "&dockh=" + dockH() + "&dockb=" + dockB()
                 + "&radiopush=1";   // «يُتلى الآن» is told when the radio changes (radioChanged): no asking every 3 s
     }
 
@@ -229,21 +265,34 @@ final class HomePage {
         final String frag = (fragment == null ? "" : fragment)
                 + (panelList == null || panelList.isEmpty() ? "" : "&panels=" + panelList);
         final String fallback = firstPanel;
-        // hold the rotation first (released in resume() when the home screen is back), then ask the panel
-        web.evaluateJavascript("(window.sauditvHold && window.sauditvHold(true), window.sauditvCurrentPanel && window.sauditvCurrentPanel())", value -> {
+        // hold the rotation first (released in resume() when the home screen is back), then ask the panel; «الجديد» also
+        // says its row's cards ("prayers,news,world,forecast|news"): the detail window's LEFT/RIGHT go through them
+        web.evaluateJavascript("(window.sauditvHold && window.sauditvHold(true), (window.sauditvDetailList ? window.sauditvDetailList() + '|' : '')"
+                + " + (window.sauditvCurrentPanel ? window.sauditvCurrentPanel() : ''))", value -> {
             opening = false;
             if (activity.isFinishing() || activity.isDestroyed()) return;
-            String p = value == null ? "" : value.replace("\"", "").trim();
+            String v = value == null ? "" : value.replace("\"", "").trim(), list = null;
+            int bar = v.lastIndexOf('|');
+            if (bar >= 0) { list = rowPanels(v.substring(0, bar)); v = v.substring(bar + 1); }
+            String p = v;
             if (!PANELS.contains(p)) p = PANELS.contains(fallback) ? fallback : PANELS.get(0);
+            String extra = list != null && list.contains(",") ? (fragment == null ? "" : fragment) + "&panels=" + list : frag;
             try {
                 activity.startActivity(new Intent(activity, DetailActivity.class)
-                        .putExtra(DetailActivity.EXTRA_FRAGMENT, frag)
+                        .putExtra(DetailActivity.EXTRA_FRAGMENT, extra)
                         .putExtra(DetailActivity.EXTRA_PANEL, p));
             } catch (RuntimeException e) {
                 Log.w("SaudiTV-Home", "detail: " + e);
                 if (web != null) web.evaluateJavascript("window.sauditvHold && window.sauditvHold(false)", null);
             }
         });
+    }
+
+    /** the page's list of panels, only the known ones, each once, comma-separated ("" for none) */
+    static String rowPanels(String list) {
+        java.util.LinkedHashSet<String> keep = new java.util.LinkedHashSet<>();
+        for (String s : list.split(",")) if (PANELS.contains(s.trim())) keep.add(s.trim());
+        return String.join(",", keep);
     }
 
     /** the card shows its next (+1) or previous (-1) panel and holds it a full rotation (window.sauditvStep) */
@@ -278,6 +327,7 @@ final class HomePage {
         p.leftMargin = show ? Math.round((float) l * k) : 0;
         p.topMargin = show ? Math.round((float) t * k) : 0;
         card.setLayoutParams(p);
+        if (card == this.card) { cardL = (float) l; cardT = (float) t; cardK = k; }
         boolean was = card.getVisibility() == View.VISIBLE, hadFocus = card.isFocused();
         if (show != was) {
             card.setVisibility(show ? View.VISIBLE : View.GONE);
@@ -343,23 +393,40 @@ final class HomePage {
                 File small = PhotoScale.of(c, name, () -> new FileInputStream(f));
                 return new WebResourceResponse("image/jpeg", null, new FileInputStream(small != null ? small : f));
             }
+            // the online photos (photos/online.json), as the screensaver app does (PhotoCache.online): a Commons
+            // thumbnail at this screen's width (PhotoSize.commonsWidth), downloaded once, the newest KEEP_ONLINE kept
+            if (PhotoSize.online(url)) {
+                android.util.DisplayMetrics m = c.getResources().getDisplayMetrics();
+                String src = PhotoSize.commonsWidth(url, m.widthPixels, m.heightPixels);
+                File f = download(c, "photos-online", src, PhotoSize.cacheName(src), KEEP_ONLINE);
+                return f == null ? null : new WebResourceResponse("image/jpeg", null, new FileInputStream(f));
+            }
         } catch (Exception ignored) { }
         return null;
     }
+
+    /** the page asks for the next few ahead of their turn (photoAhead), so a rolling few are kept */
+    private static final int KEEP_ONLINE = 30;
 
     private static String safeName(String s) {
         return s.matches("[A-Za-z0-9_-]+\\.jpg") ? s : null;
     }
 
-    /** Runs on the WebView's network thread, so a blocking download is fine. */
-    private static synchronized File hosted(Context c, String url, String name) throws java.io.IOException {
-        File dir = new File(c.getFilesDir(), "photos");
+    private static File hosted(Context c, String url, String name) throws java.io.IOException {
+        return download(c, "photos", url, name, KEEP_PHOTOS);
+    }
+
+    /** url into files/<folder>/<name> once (the newest keep stay). Runs on the WebView's network thread, so a
+     *  blocking download is fine. */
+    private static synchronized File download(Context c, String folder, String url, String name, int keep) throws java.io.IOException {
+        File dir = new File(c.getFilesDir(), folder);
         File f = new File(dir, name);
         if (f.isFile() && f.length() > 0) return f;
         if (!dir.isDirectory() && !dir.mkdirs()) return null;
         HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
         con.setConnectTimeout(15000);
         con.setReadTimeout(30000);
+        con.setRequestProperty("User-Agent", "SaudiTV/1.0 (https://github.com/raad113/SaudiTV) Android");   // Wikimedia asks every client to name itself
         File tmp = new File(dir, name + ".tmp");
         try {
             if (con.getResponseCode() != HttpURLConnection.HTTP_OK) return null;
@@ -374,9 +441,9 @@ final class HomePage {
             tmp.delete();
         }
         File[] all = dir.listFiles((d, n) -> n.endsWith(".jpg"));
-        if (all != null && all.length > KEEP_PHOTOS) {
+        if (all != null && all.length > keep) {
             Arrays.sort(all, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
-            for (int i = KEEP_PHOTOS; i < all.length; i++) all[i].delete();
+            for (int i = keep; i < all.length; i++) all[i].delete();
         }
         return f;
     }
@@ -409,6 +476,7 @@ final class HomePage {
                 if (v == web && card.isFocused()) setPageFocused(true);
                 if (v == web && qr.isFocused()) setQrFocused(true);
                 if (v == web && appsOpen) v.evaluateJavascript("window.sauditvAppsOpen && window.sauditvAppsOpen(true)", null);
+                if (v == web) sendPillsEnd();
             }
         });
         // the page's script warnings and errors go to logcat (tag SaudiTV-Home); the rest is dropped

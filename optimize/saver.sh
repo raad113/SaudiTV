@@ -28,10 +28,16 @@
 #                                                  corners (the default) or round icons with their names
 #   optimize/saver.sh focus google|apple           «شكل التحديد», the focused app: Google TV's white ring (the
 #                                                  default) or Apple TV's lift and shadow
+#   optimize/saver.sh look classic|new             «شكل الواجهة», the home screen and the screensaver: «الكلاسيكي» (as
+#                                                  before; settings saved before keep it) or «الجديد» (a new install's)
 #   optimize/saver.sh sources world skynews,bbc    a news page's sources (news tech local world), read together; ""
 #                                                  = its defaults. The ids: optimize/saver.sh show (sources_…)
 #   optimize/saver.sh autoupdate on|off            the page's auto-update from github.com/raad113/SaudiTV (on by default)
 #   optimize/saver.sh lowpower on|off              «توفير الطاقة»: the ticker tape at 30 frames a second, not 60 (off by default)
+#   optimize/saver.sh photos ours,bing             «مصادر الصور», the background photos, shown in turn: ours (the repo's)
+#                                                  bing (Bing's photo of the day) world (Commons' picture of the day);
+#                                                  "" = ours. saudi (places of Saudi Arabia, Wikimedia Commons) is off
+#                                                  for now (Prefs.SAUDI_PHOTOS): it is read as ours
 #   optimize/saver.sh update                       download the latest screen now; says where from and which page shows
 #   optimize/saver.sh app-check                    is there a newer release of both apps? (checks only; installing is
 #                                                  the TV settings' «تحديث التطبيق»)
@@ -52,6 +58,14 @@
 #                                                  country's own list
 #   optimize/saver.sh setup                        open the first-run setup on the TV (a new install shows it once;
 #                                                  the settings' «معالج الإعداد» too); the GET answer has setup_done
+#   optimize/saver.sh athan on|off                 «الأذان» (on by default): each prayer's alert at its time (the page's
+#                                                  own times); on also lets it show over other apps (SYSTEM_ALERT_WINDOW,
+#                                                  granted through ADB: no prompt on the TV)
+#   optimize/saver.sh athan-test fajr|dhuhr|asr|maghrib|isha [full|short|reminder]
+#                                                  that prayer's athan now, as at its time (its own alert, or the one
+#                                                  given); silent with the TV off or in standby, as then
+#   optimize/saver.sh athan-show                   today's athans in the city, each prayer's alert, the voices, the next
+#                                                  alarm and the last one, the permissions
 # Only ADB can change these (com.raad.sauditv.screensaver/.SaverReceiver needs the shell's DUMP).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -105,6 +119,10 @@ case "${1:-}" in
   lowpower)
     case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh lowpower on|off"; exit 1 ;; esac
     send SET "--es lowpower $v" ;;
+  photos)
+    [ $# -ge 2 ] || { echo "usage: optimize/saver.sh photos ours,bing,world (\"\" = the defaults: ours)"; exit 1; }
+    case ",$2," in *[!a-z,]*) echo "usage: optimize/saver.sh photos ours,bing,world (\"\" = the defaults: ours)"; exit 1 ;; esac
+    send SET "--es photos $(quote "$2")" ;;
   numerals)
     case "${2:-}" in 0-9|latin|western|latn) v=latn ;; arabic|arab|٠-٩) v=arab ;; *) echo "usage: optimize/saver.sh numerals 0-9|arabic"; exit 1 ;; esac
     send SET "--es numerals $v" ;;
@@ -114,6 +132,9 @@ case "${1:-}" in
   focus)
     case "${2:-}" in google|google-tv) v=google ;; apple|apple-tv) v=apple ;; *) echo "usage: optimize/saver.sh focus google|apple"; exit 1 ;; esac
     send SET "--es focus_style $v" ;;
+  look)
+    case "${2:-}" in classic|old|الكلاسيكي) v=classic ;; new|الجديد) v=new ;; *) echo "usage: optimize/saver.sh look classic|new"; exit 1 ;; esac
+    send SET "--es look $v" ;;
   sources)
     case "${2:-}" in news|tech|local|world) ;; *) echo "usage: optimize/saver.sh sources news|tech|local|world id,id (\"\" = the defaults)"; exit 1 ;; esac
     [ $# -ge 3 ] || { echo "usage: optimize/saver.sh sources $2 id,id (\"\" = the defaults)"; exit 1; }
@@ -144,5 +165,21 @@ case "${1:-}" in
   radio-hold)
     case "${2:-}" in on) send PAUSE_FOR_ATHAN ;; off) send RESUME_AFTER_ATHAN ;; *) echo "usage: optimize/saver.sh radio-hold on|off"; exit 1 ;; esac ;;
   setup) "$PY" -I optimize/tv.py "am start -n com.raad.sauditv.screensaver/.SetupActivity" ;;
-  *) sed -n '2,54p' "$0"; exit 1 ;;
+  athan)
+    case "${2:-}" in
+      on|true)   # its screen and banner over other apps: the appop the TV's settings would grant (the answer's athan_screen_over_apps)
+        "$PY" -I optimize/tv.py "appops set com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW allow" >/dev/null || true
+        send SET "--es athan on" ;;
+      off|false) send SET "--es athan off" ;;
+      *) echo "usage: optimize/saver.sh athan on|off"; exit 1 ;;
+    esac ;;
+  athan-test)
+    case "${2:-}" in fajr|dhuhr|asr|maghrib|isha) ;; *) echo "usage: optimize/saver.sh athan-test fajr|dhuhr|asr|maghrib|isha [full|short|reminder]"; exit 1 ;; esac
+    case "${3:-}" in
+      "") send ATHAN_TEST "--es prayer $2" ;;
+      full|short|reminder) send ATHAN_TEST "--es prayer $2 --es kind $3" ;;
+      *) echo "usage: optimize/saver.sh athan-test fajr|dhuhr|asr|maghrib|isha [full|short|reminder]"; exit 1 ;;
+    esac ;;
+  athan-show) send ATHAN_SHOW ;;
+  *) sed -n '2,67p' "$0"; exit 1 ;;
 esac

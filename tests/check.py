@@ -193,6 +193,10 @@ check("setup: finishing or skipping sets setupDone; Mouse attached as in the set
       setup_src.count("prefs.setSetupDone(true)") >= 2 and "Mouse.attach(this, true)" in setup_src
       and "mouse.generic(e)" in setup_src and "mouse.touch(e)" in setup_src)
 prefs_src = (SAVER_SRC / "Prefs.java").read_text(encoding="utf-8")
+check("numerals: the «شكل الأرقام» labels and the updater's versions go through one LRI…PDI helper (Prefs.ltr), no LRO/RLM",
+      'static String ltr(String s) { return s == null ? "" : "\u2066" + s + "\u2069"; }' in prefs_src
+      and 'ltr("0 1 2 3")' in prefs_src and "‭" not in prefs_src and "‏" not in prefs_src
+      and "Prefs.ltr(digits(c, s))" in (SAVER_SRC / "AppUpdate.java").read_text(encoding="utf-8"))
 mig = re.search(r"private void migrate\(\) \{(.*?)\n    \}", prefs_src, re.S).group(1)
 check("setup: Prefs.migrate writes setupDone once: an earlier read or saved settings -> done, a new install -> not",
       "SetupState.initial(true, true)" in mig and "SetupState.initial(false, older)" in mig)
@@ -359,6 +363,21 @@ check("perf: photos kept at the size the screen draws them (PhotoSize, PhotoScal
       and same_but_package(SAVER_SRC / "PhotoScale.java", HOME_SRC / "PhotoScale.java")
       and pc_src.count("PhotoScale.of(") == 2 and hp_src.count("PhotoScale.of(") == 2
       and "HomePage.photo(" in detail_src and "static WebResourceResponse photo(" in hp_src)
+check("online photos (photos/online.json): both apps download them at the screen's width (PhotoSize.commonsWidth) and keep "
+      "the last 30; the page reads the list beside index.json",
+      all("PhotoSize.online(url)" in s and "PhotoSize.commonsWidth(url, m.widthPixels, m.heightPixels)" in s
+          and "KEEP_ONLINE = 30" in s and '"photos-online"' in s for s in (pc_src, hp_src))
+      and "['online.json', 'photoOnline'," in tmpl and "PHOTO_BASE = 'https://raw.githubusercontent.com/raad113/SaudiTV/main/photos/'" in tmpl)
+
+# ---- the daily photos Action: writes the repo with the job's own token only
+wf_path = ROOT / ".github/workflows/photos.yml"
+wf = wf_path.read_text(encoding="utf-8") if wf_path.is_file() else ""
+perms = re.search(r"^permissions:\s*\n((?:[ \t]+.*\n)+)", wf, re.M)
+check("photos Action: permissions contents: write (nothing else), no secret but GITHUB_TOKEN, runs tools/online_photos.py",
+      perms is not None and [l.split("#")[0].strip() for l in perms.group(1).splitlines() if l.split("#")[0].strip()] == ["contents: write"]
+      and set(re.findall(r"secrets\.(\w+)", wf)) <= {"GITHUB_TOKEN"} and "secrets[" not in wf
+      and "python -I tools/online_photos.py" in wf and "git diff --quiet -- photos/online.json" in wf
+      and re.search(r"cron:", wf) is not None, wf[:300])
 link_src = (HOME_SRC / "RadioLink.java").read_text(encoding="utf-8")
 notify_src = (SAVER_SRC / "RadioNotify.java").read_text(encoding="utf-8")
 svc_src = (SAVER_SRC / "RadioService.java").read_text(encoding="utf-8")
@@ -379,6 +398,42 @@ check("perf: «توفير الطاقة» in the settings' «التطبيق» (of
       and "const TAPE_LOW_FPS = 30;" in tmpl and "easing: CONFIG.lowPower ? `steps(${Math.max(1, Math.round(w / TAPE_SPEED * TAPE_LOW_FPS))}, end)` : 'linear'" in tmpl
       and "lowPower: _Q.get('lowpower') === '1'" in tmpl)
 
+# ---- «شكل الواجهة» (Look): the settings app, the launcher and the page agree on look=new; a new install gets «الجديد»,
+# settings saved before keep «الكلاسيكي»; the settings' row (with its pictures) and saver.sh's command
+look_src = (SAVER_SRC / "Look.java").read_text(encoding="utf-8")
+homelook_src = (HOME_SRC / "HomeLook.java").read_text(encoding="utf-8")
+saver_sh = (ROOT / "optimize/saver.sh").read_text(encoding="utf-8")
+check("look: Prefs sends Look.param (&look=new for «الجديد» only), the page reads #look=new, the launcher HomeLook.isNew of the same fragment",
+      '"&look=new"' in look_src and "+ Look.param(look())" in prefs_src and "look: _Q.get('look') === 'new' ? 'new' : 'classic'" in tmpl
+      and "(^|&)look=new(&|$)" in homelook_src and "newLook = HomeLook.isNew(frag);" in hp_src)
+check("look: a new install's is «الجديد» (Prefs.migrate's fresh path writes Look.FRESH), anything not saved «الكلاسيكي»",
+      re.search(r'\} else \{[^}]*e\.putString\("look", Look\.FRESH\);', mig) is not None and "static final String FRESH = NEW;" in look_src
+      and "static String of(String v) { return NEW.equals(v) ? NEW : CLASSIC; }" in look_src)
+check("look: «شكل الواجهة» first in the settings' home-screen section, with its pictures (LookPreview); saver.sh look classic|new",
+      settings_src.index('header("الشاشة الرئيسية (سعودي TV)")') < settings_src.index('row("شكل الواجهة"')
+      < settings_src.index('row("بطاقة على الشاشة الرئيسية"') and "new LookPreview(this, table[i][0])" in settings_src
+      and 'send SET "--es look $v"' in saver_sh)
+tv = (ROOT / "dist/tv.html").read_text(encoding="utf-8")
+tv_css, tv_js = tv[tv.index("<style>"):tv.index("</style>")], tv[tv.index("<script>"):tv.index("</script>")]
+check("tv.html: the stylesheet's notes and the script's own-line notes stay in src/template.html (build.py), not in the page",
+      "/*" not in tv_css and not any(l.lstrip().startswith("//") for l in tv_js.splitlines())
+      and "/*" in tmpl[tmpl.index("<style>"):tmpl.index("</style>")])
+# the online photos' list bundled with the page (a new or offline TV's Saudi photos): dist/online.js beside tv.html, as
+# photos/online.json is now; the screensaver app has dist/ in its assets, the launcher copies it with tv.html
+ol = (ROOT / "dist/online.js").read_text(encoding="utf-8").strip()
+ol_list = json.loads(ol[len("window.SAUDITV_ONLINE = "):].rstrip(";").replace("<\\/", "</")) if ol.startswith("window.SAUDITV_ONLINE = ") else {}
+ol_src = json.loads((ROOT / "photos/online.json").read_text(encoding="utf-8"))
+check("online photos: dist/online.js is photos/online.json (each photo's address, author, licence, place, brightness), "
+      "loaded beside tv.html; the launcher copies it with tv.html",
+      all([x.get("u") for x in ol_list.get(k, [])] == [x.get("u") for x in v] and all(set(x) <= set("ualpb") for x in ol_list.get(k, []))
+          for k, v in ol_src.items() if isinstance(v, list))
+      # the Saudi list: switched off for now (tools/online_photos.py SAUDI = False, 2026-10-25): empty; on: photos
+      and (len(ol_list.get("saudi", [])) > 0) == bool(re.search(r"^SAUDI = True", (ROOT / "tools/online_photos.py").read_text(encoding="utf-8"), re.M))
+      and isinstance(ol_list.get("saudi"), list)
+      and '<script src="online.js"></script>' in tv
+      and "include 'tv.html', 'online.js'" in (ROOT / "android/launcher/build.gradle").read_text(encoding="utf-8")
+      and "'../../dist'" in (ROOT / "android/app/build.gradle").read_text(encoding="utf-8"))
+
 # ---- launcher config
 cfg = ET.parse(ROOT / "android/launcher/src/main/res/values/config.xml").getroot()
 arr = {a.get("name"): [i.text for i in a] for a in cfg.findall("string-array")}
@@ -392,6 +447,15 @@ keep = pkgs(ROOT / "optimize/lists/keep.txt")
 for lst in sorted((ROOT / "optimize/lists").glob("*.txt")):
     if lst.name != "keep.txt":
         check(f"optimize: {lst.name} disables nothing from keep.txt", not pkgs(lst) & keep, sorted(pkgs(lst) & keep))
+
+# ---- a match's channel and commentator (bcastUpdate, optimize/run/match-channel-research.md): btolat and filgoal only.
+# kooora's channel list is worldwide and ESPN's broadcasts are US channels, so neither is ever asked.
+bc_page = (ROOT / "src/template.html").read_text(encoding="utf-8")
+bc_code = re.search(r"\n// ---- the channel and commentator of a followed team's match.*?\n// ---- end\n", bc_page, re.S)
+bc_bad = sorted({m.group(0).lower() for m in re.finditer(r"(?i)kooora|yallakora|broadcasts|summary\?event=", bc_page)})
+check("match channel: from btolat and filgoal only; no kooora, yallakora or ESPN broadcasts URL in the page",
+      bc_code is not None and "https://mobile.btolat.com/match-score?d=" in bc_code.group(0)
+      and "https://www.filgoal.com/matches/ajaxlist?date=" in bc_code.group(0) and not bc_bad, bc_bad or "block or URL missing")
 
 # ---- scripts
 for f in tracked("*.py"):
@@ -430,6 +494,22 @@ for f in texts:
     if re.search(r"(?i)tailscale|\.ts\.net", s):
         found.append(f"{f.relative_to(ROOT)}: tailscale")
 check("no private IPs, keys or network names", not found, found[:10])
+
+# the household's own place never appears (tracked or about to be: untracked files that are not ignored); as
+# tools/release.sh's "Old names and private files", the terms split so this file holds none of them
+place = re.compile("(?i)" + "up" + "land|" + "أب" + "لاند|" + "34" + r"\.09|" + "-117" + r"\.64")
+listed = subprocess.run(["git", "ls-files", "-z", "-c", "-o", "--exclude-standard"], cwd=ROOT, capture_output=True,
+                        text=True, encoding="utf-8").stdout.split("\0")
+place_hits = []
+for name in listed:
+    f = ROOT / name
+    if not f.is_file():
+        continue
+    b = f.read_bytes()
+    if b"\0" in b:   # binary (photos, fonts)
+        continue
+    place_hits += [f"{name}: {m}" for m in sorted(set(place.findall(b.decode("utf-8", errors="ignore"))))]
+check("no household place (city, coordinates)", not place_hits, place_hits[:10])
 
 print()
 print(f"{len(failures)} failed" if failures else "all checks passed")

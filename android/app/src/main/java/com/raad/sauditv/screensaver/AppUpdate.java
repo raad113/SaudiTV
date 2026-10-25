@@ -244,6 +244,8 @@ final class AppUpdate {
 
     /** the digits as «شكل الأرقام» asks (Prefs.digits) */
     static String digits(Context c, String s) { return Prefs.digits(c, s); }
+    /** a version («1.4.2») in the chosen digits, kept left to right in the Arabic lines (Prefs.ltr) */
+    static String version(Context c, String s) { return Prefs.ltr(digits(c, s)); }
 
     /** «7.4 ميغابايت» or «٧٫٤ ميغابايت» */
     static String size(Context c, long bytes) {

@@ -62,12 +62,25 @@ with tempfile.TemporaryDirectory() as tmp:
         (("tape", "auto"), AM + "SET --es tape 'auto'"),
         (("lowpower", "on"), AM + "SET --es lowpower true"),
         (("lowpower", "off"), AM + "SET --es lowpower false"),
+        (("photos", "saudi,ours,bing"), AM + "SET --es photos 'saudi,ours,bing'"),
+        (("photos", "world"), AM + "SET --es photos 'world'"),
+        (("photos", ""), AM + "SET --es photos ''"),
+        (("athan", "on"), AM + "SET --es athan on"),
+        (("athan", "off"), AM + "SET --es athan off"),
+        (("athan-test", "asr"), AM + "ATHAN_TEST --es prayer asr"),
+        (("athan-test", "fajr", "short"), AM + "ATHAN_TEST --es prayer fajr --es kind short"),
+        (("athan-test", "maghrib", "reminder"), AM + "ATHAN_TEST --es prayer maghrib --es kind reminder"),
+        (("athan-show",), AM + "ATHAN_SHOW"),
+        (("look", "new"), AM + "SET --es look new"),
+        (("look", "classic"), AM + "SET --es look classic"),
+        (("look", "الجديد"), AM + "SET --es look new"),
     ]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: sends «{want[len(AM):]}»", code == 0 and out == want, (code, out))
     for args in [("radio",), ("radio", "maybe"), ("radio-volume", "5"), ("radio-volume", "101"), ("radio-volume", "loud"),
                  ("radio-volume",), ("radio-station",), ("radio-hold", "x"), ("radio-when",), ("radio-when", "always"),
-                 ("tape",), ("lowpower",), ("lowpower", "maybe")]:
+                 ("tape",), ("lowpower",), ("lowpower", "maybe"), ("photos",), ("photos", "saudi;rm -rf"), ("athan",), ("athan", "maybe"), ("athan-test",),
+                 ("athan-test", "noon"), ("athan-test", "asr", "loud"), ("look",), ("look", "modern"), ("look", "new;rm")]:
         code, out = saver(*args)
         check(f"saver.sh {' '.join(args)}: refused, nothing sent", code != 0 and "am broadcast" not in out, (code, out))
     code, out = saver("help")
@@ -75,6 +88,27 @@ with tempfile.TemporaryDirectory() as tmp:
         "radio on|off", "radio-station", "radio-volume", "radio-stations", "radio-test", "radio-hold", "radio-when both|saver|home",
         "tape auto|")), out[-900:])
     check("saver.sh usage lists lowpower («توفير الطاقة»)", "optimize/saver.sh lowpower on|off" in saver("help")[1], "")
+    check("saver.sh usage lists look («شكل الواجهة»: classic, new) and still ends with the athan's (the whole header)",
+          "optimize/saver.sh look classic|new" in saver("help")[1] and "optimize/saver.sh athan-show" in saver("help")[1], "")
+    check("saver.sh usage lists photos («مصادر الصور»: ours bing world; saudi off for now, read as ours)",
+          "optimize/saver.sh photos ours,bing" in saver("help")[1]
+          and all(w in saver("help")[1] for w in ("saudi (", "ours (", "bing (", "world (", '"" = ours', "read as ours")), "")
+    usage = saver("help")[1]
+    check("saver.sh usage lists the athan's commands (athan on|off, athan-test, athan-show)",
+          all(c in usage for c in ("optimize/saver.sh athan on|off", "optimize/saver.sh athan-test fajr|dhuhr|asr|maghrib|isha",
+                                   "optimize/saver.sh athan-show")), usage[-900:])
+    # athan on also grants the screen over other apps through ADB (the fake client logs every command it is given)
+    log = Path(tmp) / "calls.txt"
+    logger = Path(tmp) / "fakelog"
+    logger.write_text('#!/usr/bin/env bash\necho "$3" >> "' + log.as_posix() + '"\n'
+                      'printf \'Broadcast completed: result=0, data="%s"\\n\' "$3"\n', encoding="utf-8", newline="\n")
+    logger.chmod(0o755)
+    r = subprocess.run([BASH, "optimize/saver.sh", "athan", "on"], cwd=ROOT, env=dict(os.environ, PY=logger.as_posix()),
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    calls = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+    check("saver.sh athan on: grants SYSTEM_ALERT_WINDOW (appops) and then turns the athan on",
+          r.returncode == 0 and calls == ["appops set com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW allow", AM + "SET --es athan on"],
+          calls)
     # the first-run setup, opened on the TV (am start of SetupActivity; the fake client prints the command it was given)
     code, out = saver("setup")
     check("saver.sh setup: opens SetupActivity (am start)", code == 0
@@ -94,6 +128,9 @@ with tempfile.TemporaryDirectory() as tmp:
 
 # the app's side of the same commands
 rx = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/SaverReceiver.java").read_text(encoding="utf-8")
+check("SaverReceiver: takes look (classic|new, Look.parse, checked before saving) and shows it (look: …)",
+      'getStringExtra("look")' in rx and "Look.parse(" in rx and rx.index('getStringExtra("look")') < rx.index("p.setLook(")
+      and '"\\nlook: " + p.look()' in rx)
 man = (ROOT / "android/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
 check("SaverReceiver: takes radio, radio_station and radio_volume, and checks them before saving",
       all(f'getStringExtra("{k}")' in rx for k in ("radio", "radio_station", "radio_volume"))
@@ -111,6 +148,7 @@ check("manifest: the radio's service and its athan hook need our signature (READ
       re.search(r'\.RadioService"\s+android:exported="true"\s+android:permission="com\.raad\.sauditv\.screensaver\.READ_CONFIG"', man)
       and re.search(r'\.RadioReceiver"\s+android:exported="true"\s+android:permission="com\.raad\.sauditv\.screensaver\.READ_CONFIG"', man))
 prefs = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Prefs.java").read_text(encoding="utf-8")
+settings = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/SettingsActivity.java").read_text(encoding="utf-8")
 check("Prefs: the radio is off by default", 'sp.getBoolean("radioOn", false)' in prefs)
 check("Prefs: the settings' one radio choice is stored as radio on/off and radioWhen (what saver.sh radio / radio-when set)",
       re.search(r'void setRadioMode\(String m\) \{\s*sp\.edit\(\)\.putString\("radioWhen", RadioWhen\.modeWhen\(m, radioWhen\(\)\)\)'
@@ -119,10 +157,73 @@ check("SaverReceiver: show (GET) has setup_done", '"\\nsetup_done: " + p.setupDo
 check("SaverReceiver: takes lowpower (true|false, checked before saving) and shows it (lowpower: on|off)",
       'getStringExtra("lowpower")' in rx and rx.index('getStringExtra("lowpower")') < rx.index("p.setLowPower(")
       and '"\\nlowpower: " + (p.lowPower() ? "on" : "off")' in rx)
+check("SaverReceiver: takes photos (a list of Prefs.PHOTO_SOURCES, checked before saving) and shows it (photos: …)",
+      'getStringExtra("photos")' in rx and "known(Prefs.PHOTO_SOURCES, s)" in rx
+      and rx.index('getStringExtra("photos")') < rx.index("p.setCountry(cc)") < rx.index("p.setPhotoSources(photos)")
+      and '"\\nphotos: " + Prefs.join(p.photoSources(), ",")' in rx)
+check("Prefs: «مصادر الصور» saudi and ours on by default, bing and world off; saudi switched off (SAUDI_PHOTOS)",
+      '{"saudi", "صور السعودية", "1"}, {"ours", "صورنا المرفقة", "1"}' in prefs
+      and '{"bing", "صورة Bing اليومية", "0"}, {"world", "صور عالمية من ويكيميديا", "0"}' in prefs
+      and "static final boolean SAUDI_PHOTOS = false;" in prefs)
+check("Prefs: while SAUDI_PHOTOS is off: saudi not offered, the default ours only, a saved saudi read as ours",
+      'static boolean photoSourceOffered(String id) { return SAUDI_PHOTOS || !"saudi".equals(id); }' in prefs
+      and '(!SAUDI_PHOTOS && "ours".equals(x[0]) && ids.contains("saudi"))' in prefs
+      and 'if ("1".equals(x[2]) && photoSourceOffered(x[0])) def.add(x[0]);' in prefs
+      and "List<String> out = photoSourcesOf(list(\"photoSources\"));" in prefs
+      and "List<String> keep = photoSourcesOf(ids);" in prefs)
+check("Prefs: reaches the page as &photos= once picked, and always while SAUDI_PHOTOS is off",
+      '(sp.contains("photoSources") || !SAUDI_PHOTOS ? "&photos=" + join(photoSources(), ",") : "")' in prefs)
+check("SettingsActivity: the «مصادر الصور» checklist offers only Prefs.photoSourceOffered sources",
+      "if (Prefs.photoSourceOffered(x[0])) offered.add(x);" in settings
+      and "final String[][] all = offered.toArray(new String[0][]);" in settings)
 check("Prefs: «توفير الطاقة» is off by default and reaches the page as &lowpower=1",
       'sp.getBoolean("lowPower", false)' in prefs and '(lowPower() ? "&lowpower=1" : "")' in prefs)
 check("manifest: SetupActivity is there and exported (the home screen and saver.sh setup open it)",
       re.search(r'android:name="\.SetupActivity"\s+android:exported="true"', man) is not None)
+for a in ("ATHAN_TEST", "ATHAN_SHOW"):
+    check(f"manifest: SaverReceiver answers {a}", re.search(r'SaverReceiver.*?com\.raad\.sauditv\.screensaver\.' + a, man, re.S) is not None)
+check("SaverReceiver: ATHAN_TEST and ATHAN_SHOW go to AthanAdb; SET checks the athan's extras before saving anything; "
+      "show (GET) has the athan's lines",
+      '"com.raad.sauditv.screensaver.ATHAN_TEST"' in rx and "AthanAdb.test(c, i)" in rx and "AthanAdb.show(c)" in rx
+      and rx.index("AthanAdb.check(i)") < rx.index("p.setCountry(cc)") and rx.index("AthanAdb.check(i)") < rx.index("AthanAdb.save(c, i)")
+      and "AthanAdb.describe(c)" in rx)
+adb = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/AthanAdb.java").read_text(encoding="utf-8")
+check("AthanAdb: show lists athan, athan_next, athan_screen_over_apps, athan_exact_alarms and the last event",
+      all(f'"\\n{k}: "' in adb for k in ("athan", "athan_next", "athan_screen_over_apps", "athan_exact_alarms", "athan_last")))
+check("manifest: the athan's alarm receiver and service are private; the service is a media-playback one; exact alarms "
+      "(USE_EXACT_ALARM, SCHEDULE_EXACT_ALARM up to Android 12L), SYSTEM_ALERT_WINDOW, the foreground service's permissions",
+      re.search(r'\.AthanReceiver"\s+android:exported="false"', man) is not None
+      and re.search(r'\.AthanService"\s+android:exported="false"\s+android:foregroundServiceType="mediaPlayback"', man) is not None
+      and re.search(r'\.AthanActivity"\s+android:exported="false"', man) is not None
+      and 'android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32"' in man
+      and all(f'android.permission.{x}"' in man for x in ("USE_EXACT_ALARM", "SYSTEM_ALERT_WINDOW", "FOREGROUND_SERVICE",
+                                                          "FOREGROUND_SERVICE_MEDIA_PLAYBACK", "WAKE_LOCK")))
+check("manifest: BootReceiver sets the athan's alarm again after a boot, an update, a new clock or time zone, the exact-alarm "
+      "permission changing",
+      all(re.search(r'BootReceiver.*?' + re.escape(x), man, re.S) for x in ("BOOT_COMPLETED", "MY_PACKAGE_REPLACED", "TIME_SET",
+          "TIMEZONE_CHANGED", "SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"))
+      and "AthanScheduler.schedule(c)" in (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/BootReceiver.java").read_text(encoding="utf-8"))
+# the athan's screen over other apps without saver.sh: the TV scripts grant it, the settings ask for it
+SAW = "appops set com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW allow"
+inst = (ROOT / "optimize/install.sh").read_text(encoding="utf-8")
+saver_block = inst[inst.index('if [ "$what" = saver ]'):inst.index('if [ "$what" = launcher ]')]
+check("install.sh saver|all: grants SYSTEM_ALERT_WINDOW with the screensaver's settings", f'"{SAW}"' in saver_block)
+setup = (ROOT / "optimize/setup-new-tv.sh").read_text(encoding="utf-8")
+check("setup-new-tv.sh: checks the athan's SYSTEM_ALERT_WINDOW (appops get) and grants it when missing (not in verify)",
+      "appops get com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW" in setup and f'tvx "{SAW}"' in setup)
+ui = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/AthanSettings.java").read_text(encoding="utf-8")
+render = ui[ui.index("void render() {"):ui.index("\n    }\n", ui.index("void render() {"))]
+check("settings: «السماح بالظهور فوق التطبيقات» is the section's first row when missing, opening the TV's page only if it "
+      "resolves, else saying the athan is only heard and how to grant it",
+      render.index("السماح بالظهور فوق التطبيقات") < render.index('a.row("الأذان"') and "resolveActivity" in ui
+      and "يُسمع الأذان فقط" in render and "docs/SETUP.md" in ui and "السماح بالمنبّه الدقيق" in render)
+check("manifest: the settings pages of both permissions are visible to resolveActivity (queries)",
+      'android.settings.action.MANAGE_OVERLAY_PERMISSION' in man and 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM' in man)
+ath = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/AthanService.java").read_text(encoding="utf-8")
+check("athan without its screen: a toast «اضغط إيقاف مؤقت لإيقاف الأذان» (again while it plays); the remote's pause, "
+      "play/pause, play and stop stop it through the media session",
+      'STOP_HINT = "اضغط إيقاف مؤقت لإيقاف الأذان"' in ath and "onMediaButtonEvent" in ath
+      and all(k in ath for k in ("KEYCODE_MEDIA_PAUSE", "KEYCODE_MEDIA_PLAY_PAUSE", "KEYCODE_MEDIA_STOP", "KEYCODE_MEDIA_PLAY")))
 svc = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/RadioService.java").read_text(encoding="utf-8")
 check("RadioService: the athan's hook (PAUSE_FOR_ATHAN / RESUME_AFTER_ATHAN, hold) is there and documented",
       'ACTION_PAUSE_FOR_ATHAN = "com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN"' in svc

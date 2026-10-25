@@ -9,6 +9,17 @@
          updating itself or an app it installed before (UPDATE_PACKAGES_WITHOUT_USER_ACTION, Android 12+) -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+    <!-- «الأذان» (AthanScheduler, AthanService): an exact alarm at each prayer time (Android 12: SCHEDULE_EXACT_ALARM,
+         granted at install; 13+: USE_EXACT_ALARM, granted at install, never revocable; 10 and 11 need neither); a
+         foreground service for the athan's minutes; its screen and banner over any app (SYSTEM_ALERT_WINDOW: granted by
+         `optimize/saver.sh athan on` through ADB, or once in the TV's «الظهور فوق التطبيقات»); WAKE_LOCK keeps the
+         screen on while it plays, and brings a TV that is on out of a screensaver (never one in standby) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- the launcher (same signing key) reads the settings for its home-screen card, binds the radio (RadioService)
          and turns it on or off (ConfigProvider /radio) -->
@@ -32,6 +43,19 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- «الأذان»: whether this TV has the settings pages that grant its permissions (AthanSettings: the row opens
+             the page, or says it is missing and how to grant it over ADB) -->
+        <intent>
+            <action android:name="android.settings.action.MANAGE_OVERLAY_PERMISSION" />
+            <data android:scheme="package" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.action.MANAGE_OVERLAY_PERMISSION" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.REQUEST_SCHEDULE_EXACT_ALARM" />
+            <data android:scheme="package" />
         </intent>
     </queries>
 
@@ -107,6 +131,29 @@
             </intent-filter>
         </receiver>
 
+        <!-- «الأذان»: the alarm (only our own PendingIntent reaches it), the athan's minutes, its full-screen page (in a
+             task of its own, out of the recent apps, so closing it goes back to whatever was in front) -->
+        <receiver
+            android:name=".AthanReceiver"
+            android:exported="false" />
+        <service
+            android:name=".AthanService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+        <activity
+            android:name=".AthanActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.raad.sauditv.athan"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+        <!-- the page's online prayer times for the athan (Aladhan): a job, so it waits for the network and is retried -->
+        <service
+            android:name=".AthanOnline"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <service
             android:name=".UpdateJob"
             android:exported="false"
@@ -121,6 +168,10 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <!-- the athan's alarm again (AthanScheduler) when the clock, the time zone or the exact-alarm permission change -->
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 
@@ -146,6 +197,8 @@
                 <action android:name="com.raad.sauditv.screensaver.RADIO_TEST" />
                 <action android:name="com.raad.sauditv.screensaver.PAUSE_FOR_ATHAN" />
                 <action android:name="com.raad.sauditv.screensaver.RESUME_AFTER_ATHAN" />
+                <action android:name="com.raad.sauditv.screensaver.ATHAN_TEST" />
+                <action android:name="com.raad.sauditv.screensaver.ATHAN_SHOW" />
             </intent-filter>
         </receiver>
 

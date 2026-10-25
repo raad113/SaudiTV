@@ -50,6 +50,7 @@ final class Prefs {
         sp = c.getSharedPreferences("settings", Context.MODE_PRIVATE);
         app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
         RadioNotify.watch(app, sp);   // the home screen hears of every change to the radio's settings
+        AthanScheduler.watch(app, sp);   // the athan's alarm follows the city, the method and its own settings
         migrate();
         if (sp.getBoolean(PlaceDetect.PENDING, false)) PlaceDetect.start(app);   // a new install's place, once
     }
@@ -58,7 +59,8 @@ final class Prefs {
      * Once, the first time this build reads the settings. An older build's settings (any at all) keep what that build
      * showed: the Saudi news («أخبار السعودية») and the Roshn table, whatever country or teams are picked later. A new
      * install has none: its news follow the city's country, its table the first followed club's league; its card beside
-     * the clock is «آية اليوم» and «حديث اليوم» (PanelMigrate.FRESH); and its place is guessed once (PlaceDetect).
+     * the clock is «آية اليوم» and «حديث اليوم» (PanelMigrate.FRESH); its «شكل الواجهة» is «الجديد» (Look.FRESH; saved
+     * settings without one stay «الكلاسيكي»); and its place is guessed once (PlaceDetect).
      * The first-run setup (SetupActivity) shows on a new install only: setupDone false there, true for any settings
      * saved before, including those whose first read was already done (SetupState.initial).
      */
@@ -74,6 +76,7 @@ final class Prefs {
             if (!sp.contains("league")) e.putString("league", Leagues.ROSHN);
         } else {
             e.putString("panel", PanelMigrate.FRESH);
+            e.putString("look", Look.FRESH);
             e.putBoolean(PlaceDetect.PENDING, true);
         }
         e.apply();
@@ -231,7 +234,9 @@ final class Prefs {
     // (ConfigProvider's numerals) and this app's own screens
     // each label drawn left to right as written here (an isolate, LRI … PDI, holding an override, LRO … PDF): in the
     // right-to-left settings the spaced digits otherwise come out the other way round («3 2 1 0», «٣ ٢ ١ ٠»)
-    static final String[][] NUMERALS = {{"latn", "⁦‭0 1 2 3‬⁩"}, {"arab", "⁦‭٠ ١ ٢ ٣‬⁩"}};
+    /** s kept left to right inside Arabic text («0 1 2 3», a version): one isolate, LRI … PDI, nothing stacked */
+    static String ltr(String s) { return s == null ? "" : "⁦" + s + "⁩"; }
+    static final String[][] NUMERALS = {{"latn", ltr("0 1 2 3")}, {"arab", ltr("٠ ١ ٢ ٣")}};
 
     String numerals() { return "arab".equals(sp.getString("numerals", "latn")) ? "arab" : "latn"; }
     void setNumerals(String v) { sp.edit().putString("numerals", "arab".equals(v) ? "arab" : "latn").apply(); }
@@ -263,6 +268,10 @@ final class Prefs {
     void setTileShape(String v) { sp.edit().putString("tileShape", pick(TILE_SHAPES, v)).apply(); }
     String focusStyle() { return pick(FOCUS_STYLES, sp.getString("focusStyle", null)); }
     void setFocusStyle(String v) { sp.edit().putString("focusStyle", pick(FOCUS_STYLES, v)).apply(); }
+
+    /** «شكل الواجهة» of the home screen and the screensaver (Look): «الكلاسيكي» unless «الجديد» was set (a new install's) */
+    String look() { return Look.of(sp.getString("look", null)); }
+    void setLook(String v) { sp.edit().putString("look", Look.of(v)).apply(); }
 
     /** v when it is one of the table's values, else its first (the default) */
     static String pick(String[][] table, String v) {
@@ -299,7 +308,7 @@ final class Prefs {
         },
         {   // world
             {"alarabiya", "العربية", "1"}, {"skynews", "سكاي نيوز عربية", "1"}, {"bbc", "بي بي سي عربي", "1"},
-            {"cnn", "CNN بالعربية", "1"}, {"aawsat", "الشرق الأوسط", "0"}, {"aljazeera", "الجزيرة", "0"},
+            {"aawsat", "الشرق الأوسط", "0"}, {"aljazeera", "الجزيرة", "0"},
             {"france24", "فرانس 24", "0"}, {"google", "أخبار Google", "0"},
         },
     };
@@ -378,6 +387,48 @@ final class Prefs {
         for (String[] x : sourcesOf(page)) { if ("1".equals(x[2])) def.add(x[0]); if (ids.contains(x[0])) keep.add(x[0]); }
         if (keep.isEmpty() || keep.equals(def)) sp.edit().remove("src_" + page).apply();
         else setList("src_" + page, keep);
+    }
+
+    // «مصادر الصور»: where the background photos come from (the page's #photos=…, photoPools), in this order; id, label,
+    // on by default. saudi and world: photos/online.json (tools/online_photos.py, Wikimedia Commons); ours: photos/ of
+    // the repository; bing: Bing's photo of the day. Offline, or none of them at hand: the bundled ones.
+    static final String[][] PHOTO_SOURCES = {{"saudi", "صور السعودية", "1"}, {"ours", "صورنا المرفقة", "1"},
+            {"bing", "صورة Bing اليومية", "0"}, {"world", "صور عالمية من ويكيميديا", "0"}};
+    // «صور السعودية» is off for now (the user, 2026-10-25: only our own photos, like the old Unsplash ones; the list's
+    // switch is tools/online_photos.py's SAUDI). Off: the checklist does not offer it, the default is ours only, and a
+    // saved choice with saudi (saudi,ours of a test build) is read as ours. true puts it back as it was.
+    static final boolean SAUDI_PHOTOS = false;
+
+    /** a photo source the checklist offers (saudi only while SAUDI_PHOTOS) */
+    static boolean photoSourceOffered(String id) { return SAUDI_PHOTOS || !"saudi".equals(id); }
+
+    /** ids as kept: saudi read as ours while SAUDI_PHOTOS is off; then in PHOTO_SOURCES' order, offered ones only */
+    static List<String> photoSourcesOf(List<String> ids) {
+        List<String> out = new ArrayList<>();
+        for (String[] x : PHOTO_SOURCES) {
+            boolean picked = ids.contains(x[0]) || (!SAUDI_PHOTOS && "ours".equals(x[0]) && ids.contains("saudi"));
+            if (picked && photoSourceOffered(x[0])) out.add(x[0]);
+        }
+        return out;
+    }
+
+    /** the default photo sources: on by default and offered (ours only while SAUDI_PHOTOS is off) */
+    static List<String> defaultPhotoSources() {
+        List<String> def = new ArrayList<>();
+        for (String[] x : PHOTO_SOURCES) if ("1".equals(x[2]) && photoSourceOffered(x[0])) def.add(x[0]);
+        return def;
+    }
+
+    /** the picked photo sources, in PHOTO_SOURCES' order; none picked = the defaults */
+    List<String> photoSources() {
+        List<String> out = photoSourcesOf(list("photoSources"));
+        return out.isEmpty() ? defaultPhotoSources() : out;
+    }
+    /** an empty list (or exactly the defaults) is stored as none: the page's own defaults */
+    void setPhotoSources(List<String> ids) {
+        List<String> keep = photoSourcesOf(ids);
+        if (keep.isEmpty() || keep.equals(defaultPhotoSources())) sp.edit().remove("photoSources").apply();
+        else setList("photoSources", keep);
     }
 
     /** the screensaver's card; prayers until one is picked (a new install: PanelMigrate.FRESH, set by migrate). A
@@ -524,8 +575,12 @@ final class Prefs {
             + "&teamnames=" + join(teamNames(), ",")
             + panelParams(panel())
             + "&numerals=" + numerals()
+            + Look.param(look())   // «شكل الواجهة»: &look=new for «الجديد», nothing for «الكلاسيكي»
             + (tapeAuto() ? "" : "&tape=" + Uri.encode(join(tape(), ",")))   // the ticker's chosen items
             + (lowPower() ? "&lowpower=1" : "")   // «توفير الطاقة»: the ticker at 30 frames a second
+            // «مصادر الصور» when picked (else the page's defaults: saudi,ours); always while SAUDI_PHOTOS is off, so
+            // a Saudi list the page kept from before is never shown (ours by default)
+            + (sp.contains("photoSources") || !SAUDI_PHOTOS ? "&photos=" + join(photoSources(), ",") : "")
             + sourceParams();
     }
 

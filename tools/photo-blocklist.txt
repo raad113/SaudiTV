@@ -1,0 +1,18 @@
+# Commons files tools/online_photos.py leaves out of photos/online.json: one file name a line ("File:" optional,
+# spaces or underscores), # starts a comment. For photos that pass the rules but are not a clear view of a place.
+
+# spot check, round 1 (2026-10-25)
+File:Site of al-Ukhdud, Najran (1).jpg            # a carved stone, close up
+File:Al Falah School, Old Jeddah.jpg              # a school door, a man in front
+File:Bab Makkah, Old Jeddah 2.jpg                 # a crowded street at night
+File:Khasha'a Aljawabirah (Makkah) (13).JPG       # cave rock, close up
+
+# spot check, round 2 (2026-10-25)
+File:Jeddah Corniche (6573498559).jpg             # a person in a wheelchair, black and white
+File:Masjid Abu Baker Siddique, Old Jeddah 2.jpg  # a street of parked cars at night
+File:The Edge of the World 1937 film.jpg          # a film still, a man climbing
+
+# spot check, round 3 (2026-10-25)
+File:Saudi A320 Landing.jpg                       # an airliner, not the place
+File:SAD ELAB.jpg                                 # through a car window
+File:قصر الامارة املج.jpg                          # a courtyard with a date stamp

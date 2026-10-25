@@ -333,6 +333,12 @@ for entry in "${TV_SETTINGS[@]}"; do
   elif [ "$MODE" = verify ]; then warn "$ns $key is $cur (want $val)"
   else tvx "settings put $ns $key $val"; did "$ns $key: $cur -> $val"; fi
 done
+# «الأذان»: its screen and banner over other apps (SYSTEM_ALERT_WINDOW). Most TVs have no settings page for it: the
+# appop that page would set (install.sh sets it too; checked again here, an install may have been skipped)
+saw=$(tvq "appops get com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW")
+if grep -q 'SYSTEM_ALERT_WINDOW: allow' <<< "$saw"; then ok "athan over other apps: allowed"
+elif [ "$MODE" = verify ]; then warn "athan over other apps: not allowed (${saw:-no answer}); optimize/saver.sh athan on"
+else tvx "appops set com.raad.sauditv.screensaver SYSTEM_ALERT_WINDOW allow"; did "athan over other apps: allowed (appops SYSTEM_ALERT_WINDOW)"; fi
 
 # ---------------------------------------------------------------------------------------------------------
 step "سعودي TV settings: city, time zone, teams, cards"

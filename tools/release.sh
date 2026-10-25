@@ -180,6 +180,11 @@ hits=$( { git grep -n -I -i -E "$old_names" -- . || true; grep -n -i -E "$old_na
         | grep -v -E '^README\.md:[0-9]+:- Based on ' || true)
 [ -z "$hits" ] || die "old names found:
 $hits"
+# nor the household's own place (city, coordinates)
+private_terms='up''land|أب''لاند|34''\.09|-117''\.64'   # split, so this file holds none of them
+hits=$(git grep -n -I -i -E -e "$private_terms" -- . || true)
+[ -z "$hits" ] || die "private terms found:
+$hits"
 private=$(git ls-files | grep -E '(^|/)household(-[^/]*)?\.env$|\.(jks|keystore|p12)$|keystore\.properties$|(^|/)adbkey' || true)
 [ -z "$private" ] || die "private files are tracked: $private"
 echo "none"

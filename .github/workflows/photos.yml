@@ -1,0 +1,45 @@
+# photos/online.json, every day: places of Saudi Arabia from Wikimedia Commons (keyless API), Commons' picture of the
+# day and Bing's (tools/online_photos.py). Committed only when the list changed. No secrets: the job's own GITHUB_TOKEN.
+name: photos
+
+on:
+  schedule:
+    - cron: "17 2 * * *"   # 05:17 in Riyadh
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: photos
+  cancel-in-progress: false
+
+jobs:
+  online:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pillow (each photo's brightness)
+        run: python -m pip install --quiet pillow
+      - name: Unit tests of the rules (no network)
+        run: python -I tests/online_photos_test.py
+      - name: Build photos/online.json
+        run: python -I tools/online_photos.py
+      - name: Commit when it changed
+        run: |
+          if git diff --quiet -- photos/online.json; then
+            echo "photos/online.json unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add photos/online.json
+          git commit -m "photos: online.json $(date -u +%F)"
+          git pull --rebase --quiet
+          git push

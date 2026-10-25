@@ -30,6 +30,7 @@ public class SettingsActivity extends Activity {
 
     private Prefs prefs;
     private Pickers pickers;   // the place and «إضافة فريق» (shared with SetupActivity)
+    private AthanSettings athan;   // the «الأذان» section
     private ScrollView scroll;
     private Mouse mouse;
     private LinearLayout list;
@@ -73,6 +74,7 @@ public class SettingsActivity extends Activity {
         Geo.pickerOpened();   // its place pickers' cities are let go when the last such screen closes (onDestroy)
         prefs = new Prefs(this);
         pickers = new Pickers(this, prefs, this::render);
+        athan = new AthanSettings(this, pickers);
         // a new install's first-run setup first (SetupState), unless the home screen's «تحديث متوفر» opened this
         if (!prefs.setupDone() && !getIntent().getBooleanExtra("app_update", false)) {
             startActivity(new Intent(this, SetupActivity.class));
@@ -100,7 +102,7 @@ public class SettingsActivity extends Activity {
         setContentView(scroll);
         mouse = Mouse.attach(this, true);   // a mouse: hover = focus, the wheel = ▲▼, right-click = Back
         justUpdated = AppUpdate.takeJustUpdated(this);   // the first launch after a self-update
-        if (justUpdated != null) toast("تم التحديث إلى " + AppUpdate.digits(this, justUpdated));
+        if (justUpdated != null) toast("تم التحديث إلى " + AppUpdate.version(this, justUpdated));
         render();
         AppInstaller.setListener(installListener);   // an update still running shows its progress again
         if (getIntent().getBooleanExtra("app_update", false)) openAppUpdate();   // the home screen's «تحديث متوفر»
@@ -133,12 +135,19 @@ public class SettingsActivity extends Activity {
     protected void onRestart() {
         super.onRestart();
         if (setupOpened) { setupOpened = false; render(); }   // back from «معالج الإعداد»: its choices shown here
+        else if (athan != null && athan.backFromSettings()) render();   // a permission the athan asked for, granted or not
     }
 
     @Override
     protected void onPause() {
         stopPreview();   // the preview only plays while these settings are in front
         super.onPause();
+    }
+
+    /** «صوت من عندي»'s file, picked in Android's file picker (AthanSettings) */
+    @Override
+    protected void onActivityResult(int req, int code, Intent data) {
+        if (athan == null || !athan.onResult(req, code, data)) super.onActivityResult(req, code, data);
     }
 
     @Override
@@ -157,7 +166,7 @@ public class SettingsActivity extends Activity {
         super.onDestroy();
     }
 
-    private void render() {
+    void render() {
         final int y = restoreScroll >= 0 ? restoreScroll : scroll.getScrollY();
         restoreScroll = -1;
         final String want = focusKey;
@@ -199,6 +208,9 @@ public class SettingsActivity extends Activity {
         row("المحتوى", prefs.panelTitle(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
 
         header("الشاشة الرئيسية (سعودي TV)");
+        // «شكل الواجهة»: the home screen and the screensaver in «الكلاسيكي» or «الجديد» (Look), each with its picture
+        row("شكل الواجهة", Look.label(prefs.look()) + " · الشاشة الرئيسية وشاشة التوقف", R.drawable.ic_screensaver,
+            new Runnable() { public void run() { pickLook(); } });
         row("بطاقة على الشاشة الرئيسية", prefs.panelTitle(prefs.homePanel()), R.drawable.ic_eye,
             new Runnable() { public void run() { pickPanel(true); } });
         row("ترتيب التطبيقات المفضلة", "قائمة ترتّب فيها المفضلة بالأسهم", R.drawable.ic_star,
@@ -221,6 +233,8 @@ public class SettingsActivity extends Activity {
             new Runnable() { public void run() { pickVolume(); } });
         previewRow = row("معاينة الإذاعة", previewLabel(), R.drawable.ic_play, new Runnable() { public void run() { togglePreview(); } });
 
+        athan.render();   // «الأذان» (AthanSettings): on or off, each prayer's alert, the voices, a test, the credits
+
         // each news page on a card: its sources (Prefs.NEWS_SOURCES), ticked in a list like the cards'
         boolean anyNews = false;
         for (String page : Prefs.NEWS_PAGES) anyNews |= hasPanel(prefs.panel(), page) || hasPanel(prefs.homePanel(), page);
@@ -236,6 +250,8 @@ public class SettingsActivity extends Activity {
         }
 
         header("التطبيق");
+        // «مصادر الصور»: the background photos' sources, ticked like a news page's (Prefs.PHOTO_SOURCES, the page's #photos=)
+        row("مصادر الصور", photoSourcesLabel(), R.drawable.ic_screensaver, new Runnable() { public void run() { pickPhotoSources(); } });
         row("شكل الأرقام", numeralsLabel(), R.drawable.ic_language, new Runnable() { public void run() { pickNumerals(); } });
         // «توفير الطاقة» (off by default): the ticker tape of the home screen and the screensaver at 30 frames a second
         // instead of 60 (Prefs.lowPower, the page's #lowpower=1); a home screen in front reloads its page (changed)
@@ -595,6 +611,31 @@ public class SettingsActivity extends Activity {
         lv.setItemChecked(sel, true);   // a new adapter clears the choice
     }
 
+    /** «شكل الواجهة»: «الكلاسيكي» or «الجديد», each with a small picture of the home screen in it (LookPreview, drawn as
+     *  TilePreview's are). A home screen in front reloads its page in the new look at once (changed: CONFIG_CHANGED, the
+     *  page's #look); the screensaver shows it from its next start. */
+    private void pickLook() {
+        final String[][] table = Look.LOOKS;
+        String[] labels = new String[table.length];
+        int sel = 0;
+        for (int i = 0; i < table.length; i++) {
+            labels[i] = table[i][1];
+            if (table[i][0].equals(prefs.look())) sel = i;
+        }
+        AlertDialog d = dialog().setTitle("شكل الواجهة")
+            .setSingleChoiceItems(labels, sel, (x, i) -> {
+                prefs.setLook(table[i][0]);
+                x.dismiss();
+                changed();
+                render();
+            })
+            .show();
+        ListView lv = d.getListView();
+        if (lv == null || lv.getAdapter() == null) return;
+        lv.setAdapter(TilePreview.withPictures(d.getContext(), lv.getAdapter(), i -> new LookPreview(this, table[i][0])));
+        lv.setItemChecked(sel, true);   // a new adapter clears the choice
+    }
+
     /** A card setting holds a comma list now */
     private static boolean hasPanel(String list, String id) {
         for (String s : list.split(",")) if (s.trim().equals(id)) return true;
@@ -639,6 +680,36 @@ public class SettingsActivity extends Activity {
             .setNegativeButton("إلغاء", null).show();
     }
 
+    /** «مصادر الصور»: tick where the background photos come from (shown in turn); none = the defaults. Offline, the
+     *  bundled photos. */
+    private void pickPhotoSources() {
+        // the offered ones only: «صور السعودية» is left out while Prefs.SAUDI_PHOTOS is off
+        List<String[]> offered = new ArrayList<>();
+        for (String[] x : Prefs.PHOTO_SOURCES) if (Prefs.photoSourceOffered(x[0])) offered.add(x);
+        final String[][] all = offered.toArray(new String[0][]);
+        final List<String> cur = prefs.photoSources();
+        String[] labels = new String[all.length];
+        final boolean[] on = new boolean[all.length];
+        for (int i = 0; i < all.length; i++) { labels[i] = all[i][1]; on[i] = cur.contains(all[i][0]); }
+        dialog()
+            .setTitle("مصادر الصور (بدون اختيار = الافتراضية)")
+            .setMultiChoiceItems(labels, on, (d, i, checked) -> on[i] = checked)
+            .setPositiveButton("تم", (d, w) -> {
+                List<String> v = new ArrayList<>();
+                for (int i = 0; i < all.length; i++) if (on[i]) v.add(all[i][0]);
+                prefs.setPhotoSources(v);
+                changed();
+                render();
+            })
+            .setNegativeButton("إلغاء", null).show();
+    }
+
+    private String photoSourcesLabel() {
+        List<String> names = new ArrayList<>(), ids = prefs.photoSources();
+        for (String[] x : Prefs.PHOTO_SOURCES) if (ids.contains(x[0])) names.add(x[1]);
+        return Prefs.join(names, "، ");
+    }
+
     private String sourcesLabel(String page) {
         List<String> names = new ArrayList<>(), ids = prefs.sources(page);
         for (String[] x : prefs.sourcesOf(page)) if (ids.contains(x[0])) names.add(x[1]);
@@ -668,11 +739,11 @@ public class SettingsActivity extends Activity {
 
     /** The installed version, and «محدّث» or «تحديث متوفر: …» from the last check. */
     private String appUpdateLabel() {
-        String v = "النسخة " + AppUpdate.digits(this, AppUpdate.installedName(this));
+        String v = "النسخة " + AppUpdate.version(this, AppUpdate.installedName(this));
         if (AppInstaller.running()) return v + " · جارٍ التحديث…";
-        if (justUpdated != null) return "تم التحديث إلى " + AppUpdate.digits(this, justUpdated);
+        if (justUpdated != null) return "تم التحديث إلى " + AppUpdate.version(this, justUpdated);
         AppUpdate.Manifest m = AppUpdate.available(this);
-        if (m != null) return v + " · تحديث متوفر: " + AppUpdate.digits(this, m.versionName);
+        if (m != null) return v + " · تحديث متوفر: " + AppUpdate.version(this, m.versionName);
         return AppUpdate.sp(this).getLong("checked", 0) > 0 ? v + " · محدّث" : v;
     }
 
@@ -722,13 +793,13 @@ public class SettingsActivity extends Activity {
         }
         StringBuilder msg = new StringBuilder();
         if (!m.notes.isEmpty()) msg.append(m.notes).append("\n\n");
-        msg.append("المثبتة: ").append(AppUpdate.digits(this, AppUpdate.installedName(this)))
+        msg.append("المثبتة: ").append(AppUpdate.version(this, AppUpdate.installedName(this)))
            .append(" · حجم التنزيل: ").append(AppUpdate.size(this, m.bytes(this)));
         msg.append("\n\nيُنزَّل التحديث ويُتحقَّق منه أولاً، ثم يطلب التلفاز موافقتك على تثبيت ")
            .append(self && home ? "كل تطبيق (الواجهة الرئيسية ثم الإعدادات)" : "التطبيق").append('.');
         if (self) msg.append(" في النهاية يُغلق هذا التطبيق ويعود التلفاز إلى الشاشة الرئيسية.");
         dialog()
-            .setTitle("تحديث متوفر: " + AppUpdate.digits(this, m.versionName))
+            .setTitle("تحديث متوفر: " + AppUpdate.version(this, m.versionName))
             .setMessage(msg)
             .setPositiveButton("تثبيت", (d, w) -> install(m))
             .setNegativeButton("لاحقاً", null)
@@ -1012,7 +1083,7 @@ public class SettingsActivity extends Activity {
     }
 
     /** a number in the chosen digits («شكل الأرقام») */
-    private String num(long n) { return Prefs.digits(this, n); }
+    String num(long n) { return Prefs.digits(this, n); }
 
     // ---------- small UI helpers ----------
 
@@ -1037,7 +1108,7 @@ public class SettingsActivity extends Activity {
 
     private void ask(String hint, Pickers.Text then) { pickers.ask(hint, then); }
 
-    private void header(String text) {
+    void header(String text) {
         TextView t = new TextView(this);
         t.setText(text);
         t.setTextColor(0xFFD6AF6B);
@@ -1049,7 +1120,7 @@ public class SettingsActivity extends Activity {
     }
 
     /** A card row: icon, label and its current value on a second line, chevron; gold when focused. */
-    private View row(String label, String value, int icon, final Runnable onClick) {
+    View row(String label, String value, int icon, final Runnable onClick) {
         return row(rowKey(label), label, value, icon, onClick);
     }
 
@@ -1121,7 +1192,7 @@ public class SettingsActivity extends Activity {
     }
 
 
-    private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
+    void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
 
     private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
 }
