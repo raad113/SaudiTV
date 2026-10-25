@@ -1,24 +1,24 @@
 {
-  "versionCode": 9042,
-  "versionName": "9042",
-  "tag": "v9042",
-  "notes": "تحديث عالمي: اختيار الدولة ثم المدينة، طريقة حساب الصلاة حسب الدولة وتوقيت المدينة، أي دوري ونادٍ في العالم، وأخبار الدولة من صحفها",
+  "versionCode": 9043,
+  "versionName": "9043",
+  "tag": "v9043",
+  "notes": "شريط الأسعار يتبع دولتك (العملة والمؤشر)، قوائم المدن أسرع بكثير ولا تتجمد، ويمكنك كتابة اسم مدينتك مباشرة",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9042,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9042/saudi-tv-screensaver.apk",
-      "sha256": "ee8a30899765c5b8bc4f3704e163b608ec12c3edd3bdf8d394295f8b0e25d8c2",
-      "size": 7557416
+      "versionCode": 9043,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9043/saudi-tv-screensaver.apk",
+      "sha256": "bb4423a5d0b59d61f17f6008f9a49f1bd315bfbc4c486a12898e29ab17344a93",
+      "size": 9032665
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9042,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9042/saudi-tv-home.apk",
-      "sha256": "920e28b5ba734124d18dd0d41a7d707276b07bf2e3728c53d4d185920fa1317c",
-      "size": 2699395
+      "versionCode": 9043,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9043/saudi-tv-home.apk",
+      "sha256": "5f248eb57604c4a948fd3846f3a500cea7ca72471e81bb817d966b9eb73da984",
+      "size": 2704239
     }
   ]
 }
