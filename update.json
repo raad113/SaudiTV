@@ -1,24 +1,24 @@
 {
-  "versionCode": 9041,
-  "versionName": "9041",
-  "tag": "v9041",
-  "notes": "جديد: ترتيب بطاقات المحتوى بالأسهم ◀ ▶. «شكل التطبيقات» (زوايا دائرية أو دوائر) و«شكل التحديد» (Google TV أو Apple TV) في الواجهة الرئيسية.",
+  "versionCode": 9042,
+  "versionName": "9042",
+  "tag": "v9042",
+  "notes": "تحديث عالمي: اختيار الدولة ثم المدينة، طريقة حساب الصلاة حسب الدولة وتوقيت المدينة، أي دوري ونادٍ في العالم، وأخبار الدولة من صحفها",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9041,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9041/saudi-tv-screensaver.apk",
-      "sha256": "bee0d2476c7ebf08555bcee92e3769c7fea24e6afd2ec920fe0c72623d19042c",
-      "size": 4920026
+      "versionCode": 9042,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9042/saudi-tv-screensaver.apk",
+      "sha256": "ee8a30899765c5b8bc4f3704e163b608ec12c3edd3bdf8d394295f8b0e25d8c2",
+      "size": 7557416
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9041,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9041/saudi-tv-home.apk",
-      "sha256": "5146119bbdb31453665fb29d39b9372d4e0f0bab96f51d7f809b30a0d28892c9",
-      "size": 2690155
+      "versionCode": 9042,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9042/saudi-tv-home.apk",
+      "sha256": "920e28b5ba734124d18dd0d41a7d707276b07bf2e3728c53d4d185920fa1317c",
+      "size": 2699395
     }
   ]
 }
