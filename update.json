@@ -1,24 +1,24 @@
 {
-  "versionCode": 9044,
-  "versionName": "9044",
-  "tag": "v9044",
-  "notes": "إذاعة القرآن الكريم على الشاشة الرئيسية وشاشة التوقف، الإعدادات تبقى في مكانها، اختيار الدولة يغيّر الأخبار والأندية، وإصلاح نسبة تغيّر الريال",
+  "versionCode": 9045,
+  "versionName": "9045",
+  "tag": "v9045",
+  "notes": "الماوس يعمل في كل مكان (العجلة والتمرير والزر الأيمن للرجوع)، زر تشغيل وإيقاف إذاعة القرآن في الشاشة الرئيسية، خيار «متى تعمل الإذاعة»، اختيار عناصر شريط الأسعار، وتوسيط مربع رمضان في شاشة التوقف.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9044,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9044/saudi-tv-screensaver.apk",
-      "sha256": "4bde34d4b493f063c82b20a07e88cbdda99750c184e2fb80219d25dc69f218f7",
-      "size": 9069879
+      "versionCode": 9045,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9045/saudi-tv-screensaver.apk",
+      "sha256": "e7a38ab121d478bc3025282cf857f360eb708c0beb7ce6d4c15100a1cf57d25e",
+      "size": 9082472
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9044,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9044/saudi-tv-home.apk",
-      "sha256": "b430b372eca3056dc9024244625d2b1058f7a4fc8e580047329ac1b1aff7e2b9",
-      "size": 2708919
+      "versionCode": 9045,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9045/saudi-tv-home.apk",
+      "sha256": "78edafa34a9be1d7271d312f7f5edfeb0c4a7adbe4577bc074a08e309826c770",
+      "size": 2716571
     }
   ]
 }
