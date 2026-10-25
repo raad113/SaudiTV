@@ -186,29 +186,94 @@ public class SettingsActivity extends Activity {
     // ---------- the place: the country (every one, CLDR's Arabic names), then its cities (GeoNames, biggest first; the
     // Saudi ones from the regions list, as before). The city keeps its country and its time zone.
 
+    // The bundled lists are read off the main thread (loadThen): the US alone has 16,000 cities, read and listed on it
+    // they froze this screen («… isn't responding»). A country's list shows its biggest Geo.TOP cities; the search
+    // («بحث في مدن …») looks through all of them, also off the main thread.
     private void pickCountry() {
-        final List<Geo.Country> all = Geo.countries(this);
-        if (all.isEmpty()) { pickCity(); return; }   // no bundled list (an incomplete build): the Saudi regions
-        String[] labels = new String[all.size()];
+        final android.content.Context app = getApplicationContext();
+        loadThen(() -> Geo.countries(app), this::showCountries);
+    }
+
+    private void showCountries(final List<Geo.Country> all) {
+        if (all == null || all.isEmpty()) { pickCity(); return; }   // no bundled list (an incomplete build): the Saudi regions
+        final int head = 1;   // first «اكتب اسم مدينتك» (any country's city by its name), then the countries
+        String[] labels = new String[all.size() + head];
+        labels[0] = "اكتب اسم مدينتك";
         int sel = -1;
         String cur = prefs.country().isEmpty() ? "SA" : prefs.country();
-        for (int i = 0; i < labels.length; i++) {
-            labels[i] = all.get(i).ar;
-            if (all.get(i).cc.equals(cur)) sel = i;
+        for (int i = 0; i < all.size(); i++) {
+            labels[i + head] = all.get(i).ar;
+            if (all.get(i).cc.equals(cur)) sel = i + head;
         }
         AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("الدولة")
-            .setItems(labels, (x, i) -> pickCityOf(all.get(i))).create();
+            .setItems(labels, (x, i) -> { if (i < head) typeCity(); else pickCityOf(all.get(i - head)); }).create();
         d.show();
         if (sel >= 0) d.getListView().setSelection(sel);   // the current country in front
     }
 
-    private void pickCityOf(final Geo.Country c) {
-        if ("SA".equals(c.cc)) { pickCity(); return; }
-        showCities(c, Geo.cities(this, c.cc), null);
+    /** «اكتب اسم مدينتك»: a city of any country by its Arabic or English name (Geo.searchAll, off the main thread);
+     *  picking one sets its country too, as picking it from the country's list does */
+    private void typeCity() {
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> Geo.preloadNames(app), "geo").start();   // every country's cities read while the name is typed
+        ask("اسم مدينتك بالعربية أو الإنجليزية", q -> {
+            final long t0 = android.os.SystemClock.uptimeMillis();
+            loadThen(() -> placesFor(app, q), f -> showPlaces(f, q, t0));
+        });
     }
 
-    /** a country's cities, biggest first, or those a search kept (query); first a search, then «ابحث عن مدينة أخرى» */
-    private void showCities(final Geo.Country c, final List<Geo.City> list, final String query) {
+    /** the cities a search found and their rows */
+    private static final class Found {
+        final List<Geo.Place> places = new ArrayList<>();
+        final List<String> rows = new ArrayList<>();
+    }
+
+    /** the rows «المدينة، الدولة», with the region between when two found share a name («…، إلينوي، الولايات المتحدة») */
+    private static Found placesFor(android.content.Context app, String q) {
+        Found f = new Found();
+        f.places.addAll(Geo.searchAll(app, q));
+        java.util.Map<String, Integer> same = new java.util.HashMap<>();
+        for (Geo.Place p : f.places) { Integer n = same.get(p.name); same.put(p.name, n == null ? 1 : n + 1); }
+        for (Geo.Place p : f.places) {
+            Geo.Country k = Geo.country(app, p.cc);
+            String region = "";
+            if (same.get(p.name) > 1) {
+                Geo.City x = Geo.cityOf(app, p);
+                if (x != null && !x.region.isEmpty() && !Geo.key(x.region).equals(Geo.key(p.name))) region = x.region + "، ";
+            }
+            f.rows.add("‏" + p.name + "، " + region + (k == null ? p.cc : k.shortAr));   // an RLM first: a Latin name on the right too
+        }
+        return f;
+    }
+
+    private void showPlaces(final Found f, final String q, final long t0) {
+        if (f == null || f.places.isEmpty()) { toast("لا توجد نتائج، جرّب اسماً آخر أو اختر الدولة"); return; }
+        final android.content.Context app = getApplicationContext();
+        AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("«⁨" + q + "⁩»")   // the query isolated (FSI … PDI)
+            .setItems(f.rows.toArray(new String[0]), (x, i) -> {
+                final Geo.Place p = f.places.get(i);
+                loadThen(() -> Geo.cityOf(app, p), city -> {
+                    if (city == null) toast("تعذّر قراءة المدينة");
+                    else setPlace(city.name, city.lat, city.lon, p.cc, city.tz);
+                });
+            }).create();
+        d.show();
+        d.getListView().post(() -> android.util.Log.i("SaudiTV-Settings", "places «" + q + "» (" + f.places.size()
+            + ") shown in " + (android.os.SystemClock.uptimeMillis() - t0) + " ms"));
+    }
+
+    private void pickCityOf(final Geo.Country c) {
+        if ("SA".equals(c.cc)) { pickCity(); return; }
+        final android.content.Context app = getApplicationContext();
+        final long t0 = android.os.SystemClock.uptimeMillis();
+        loadThen(() -> Geo.top(Geo.cities(app, c.cc), Geo.TOP), l -> showCities(c, l, null, t0));
+    }
+
+    /** a country's biggest cities, or those a search kept (query); first a search, then «ابحث عن مدينة أخرى». t0: when
+     *  the country was picked (the time to the list shown goes to the log, tag SaudiTV-Settings), 0 for none */
+    private void showCities(final Geo.Country c, final List<Geo.City> found, final String query, final long t0) {
+        final List<Geo.City> list = found == null ? new ArrayList<Geo.City>() : found;
+        final android.content.Context app = getApplicationContext();
         final int head = 2;
         String[] labels = new String[list.size() + head];
         labels[0] = query == null ? "بحث في مدن " + c.shortAr + "…" : "بحث آخر…";
@@ -227,7 +292,8 @@ public class SettingsActivity extends Activity {
         AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME)
             .setTitle(query == null ? c.ar : c.shortAr + ": «⁨" + query + "⁩»")   // the query isolated (FSI … PDI)
             .setItems(labels, (x, i) -> {
-                if (i == 0) ask("اسم المدينة بالعربية أو الإنجليزية", q -> showCities(c, filterCities(c, q), q));
+                if (i == 0) ask("اسم المدينة بالعربية أو الإنجليزية",
+                    q -> loadThen(() -> Geo.search(app, c.cc, q), l -> showCities(c, l, q, 0)));
                 else if (i == 1) searchCity(c);
                 else {
                     Geo.City city = list.get(i - head);
@@ -236,15 +302,34 @@ public class SettingsActivity extends Activity {
             }).create();
         d.show();
         if (sel >= 0) d.getListView().setSelection(sel);
+        if (t0 > 0) d.getListView().post(() -> android.util.Log.i("SaudiTV-Settings", "cities " + c.cc + " shown in "
+            + (android.os.SystemClock.uptimeMillis() - t0) + " ms"));
     }
 
-    /** the country's cities whose Arabic or English name holds q (biggest first) */
-    private List<Geo.City> filterCities(Geo.Country c, String q) {
-        String want = Geo.fold(q);
-        List<Geo.City> out = new ArrayList<>();
-        for (Geo.City x : Geo.cities(this, c.cc))
-            if (Geo.fold(x.name).contains(want) || Geo.fold(x.alt).contains(want)) out.add(x);
-        return out;
+    interface Got<T> { void got(T v); }
+
+    /** work off the main thread, then done with its answer (null when it failed) on it; «جارٍ التحميل…» shows when it
+     *  takes more than 150 ms (Back there drops the answer) */
+    private <T> void loadThen(final java.util.concurrent.Callable<T> work, final Got<T> done) {
+        final AlertDialog[] wait = {null};
+        final boolean[] over = {false};
+        final Runnable showWait = () -> {
+            if (over[0] || isFinishing()) return;
+            wait[0] = new AlertDialog.Builder(this, DIALOG_THEME).setMessage("جارٍ التحميل…").setCancelable(true).show();
+        };
+        list.postDelayed(showWait, 150);
+        new Thread(() -> {
+            T r;
+            try { r = work.call(); } catch (Exception e) { r = null; }
+            final T got = r;
+            runOnUiThread(() -> {
+                over[0] = true;
+                list.removeCallbacks(showWait);
+                boolean dropped = wait[0] != null && !wait[0].isShowing();
+                if (wait[0] != null) wait[0].dismiss();
+                if (!isFinishing() && !dropped) done.got(got);
+            });
+        }, "geo").start();
     }
 
     /** any place of the country, from Open-Meteo's GeoNames search (no key), in Arabic where it has the name */
@@ -270,13 +355,19 @@ public class SettingsActivity extends Activity {
     }
 
     /** the city, its country and time zone (none known: the nearest bundled city's) */
-    private void setPlace(String name, String lat, String lon, String cc, String tz) {
-        if (tz == null || tz.isEmpty()) {
-            try {
-                Geo.City near = Geo.nearest(this, cc, Double.parseDouble(lat), Double.parseDouble(lon));
-                tz = near == null ? "" : near.tz;
-            } catch (RuntimeException e) { tz = ""; }
+    private void setPlace(final String name, final String lat, final String lon, final String cc, String tz) {
+        if (tz == null || tz.isEmpty()) {   // the nearest bundled city's (reads the country's list: off the main thread)
+            final android.content.Context app = getApplicationContext();
+            loadThen(() -> {
+                Geo.City near = Geo.nearest(app, cc, Double.parseDouble(lat), Double.parseDouble(lon));
+                return near == null ? "" : near.tz;
+            }, z -> savePlace(name, lat, lon, cc, z == null ? "" : z));
+            return;
         }
+        savePlace(name, lat, lon, cc, tz);
+    }
+
+    private void savePlace(String name, String lat, String lon, String cc, String tz) {
         prefs.setCity(name, lat, lon, cc, tz);
         changed();
         render();
@@ -362,7 +453,12 @@ public class SettingsActivity extends Activity {
 
     /** «دولة الأخبار»: the city's country (تلقائي) or any other */
     private void pickNewsCountry() {
-        final List<Geo.Country> all = Geo.countries(this);
+        final android.content.Context app = getApplicationContext();
+        loadThen(() -> Geo.countries(app), this::showNewsCountries);
+    }
+
+    private void showNewsCountries(final List<Geo.Country> all) {
+        if (all == null) return;
         String[] labels = new String[all.size() + 1];
         Geo.Country own = Geo.country(this, prefs.country());
         labels[0] = "تلقائي: دولة المدينة (" + (own == null ? "السعودية" : own.ar) + ")";
@@ -1202,12 +1298,19 @@ public class SettingsActivity extends Activity {
         in.setHint(hint);
         in.setSingleLine(true);
         in.setInputType(InputType.TYPE_CLASS_TEXT);
-        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("بحث").setView(in)
-            .setPositiveButton("بحث", (d, w) -> {
+        in.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        final AlertDialog d = new AlertDialog.Builder(this, DIALOG_THEME).setTitle("بحث").setView(in)
+            .setPositiveButton("بحث", (x, w) -> {
                 String q = in.getText().toString().trim();
                 if (!q.isEmpty()) then.got(q);
             })
             .setNegativeButton("إلغاء", null).show();
+        // the keyboard's search key (the TV's keyboard, or the phone remote's) does what «بحث» does
+        in.setOnEditorActionListener((v, action, ev) -> {
+            if (action != android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH && action != android.view.inputmethod.EditorInfo.IME_ACTION_DONE) return false;
+            d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            return true;
+        });
         in.requestFocus();
     }
 

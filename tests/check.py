@@ -174,6 +174,23 @@ codes = [r[0] for r in rows]
 check("geo: every country has its code, Arabic and English names, and its cities file", len(rows) >= 230 and all(
       len(r) == 7 and re.fullmatch(r"[A-Z]{2}", r[0]) and re.search("[؀-ۿ]", r[1]) and r[3] and (geo / "cities" / f"{r[0]}.tsv.gz").is_file()
       for r in rows) and {"SA", "EG", "US", "AE", "GB"} <= set(codes), len(rows))
+# the ticker tape follows the country (tapeList): every bundled country has its currency or is on the dollar, each once;
+# every index is a bundled country's; the Saudi tape (also the one when no country is set) is as it was
+tcur = re.search(r"const TAPE_CUR = Object\.fromEntries\(Object\.entries\(\{(.*?)\n\}\)", tmpl, re.S).group(1)
+tcur_cc = [cc for _, ccs in re.findall(r"([A-Z]{3}):'([A-Z ]+)'", tcur) for cc in ccs.split()]
+tusd = re.search(r"const TAPE_USD = '([A-Z ]+)'", tmpl).group(1).split()
+tidx = re.findall(r"\b([A-Z]{2}): \['[^']+', '[^']+'\]", re.search(r"const TAPE_INDEX = \{(.*?)\n\};", tmpl, re.S).group(1))
+check("ticker tape: every bundled country has its currency (TAPE_CUR) or is on the dollar (TAPE_USD), each once",
+      sorted(tcur_cc + tusd) == sorted(codes), (sorted(set(codes) - set(tcur_cc + tusd)), sorted(set(tcur_cc + tusd) - set(codes))))
+check("ticker tape: every index (TAPE_INDEX) is a bundled country's, Saudi Arabia's is TASI",
+      len(tidx) >= 30 and set(tidx) <= set(codes) and "SA: ['تاسي', '^TASI.SR']" in tmpl, sorted(set(tidx) - set(codes)))
+tsa = re.search(r"const TAPE_SA = \[\n(.*?)\n\];", tmpl, re.S).group(1)
+check("ticker tape: the Saudi tape is as before (TASI first, the dollar in riyals, the same nine markets in order)",
+      re.findall(r"\{name:'([^']+)', +(?:sym|cg):'([^']+)'", tsa) == [
+          ("تاسي", "^TASI.SR"), ("S&P 500", "^GSPC"), ("ناسداك", "^IXIC"), ("داو جونز", "^DJI"), ("الذهب", "GC=F"),
+          ("برنت", "BZ=F"), ("الدولار/الريال", "SAR=X"), ("بيتكوين", "bitcoin"), ("إيثريوم", "ethereum")], tsa)
+check("ticker tape: no API key in its sources (Yahoo, CoinGecko, open.er-api.com)",
+      not re.search(r"apikey|api_key|access_key|appid=", tmpl, re.I) and "open.er-api.com/v6/latest/USD'" in tmpl)
 bad = []
 for cc in ("SA", "EG", "US", "MA"):
     lines = gzip.decompress((geo / "cities" / f"{cc}.tsv.gz").read_bytes()).decode("utf-8").splitlines()
@@ -186,6 +203,18 @@ for cc in ("SA", "EG", "US", "MA"):
     if pops != sorted(pops, reverse=True):
         bad.append(f"{cc}: not biggest first")
 check("geo: city files well formed (name, English, lat, lon, population, zone, region), biggest first", not bad, bad[:3])
+# «اكتب اسم مدينتك»: names.tsv.gz lists every city of every country file once, biggest first, each pointing at its line
+per_cc = {}
+for f in (geo / "cities").glob("*.tsv.gz"):
+    per_cc[f.name[:2]] = gzip.decompress(f.read_bytes()).decode("utf-8").splitlines()[2:]
+idx = [l.split("\t") for l in gzip.decompress((geo / "names.tsv.gz").read_bytes()).decode("utf-8").splitlines()]
+bad = [r for r in idx if len(r) != 4 or r[2] not in per_cc or not r[3].isdigit() or int(r[3]) >= len(per_cc[r[2]])
+       or per_cc[r[2]][int(r[3])].split("\t")[:2] != r[:2]]
+pops = [int(per_cc[r[2]][int(r[3])].split("\t")[4]) for r in idx if r not in bad]
+check("geo: names.tsv.gz has every city once, biggest first, each at its line of its country's file (gen_geo.py --index)",
+      not bad and len(idx) == sum(len(v) for v in per_cc.values()) == len({(r[2], r[3]) for r in idx}) and pops == sorted(pops, reverse=True),
+      (len(idx), sum(len(v) for v in per_cc.values()), bad[:3]))
+check("geo: names.tsv.gz stays under 1.6 MB", (geo / "names.tsv.gz").stat().st_size < 1_600_000, (geo / "names.tsv.gz").stat().st_size)
 size = sum(f.stat().st_size for f in (geo / "cities").glob("*.tsv.gz"))
 check("geo: the city files stay under 3 MB (they are in the screensaver APK)", size < 3_000_000, size)
 geo_java = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Geo.java").read_text(encoding="utf-8")

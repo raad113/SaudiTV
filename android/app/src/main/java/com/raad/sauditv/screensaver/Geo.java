@@ -39,14 +39,23 @@ final class Geo {
     static final class City {
         final String name, alt, lat, lon, tz, region;
         final int pop;
+        private String nameKey, regionKey;   // key(name) + "\n" + key(alt), key(region): made on first search
         City(String name, String alt, String lat, String lon, int pop, String tz, String region) {
             this.name = name; this.alt = alt; this.lat = lat; this.lon = lon; this.pop = pop; this.tz = tz; this.region = region;
         }
     }
 
     private static List<Country> countries;
-    private static String citiesOf;   // the country whose cities are cached
-    private static List<City> cities;
+    // the countries whose cities were read, the last used kept: the US file alone is 16,000 cities (a few hundred ms
+    // to read on a TV), so a country is read once while the app runs (up to CACHE countries)
+    private static final int CACHE = 6;
+    private static final Map<String, List<City>> CITIES = new java.util.LinkedHashMap<String, List<City>>(8, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, List<City>> e) { return size() > CACHE; }
+    };
+    /** the cities shown before a search: the biggest TOP (the full list is searched: search) */
+    static final int TOP = 40;
+    /** at most this many cities a search lists */
+    static final int SEARCH_MAX = 50;
 
     /** Every country, in Arabic order (the file's) */
     static synchronized List<Country> countries(Context c) {
@@ -71,11 +80,18 @@ final class Geo {
         return null;
     }
 
-    /** a country's bundled cities, biggest first; the last country asked is kept */
+    /** true when countries() answers without reading the file */
+    static synchronized boolean countriesLoaded() { return countries != null; }
+
+    /** true when cities(cc) answers without reading the file */
+    static synchronized boolean citiesLoaded(String cc) { return cc != null && CITIES.containsKey(cc.toUpperCase(Locale.ROOT)); }
+
+    /** a country's bundled cities, biggest first (kept in memory: CITIES). Reads a file: not on the main thread */
     static synchronized List<City> cities(Context c, String cc) {
         if (cc == null) return Collections.emptyList();
         cc = cc.toUpperCase(Locale.ROOT);
-        if (cc.equals(citiesOf) && cities != null) return cities;
+        List<City> got = CITIES.get(cc);
+        if (got != null) return got;
         List<City> out = new ArrayList<>();
         try (InputStream in = open(c, "geo/cities/" + cc + ".tsv");
              BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
@@ -95,9 +111,155 @@ final class Geo {
                     g >= 0 && g < regions.length ? regions[g] : ""));
             }
         } catch (Exception ignored) { }
-        citiesOf = cc;
-        cities = Collections.unmodifiableList(out);
-        return cities;
+        got = Collections.unmodifiableList(out);
+        CITIES.put(cc, got);
+        return got;
+    }
+
+    /** the first n of a list (the biggest cities) */
+    static List<City> top(List<City> all, int n) { return all.size() <= n ? all : all.subList(0, n); }
+
+    /** the country's cities whose Arabic or English name holds q, then those whose region does (each biggest first), at
+     *  most SEARCH_MAX. Reads and folds the whole list: not on the main thread */
+    static List<City> search(Context c, String cc, String q) {
+        String want = key(q);
+        List<City> out = new ArrayList<>(), byRegion = new ArrayList<>();
+        if (want.isEmpty()) return out;
+        for (City x : cities(c, cc)) {
+            synchronized (x) {
+                if (x.nameKey == null) { x.nameKey = key(x.name) + "\n" + key(x.alt); x.regionKey = key(x.region); }
+            }
+            if (x.nameKey.contains(want)) { out.add(x); if (out.size() >= SEARCH_MAX) return out; }
+            else if (byRegion.size() < SEARCH_MAX && x.regionKey.contains(want)) byRegion.add(x);
+        }
+        for (City x : byRegion) { if (out.size() >= SEARCH_MAX) break; out.add(x); }
+        return out;
+    }
+
+    // ---------- «اكتب اسم مدينتك»: a city of any country (assets/geo/names.tsv.gz, every country's cities biggest
+    // first: name, English name, country, its line in the country's file). Held as two long strings (the names' search
+    // keys, and the lines as they are) rather than 139,000 objects; dropped when memory runs short.
+
+    /** a city found by searchAll: its names and country; the rest of the place is line `line` of its country's file */
+    static final class Place {
+        final String name, alt, cc;
+        final int line;
+        Place(String name, String alt, String cc, int line) { this.name = name; this.alt = alt; this.cc = cc; this.line = line; }
+    }
+
+    private static final class Names {
+        String keys;     // "\n" + key(name) + "\t" + key(alt) per city, in the file's order
+        int[] keyAt;     // where each city starts in keys
+        String raw;      // the file's lines
+        int[] rawAt;     // where each city's line starts in raw
+    }
+    private static java.lang.ref.SoftReference<Names> names = new java.lang.ref.SoftReference<>(null);
+    /** at most this many cities searchAll lists */
+    static final int ALL_MAX = 30;
+
+    /** reads names.tsv.gz once (kept until memory runs short). Reads a file: not on the main thread */
+    private static synchronized Names names(Context c) {
+        Names n = names.get();
+        if (n != null) return n;
+        n = new Names();
+        StringBuilder keys = new StringBuilder(4_000_000), raw = new StringBuilder(4_200_000);
+        int[] keyAt = new int[150_000], rawAt = new int[150_000];
+        int count = 0;
+        try (InputStream in = open(c, "geo/names.tsv");
+             BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8), 1 << 16)) {
+            for (String line; (line = r.readLine()) != null; ) {
+                int t = line.indexOf('\t');
+                if (t < 0) continue;
+                int t2 = line.indexOf('\t', t + 1);
+                if (t2 < 0) continue;
+                if (count == keyAt.length) { keyAt = Arrays.copyOf(keyAt, count * 2); rawAt = Arrays.copyOf(rawAt, count * 2); }
+                keyAt[count] = keys.length();
+                rawAt[count] = raw.length();
+                keys.append('\n').append(key(line.substring(0, t))).append('\t').append(key(line.substring(t + 1, t2)));
+                raw.append(line).append('\n');
+                count++;
+            }
+        } catch (Exception ignored) { }
+        n.keys = keys.toString();
+        n.raw = raw.toString();
+        n.keyAt = Arrays.copyOf(keyAt, count);
+        n.rawAt = Arrays.copyOf(rawAt, count);
+        names = new java.lang.ref.SoftReference<>(n);
+        return n;
+    }
+
+    /** reads the cities of every country ahead of a search (while the name is being typed) */
+    static void preloadNames(Context c) { names(c); }
+
+    /** cities of any country whose Arabic or English name starts with q, then those that hold it elsewhere (each
+     *  biggest first), at most ALL_MAX. Not on the main thread */
+    static List<Place> searchAll(Context c, String q) {
+        String want = key(q);
+        List<Place> out = new ArrayList<>();
+        if (want.isEmpty()) return out;
+        Names n = names(c);
+        List<Integer> first = new ArrayList<>(), rest = new ArrayList<>();
+        int from = 0, len = n.keys.length();
+        while (from < len && first.size() < ALL_MAX) {
+            int at = n.keys.indexOf(want, from);
+            if (at < 0) break;
+            int i = Arrays.binarySearch(n.keyAt, at);
+            if (i < 0) i = -i - 2;
+            char before = n.keys.charAt(at - 1);
+            boolean start = before == '\n' || before == '\t' || before == ' ';
+            if (start) { first.add(i); rest.remove(Integer.valueOf(i)); }
+            else if (rest.size() < ALL_MAX && !first.contains(i) && !rest.contains(i)) rest.add(i);
+            // the same city again only for a better match: its next one at the start of a name or word
+            from = start || i + 1 >= n.keyAt.length ? (i + 1 < n.keyAt.length ? n.keyAt[i + 1] : len) : at + 1;
+        }
+        for (Integer i : rest) { if (first.size() >= ALL_MAX) break; first.add(i); }
+        for (int i : first) {
+            int s = n.rawAt[i], e = n.raw.indexOf('\n', s);
+            String[] f = n.raw.substring(s, e < 0 ? n.raw.length() : e).split("\t", -1);
+            if (f.length < 4) continue;
+            try { out.add(new Place(f[0], f[1], f[2], Integer.parseInt(f[3]))); } catch (RuntimeException ignored) { }
+        }
+        return out;
+    }
+
+    /** the whole place of a city found by searchAll (from its country's file); null when not there */
+    static City cityOf(Context c, Place p) {
+        List<City> l = cities(c, p.cc);
+        return p.line >= 0 && p.line < l.size() ? l.get(p.line) : null;
+    }
+
+    /** a search key: fold, plus ؤ = و, ئ = ي, no ء, - = space, and no «ال» at the start of a word (الإسكندرية =
+     *  اسكندريه, القاهرة = قاهره). Made for every bundled city, so it avoids Normalizer for plain letters */
+    static String key(String s) {
+        if (s == null || s.isEmpty()) return "";
+        StringBuilder b = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if ((ch >= 0xC0 && ch < 0x250) || (ch >= 0x1E00 && ch < 0x1F00))   // Latin with accents: the letter alone
+                ch = Normalizer.normalize(String.valueOf(ch), Normalizer.Form.NFD).charAt(0);
+            if ((ch >= 0x300 && ch < 0x370) || (ch >= 0x64B && ch <= 0x65F) || ch == 0x670 || ch == 'ـ' || ch == 'ء') continue;
+            switch (ch) {
+                case 'أ': case 'إ': case 'آ': case 'ٱ': ch = 'ا'; break;
+                case 'ة': ch = 'ه'; break;
+                case 'ى': case 'ئ': ch = 'ي'; break;
+                case 'ؤ': ch = 'و'; break;
+                case '’': ch = '\''; break;
+                case '-': ch = ' '; break;
+                default: ch = Character.toLowerCase(ch);
+            }
+            b.append(ch);
+        }
+        // «ال» at the start of a word, when more than two letters follow
+        for (int i = 0; i < b.length(); ) {
+            boolean wordStart = i == 0 || b.charAt(i - 1) == ' ';
+            if (wordStart && b.charAt(i) == 'ا' && i + 1 < b.length() && b.charAt(i + 1) == 'ل') {
+                int end = i;
+                while (end < b.length() && b.charAt(end) != ' ') end++;
+                if (end - i > 4) { b.delete(i, i + 2); continue; }
+            }
+            i++;
+        }
+        return b.toString().trim();
     }
 
     /** a city file: the build stores assets/geo/cities/XX.tsv.gz unpacked as XX.tsv (the APK compresses it itself);

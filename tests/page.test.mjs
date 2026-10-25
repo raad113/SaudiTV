@@ -423,6 +423,58 @@ for (const [panel, title] of [['world', 'أخبار العالم'], ['hadith', '
   await ctx.close();
 }
 
+// ---- the ticker tape follows the city's country (tapeList): its index and the dollar against its currency
+{
+  const tape = async (hash) => {
+    const { p, ctx, errors } = await open('tv.html', hash);
+    const r = await p.evaluate(() => {
+      TAPE.forEach((t, i) => { TAPE_Q[i] = mkTapeHtml(t.fmt === 'fx' ? 3.75 : 1234, 0.5, t.fmt); });
+      tapeRender();
+      const d = document.createElement('div'); d.innerHTML = TAPE_HTML;
+      return { names: TAPE.map(t => t.name), syms: TAPE.map(t => t.sym || t.cg),
+               shown: [...d.querySelectorAll('.tape-n')].map(e => e.textContent) };
+    });
+    await ctx.close();
+    return { ...r, errors };
+  };
+  const SA_NAMES = ['تاسي', 'S&P 500', 'ناسداك', 'داو جونز', 'الذهب', 'برنت', 'الدولار/الريال', 'بيتكوين', 'إيثريوم'];
+  const SA_SYMS = ['^TASI.SR', '^GSPC', '^IXIC', '^DJI', 'GC=F', 'BZ=F', 'SAR=X', 'bitcoin', 'ethereum'];
+  for (const [tag, hash] of [['no country', 'city=جدة&lat=21.5433&lon=39.1728'], ['SA', 'city=جدة&lat=21.5433&lon=39.1728&cc=SA']]) {
+    const r = await tape(hash);
+    check(`ticker tape, ${tag}: as before (تاسي … الدولار/الريال …)`, !r.errors.length && JSON.stringify(r.names) === JSON.stringify(SA_NAMES)
+      && JSON.stringify(r.syms) === JSON.stringify(SA_SYMS) && JSON.stringify(r.shown) === JSON.stringify(SA_NAMES), JSON.stringify(r));
+  }
+  let r = await tape('city=القاهرة&lat=30.0444&lon=31.2357&cc=EG&numerals=arab');
+  check('ticker tape, EG: EGX30 first, «الدولار/الجنيه» (EGP=X), the rest as before, the index\'s digits as set',
+    !r.errors.length && r.syms[0] === '^CASE30' && r.shown[0] === 'إيجي إكس ٣٠' && r.names[6] === 'الدولار/الجنيه' && r.syms[6] === 'EGP=X'
+      && JSON.stringify(r.syms.slice(1, 6)) === JSON.stringify(SA_SYMS.slice(1, 6)) && r.syms.slice(7).join() === 'bitcoin,ethereum', JSON.stringify(r));
+  r = await tape('city=Cairo&lat=30.0444&lon=31.2357&cc=EG');
+  check('ticker tape, EG with 0-9: «إيجي إكس 30»', r.shown[0] === 'إيجي إكس 30', JSON.stringify(r.shown));
+  r = await tape('city=New York&lat=40.71&lon=-74.0&cc=US');
+  check('ticker tape, US: no local index (S&P 500 first), «اليورو/الدولار» (EURUSD=X)',
+    !r.errors.length && r.syms[0] === '^GSPC' && r.names.includes('اليورو/الدولار') && r.syms.includes('EURUSD=X')
+      && !r.names.some(n => n.startsWith('الدولار/')) && r.names.length === 8, JSON.stringify(r));
+  r = await tape('city=دبي&lat=25.2&lon=55.27&cc=AE');
+  check('ticker tape, AE Dubai: «مؤشر دبي» and «الدولار/الدرهم»', r.names[0] === 'مؤشر دبي' && r.syms[0] === 'DFMGI.AE'
+    && r.names[6] === 'الدولار/الدرهم' && r.syms[6] === 'AED=X', JSON.stringify(r));
+  r = await tape('city=أبو ظبي&lat=24.45&lon=54.38&cc=AE');
+  check('ticker tape, AE Abu Dhabi: «مؤشر أبوظبي»', r.names[0] === 'مؤشر أبوظبي' && r.syms[0] === 'FADGI.FGI', JSON.stringify(r.names));
+  r = await tape('city=مسقط&lat=23.6&lon=58.4&cc=OM');
+  check('ticker tape, OM (no index on Yahoo): the index left out, «الدولار/الريال» (OMR=X)',
+    r.syms[0] === '^GSPC' && r.names.length === 8 && r.names[5] === 'الدولار/الريال' && r.syms[5] === 'OMR=X', JSON.stringify(r));
+  r = await tape('city=Paris&lat=48.85&lon=2.35&cc=FR');
+  check('ticker tape, FR: its index and «الدولار/اليورو»', r.names[0] === 'كاك 40' && r.names[6] === 'الدولار/اليورو' && r.syms[6] === 'EUR=X', JSON.stringify(r.names));
+  r = await tape('city=Suva&lat=-18.1&lon=178.4&cc=FJ');
+  check('ticker tape, a currency without an Arabic name: its code («الدولار/FJD»)', r.names.includes('الدولار/FJD'), JSON.stringify(r.names));
+  const { p, ctx } = await open('tv.html', 'city=جدة&lat=21.5433&lon=39.1728');
+  const f = await p.evaluate(() => [erRate({EUR: 0.8, EGP: 48.5}, '1/EUR'), erRate({EGP: 48.5}, 'EGP'), erRate(null, 'EGP'), erRate({}, 'XYZ'),
+    mkTapeHtml(3.75, 0, 'fx').value, mkTapeHtml(48.5, 0, 'fx').value, mkTapeHtml(145.2, 0, 'fx').value, mkTapeHtml(16234.5, 0, 'fx').value]);
+  check('ticker tape: open.er-api.com rates (and the inverse for the euro); the rate\'s decimals (4, 2 from 100, none from 1,000)',
+    f[0] === 1.25 && f[1] === 48.5 && f[2] === null && f[3] === null && f[4].includes('3.7500') && f[5].includes('48.5000')
+      && f[6].includes('145.20') && f[7].includes('16,235') && !f[7].includes('.'), JSON.stringify(f));
+  await ctx.close();
+}
+
 await browser.close();
 console.log(failed ? `\n${failed} failed` : '\nall page tests passed');
 process.exit(failed ? 1 : 0);

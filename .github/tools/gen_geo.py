@@ -3,6 +3,7 @@
 
     python3 .github/tools/gen_geo.py --fetch DIR     download the sources into DIR (an empty folder), then generate
     python3 .github/tools/gen_geo.py DIR             generate from sources already in DIR
+    python3 .github/tools/gen_geo.py --index         only assets/geo/names.tsv.gz, from the city files already there
 
 Sources (no keys):
   GeoNames (CC BY 4.0, https://www.geonames.org): countryInfo.txt, cities1000.zip (every place of 1,000 people or
@@ -18,6 +19,9 @@ Writes:
                                per city, biggest first: name (Arabic when GeoNames has one, else English), the English
                                name when the first is Arabic, latitude, longitude, population, time zone and region
                                (their index in the first two lines)
+  assets/geo/names.tsv.gz      every city of every country in one file (gzip), biggest first, for «اكتب اسم مدينتك»:
+                               name, English name (as in its country's file), country code and its line in the
+                               country's file (0 = the first city), where the rest of the place is
 """
 import gzip
 import io
@@ -164,12 +168,33 @@ def main(src):
         for cc, c in rows:
             fh.write("\t".join([cc, c["ar"], c["short"], c["en"], c["continent"], c["lang"], str(c["n"])]) + "\n")
     print(f"{len(rows)} countries, {sum(c['n'] for _, c in rows)} cities, {total / 1e6:.2f} MB of city files")
+    write_index()
+
+
+def write_index():
+    """assets/geo/names.tsv.gz: every country's cities in one list, biggest first (the settings app searches it for a
+    city of any country, then reads the place from its country's file)"""
+    rows = []
+    for f in sorted((OUT / "cities").glob("*.tsv.gz")):
+        cc = f.name[:2]
+        lines = gzip.decompress(f.read_bytes()).decode("utf-8").splitlines()
+        for i, l in enumerate(lines[2:]):
+            x = l.split("\t")
+            rows.append((-int(x[4]), cc, i, x[0], x[1]))
+    rows.sort()
+    body = "".join(f"{r[3]}\t{r[4]}\t{r[1]}\t{r[2]}\n" for r in rows)
+    data = gzip.compress(body.encode("utf-8"), compresslevel=9, mtime=0)
+    (OUT / "names.tsv.gz").write_bytes(data)
+    print(f"{len(rows)} cities in names.tsv.gz, {len(data) / 1e6:.2f} MB")
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args:
         sys.exit(__doc__)
+    if args[0] == "--index":
+        write_index()
+        sys.exit(0)
     if args[0] == "--fetch":
         fetch(Path(args[1]))
         args = args[1:]

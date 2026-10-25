@@ -726,6 +726,9 @@ const CONFIG = {
     .map(x=>(x||'').trim()).filter(x=>/^(\d+(@tsdb\.\d+)?|E\d+@[a-z0-9._]+)$/.test(x)).slice(0, 10),
   // #feedtest=1 (the preview from ADB, tests only): every country news source is read once and logged (feedTest)
   feedTest: _num('feedtest', 0) === 1,
+  // #tapetest=1 (the preview from ADB, tests only): every ticker tape source of every country is asked once and
+  // logged (tapeTest)
+  tapeTest: _num('tapetest', 0) === 1,
   sportsKey: '123',
   // the card beside the clock: shows | prayers | forecast | matches | verse | hadith | standings | news | local | world
   // | tech | none (#week=0 from older builds = none); local = news of the city (loadLocalNews); verse = a verse of the
@@ -1539,8 +1542,13 @@ async function loadMatches(){
 }
 
 // the ticker tape's markets, in this order: Yahoo symbol or CoinGecko id, and how its value is written
-// (index: whole points; usd: dollars, whole from 1,000 up; fx: four decimals)
-const TAPE = [
+// (index: whole points; usd: dollars, whole from 1,000 up; fx: four decimals, two from 100 up, whole from 1,000 up).
+// The first item (the local index) and the dollar's rate follow the city's country (CONFIG.country, '' = Saudi
+// Arabia: tapeList): its main index where Yahoo has one (TAPE_INDEX; none: the item is left out) and the dollar
+// against its currency (TAPE_CUR, the currency's Arabic name in TAPE_CUR_NAME, else its code). A country on the
+// dollar (TAPE_USD) shows the euro against the dollar instead. er: the currency on open.er-api.com (keyless), asked
+// when Yahoo does not answer for it (no daily change there); '1/' its inverse.
+const TAPE_SA = [
   {name:'تاسي',           sym:'^TASI.SR', fmt:'index'},
   {name:'S&P 500',        sym:'^GSPC',    fmt:'index'},
   {name:'ناسداك',         sym:'^IXIC',    fmt:'index'},
@@ -1551,6 +1559,79 @@ const TAPE = [
   {name:'بيتكوين',        cg:'bitcoin',   fmt:'usd'},
   {name:'إيثريوم',        cg:'ethereum',  fmt:'usd'},
 ];
+// a country's main index on Yahoo (each checked through the TVs' VPN with #tapetest=1); AE: Dubai's, Abu Dhabi's
+// for a city of that emirate (tapeList). Digits in a name follow the numerals setting (tapeName).
+const TAPE_INDEX = {
+  SA: ['تاسي', '^TASI.SR'], EG: ['إيجي إكس 30', '^CASE30'], AE: ['مؤشر دبي', 'DFMGI.AE'], QA: ['مؤشر قطر', '^GNRI.QA'],
+  KW: ['بورصة الكويت', '^BKP.KW'],
+  GB: ['فوتسي 100', '^FTSE'], DE: ['داكس', '^GDAXI'], FR: ['كاك 40', '^FCHI'], ES: ['إيبكس 35', '^IBEX'],
+  IT: ['فوتسي ميب', 'FTSEMIB.MI'], NL: ['مؤشر أمستردام', '^AEX'], BE: ['مؤشر بروكسل', '^BFX'], AT: ['مؤشر فيينا', '^ATX'],
+  CH: ['مؤشر سويسرا', '^SSMI'], SE: ['مؤشر ستوكهولم', '^OMX'], DK: ['مؤشر كوبنهاغن', '^OMXC25'],
+  FI: ['مؤشر هلسنكي', '^OMXH25'], NO: ['مؤشر أوسلو', 'OSEBX.OL'], PT: ['مؤشر لشبونة', 'PSI20.LS'], IE: ['مؤشر دبلن', '^ISEQ'],
+  PL: ['مؤشر وارسو', 'WIG20.WA'], HU: ['مؤشر بودابست', '^BUX.BD'], GR: ['مؤشر أثينا', 'GD.AT'], TR: ['بيست 100', 'XU100.IS'],
+  JP: ['نيكاي', '^N225'], CN: ['مؤشر شنغهاي', '000001.SS'], HK: ['هانغ سنغ', '^HSI'], KR: ['كوسبي', '^KS11'],
+  TW: ['مؤشر تايوان', '^TWII'], IN: ['نيفتي 50', '^NSEI'], ID: ['مؤشر جاكرتا', '^JKSE'], MY: ['مؤشر كوالالمبور', '^KLSE'],
+  SG: ['مؤشر سنغافورة', '^STI'], TH: ['مؤشر تايلاند', '^SET.BK'], PH: ['مؤشر الفلبين', 'PSEI.PS'],
+  AU: ['مؤشر أستراليا', '^AXJO'], NZ: ['مؤشر نيوزيلندا', '^NZ50'], CA: ['مؤشر تورنتو', '^GSPTSE'],
+  BR: ['بوفيسبا', '^BVSP'], MX: ['مؤشر المكسيك', '^MXX'], ZA: ['مؤشر جوهانسبرغ', '^J203.JO'],
+};
+const TAPE_INDEX_AD = ['مؤشر أبوظبي', 'FADGI.FGI'];
+// each currency and the countries that use it (the settings app's geo/countries.tsv codes)
+const TAPE_CUR = Object.fromEntries(Object.entries({
+  AED:'AE', AFN:'AF', ALL:'AL', AMD:'AM', AOA:'AO', ARS:'AR', AUD:'AU TV CX KI NR', AWG:'AW', AZN:'AZ', BAM:'BA',
+  BBD:'BB', BDT:'BD', BHD:'BH', BIF:'BI', BND:'BN', BOB:'BO', BRL:'BR', BTN:'BT', BWP:'BW', BYN:'BY', BZD:'BZ',
+  CAD:'CA', CDF:'CD', CHF:'CH LI', CLP:'CL', CNY:'CN', COP:'CO', CRC:'CR', CUP:'CU', CVE:'CV', CZK:'CZ', DJF:'DJ',
+  DKK:'DK FO GL', DOP:'DO', DZD:'DZ', EGP:'EG', ERN:'ER', ETB:'ET', FJD:'FJ', FKP:'FK', GBP:'GB IM JE GG', GEL:'GE',
+  GHS:'GH', GIP:'GI', GMD:'GM', GNF:'GN', GTQ:'GT', GYD:'GY', HKD:'HK', HNL:'HN', HTG:'HT', HUF:'HU', IDR:'ID',
+  ILS:'IL PS', INR:'IN', IQD:'IQ', IRR:'IR', ISK:'IS', JMD:'JM', JOD:'JO', JPY:'JP', KES:'KE', KGS:'KG', KHR:'KH',
+  KMF:'KM', KPW:'KP', KRW:'KR', KWD:'KW', KYD:'KY', KZT:'KZ', LAK:'LA', LBP:'LB', LKR:'LK', LRD:'LR', LSL:'LS',
+  LYD:'LY', MAD:'MA EH', MDL:'MD', MGA:'MG', MKD:'MK', MMK:'MM', MNT:'MN', MOP:'MO', MRU:'MR', MUR:'MU', MVR:'MV',
+  MWK:'MW', MXN:'MX', MYR:'MY', MZN:'MZ', NAD:'NA', NGN:'NG', NIO:'NI', NOK:'NO SJ', NPR:'NP', NZD:'NZ CK', OMR:'OM',
+  PEN:'PE', PGK:'PG', PHP:'PH', PKR:'PK', PLN:'PL', PYG:'PY', QAR:'QA', RON:'RO', RSD:'RS', RUB:'RU', RWF:'RW',
+  SAR:'SA', SBD:'SB', SCR:'SC', SDG:'SD', SEK:'SE', SGD:'SG', SHP:'SH', SLE:'SL', SOS:'SO', SRD:'SR', SSP:'SS',
+  STN:'ST', SYP:'SY', SZL:'SZ', THB:'TH', TJS:'TJ', TMT:'TM', TND:'TN', TOP:'TO', TRY:'TR', TTD:'TT', TWD:'TW',
+  TZS:'TZ', UAH:'UA', UGX:'UG', UYU:'UY', UZS:'UZ', VES:'VE', VND:'VN', VUV:'VU', WST:'WS', XAF:'CF TD GA GQ CM CG',
+  XCD:'AG AI DM GD KN LC MS VC', XCG:'CW SX', XOF:'BJ BF TG CI SN ML NE GW', XPF:'PF NC WF', YER:'YE', ZAR:'ZA',
+  ZMW:'ZM',
+  EUR:'AD AT AX BE BG BL CY DE EE ES FI FR GF GP GR HR IE IT LT LU LV MC ME MF MQ MT NL PM PT RE SI SK SM XK YT',
+}).flatMap(([cur, ccs]) => ccs.split(' ').map(cc => [cc, cur])));
+// on the dollar, or on a currency worth exactly one dollar (Panama, the Bahamas, Bermuda)
+const TAPE_USD = 'US EC SV PA PR VI VG GU AS MP TC BQ FM MH PW TL IO ZW BS BM'.split(' ');
+// a currency's Arabic name after «الدولار/»; a dollar of another country by its country's adjective
+const TAPE_CUR_NAME = {
+  EGP:'الجنيه', SDG:'الجنيه', SSP:'الجنيه', GBP:'الجنيه', AED:'الدرهم', MAD:'الدرهم',
+  KWD:'الدينار', JOD:'الدينار', BHD:'الدينار', IQD:'الدينار', LYD:'الدينار', TND:'الدينار', DZD:'الدينار', RSD:'الدينار',
+  MKD:'الدينار', QAR:'الريال', OMR:'الريال', YER:'الريال', IRR:'الريال', SAR:'الريال', KHR:'الريال', BRL:'الريال',
+  LBP:'الليرة', SYP:'الليرة', TRY:'الليرة', ILS:'الشيكل', MRU:'الأوقية', SOS:'الشلن', KES:'الشلن', TZS:'الشلن',
+  UGX:'الشلن', DJF:'الفرنك', KMF:'الفرنك', CHF:'الفرنك', XOF:'الفرنك', XAF:'الفرنك', XPF:'الفرنك', RWF:'الفرنك',
+  BIF:'الفرنك', GNF:'الفرنك', CDF:'الفرنك', EUR:'اليورو', JPY:'الين', CNY:'اليوان', INR:'الروبية', PKR:'الروبية',
+  LKR:'الروبية', NPR:'الروبية', MUR:'الروبية', SCR:'الروبية', IDR:'الروبية', MVR:'الروفية', RUB:'الروبل', BYN:'الروبل',
+  KRW:'الوون', KPW:'الوون', CAD:'الكندي', AUD:'الأسترالي', NZD:'النيوزيلندي', SGD:'السنغافوري', HKD:'الهونغ كونغي',
+  TWD:'التايواني', MYR:'الرينغيت', THB:'البات', VND:'الدونغ', PHP:'البيزو', MXN:'البيزو', ARS:'البيزو', CLP:'البيزو',
+  COP:'البيزو', UYU:'البيزو', CUP:'البيزو', DOP:'البيزو', SEK:'الكرونة', NOK:'الكرونة', DKK:'الكرونة', ISK:'الكرونة',
+  CZK:'الكرونة', PLN:'الزلوتي', HUF:'الفورنت', RON:'الليو', MDL:'الليو', UAH:'الهريفنيا', ZAR:'الراند', NGN:'النايرا',
+  GHS:'السيدي', ETB:'البير', AFN:'الأفغاني', BDT:'التاكا', AZN:'المانات', TMT:'المانات', KZT:'التينغي', UZS:'السوم',
+  KGS:'السوم', GEL:'اللاري', AMD:'الدرام', ALL:'الليك', BAM:'المارك', ERN:'الناكفا', PEN:'السول', PYG:'الغواراني',
+  BOB:'البوليفيانو', VES:'البوليفار', GTQ:'الكتزال', HNL:'اللمبيرة', NIO:'الكوردوبا', CRC:'الكولون', HTG:'الغورد',
+  ZMW:'الكواشا', MWK:'الكواشا', MZN:'الميتكال', AOA:'الكوانزا', BWP:'البولا', MGA:'الأرياري', MMK:'الكيات', LAK:'الكيب',
+  MNT:'التوغروغ', TJS:'السوموني', GMD:'الدالاسي', SLE:'الليون', CVE:'الإسكودو', STN:'الدوبرا', MOP:'الباتاكا',
+  LSL:'اللوتي', SZL:'الليلانغيني', PGK:'الكينا', TOP:'البانغا', WST:'التالا', VUV:'الفاتو', BTN:'النغولترم',
+  AWG:'الفلورن', XCG:'الغيلدر',
+};
+// the tape for country cc ('' = Saudi Arabia: TAPE_SA as it is) and the city's name (AE: Abu Dhabi's index)
+function tapeList(cc, city){
+  cc = /^[A-Z]{2}$/.test(cc || '') ? cc : 'SA';
+  if(cc === 'SA') return TAPE_SA.slice();
+  const ad = cc === 'AE' && /أبو ?ظبي|العين|abu dhabi|al ain/i.test(city || '');
+  const idx = ad ? TAPE_INDEX_AD : TAPE_INDEX[cc], cur = TAPE_CUR[cc];
+  const fx = TAPE_USD.includes(cc) ? {name:'اليورو/الدولار', sym:'EURUSD=X', fmt:'fx', er:'1/EUR'}
+    : cur ? {name:'الدولار/' + (TAPE_CUR_NAME[cur] || cur), sym:cur + '=X', fmt:'fx', er:cur} : null;
+  return TAPE_SA.flatMap((t, i) => i === 0 ? (idx ? [{name:idx[0], sym:idx[1], fmt:'index', dg:/[0-9]/.test(idx[0])}] : [])
+    : t.fmt === 'fx' ? (fx ? [fx] : []) : [t]);
+}
+const TAPE = tapeList(CONFIG.country, CONFIG.city);
+// a market's name; one of the countries' indexes with its digits as set (the Saudi tape's names are as they were)
+const tapeName = t => t.dg ? esc(t.name).replace(/[0-9]+/g, n => mkIso(mkNum(+n, 0))) : esc(t.name);
 
 // ---- market formatting (value and daily change), pure: no DOM, no network
 // the chosen digits and their separators (NU); every number group is its own left-to-right isolate, so the sign,
@@ -1591,7 +1672,7 @@ const mkIndexPct = q => q && q.prev > 0 ? (q.price - q.prev) / q.prev * 100 : nu
 // 0 unchanged (as shown: under 0.005 % is ٠٫٠٠٪, grey, no arrow). fmt: see TAPE.
 function mkTapeHtml(price, pct, fmt){
   if(typeof price !== 'number' || !(price > 0)) return {value:'', change:'', dir:0};
-  const d = fmt === 'fx' ? 4 : fmt === 'usd' && price < 1000 ? 2 : 0;
+  const d = fmt === 'fx' ? (price < 100 ? 4 : price < 1000 ? 2 : 0) : fmt === 'usd' && price < 1000 ? 2 : 0;
   const value = mkIso(mkNum(price, d) + (fmt === 'usd' ? ' $' : ''));
   if(typeof pct !== 'number' || !isFinite(pct) || pct <= -100) return {value, change:'', dir:0};
   const r = Math.round(pct * 100) / 100, dir = r > 0 ? 1 : r < 0 ? -1 : 0;
@@ -1629,10 +1710,19 @@ async function yahooChart(sym){
 // kept; a failed one keeps the market's last good value, or leaves it out until it has one. Resolves to false when
 // nothing answered (see firstLoad).
 const TAPE_Q = [];   // TAPE index -> {value, change, dir} (mkTapeHtml)
+// the dollar's rates on open.er-api.com (keyless, CORS friendly, once a day): the rate of a currency Yahoo has not
+// answered for (t.er; '1/EUR' the euro in dollars), without a daily change; null when unknown
+const erRates = () => fetchT('https://open.er-api.com/v6/latest/USD', 10000).then(r => r.ok ? r.json() : null)
+  .then(j => j && j.result === 'success' && j.rates ? j.rates : null).catch(() => null);
+function erRate(rates, er){
+  const inv = /^1\//.test(er || ''), x = rates && rates[String(er || '').replace(/^1\//, '')];
+  return typeof x === 'number' && x > 0 ? (inv ? 1 / x : x) : null;
+}
 async function loadTape(){
   const ids = TAPE.filter(t => t.cg).map(t => t.cg).join(',');
   const coins = ids ? fetchT(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`, 10000)
     .then(r => r.ok ? r.json() : null).catch(() => null) : null;
+  let er = null;
   const got = await Promise.all(TAPE.map(async (t, i) => {
     let h;
     try{
@@ -1640,8 +1730,10 @@ async function loadTape(){
         const c = ((await coins) || {})[t.cg] || {};
         h = mkTapeHtml(c.usd, c.usd_24h_change ?? c.usd_24hr_change, t.fmt);
       } else {
-        const q = mkIndexQuote((await yahooChart(t.sym)).chart.result[0]);
-        h = mkTapeHtml(q && q.price, mkIndexPct(q), t.fmt);
+        let q = null;
+        try{ q = mkIndexQuote((await yahooChart(t.sym)).chart.result[0]); }catch(e){ if(!t.er) throw e; }
+        if(!q && t.er) h = mkTapeHtml(erRate(await (er || (er = erRates())), t.er), null, t.fmt);
+        else h = mkTapeHtml(q && q.price, mkIndexPct(q), t.fmt);
       }
     }catch(e){ return false; }
     if(!h.value) return false;                   // an answer without a price is no better than none
@@ -1651,6 +1743,34 @@ async function loadTape(){
   }));
   tapeRender();
   return got.some(Boolean);
+}
+
+// #tapetest=1 (tests only, the preview from ADB): every index, every rate (Yahoo, then open.er-api.com) and the coins,
+// once, four at a time, each in the TV's log: «SaudiTV tapetest idx EG ^CASE30 51052.3 day 2026-10-22 chg -0.4» or
+// «… none»; then «SaudiTV tapetest done»
+async function tapeTest(){
+  const log = m => console.warn('SaudiTV tapetest ' + m);
+  const er = await erRates();
+  log('er-api ' + (er ? Object.keys(er).length + ' rates' : 'none'));
+  const coins = await fetchT('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', 10000)
+    .then(r => r.ok ? r.json() : 'HTTP ' + r.status).catch(e => String(e && e.message || e));
+  log('coingecko ' + JSON.stringify(coins).slice(0, 120));
+  const jobs = [];
+  TAPE_SA.filter(t => t.sym).forEach(t => jobs.push(['sa', 'SA', t.sym, '']));
+  Object.entries(TAPE_INDEX).concat([['AE-AD', TAPE_INDEX_AD]]).forEach(([cc, x]) => jobs.push(['idx', cc, x[1], '']));
+  [...new Set(Object.values(TAPE_CUR))].sort().forEach(c => jobs.push(['fx', c, c + '=X', c]));
+  jobs.push(['fx', 'EUR/USD', 'EURUSD=X', '1/EUR']);
+  const run = async ([kind, id, sym, e]) => {
+    let m;
+    try{
+      const q = mkIndexQuote((await yahooChart(sym)).chart.result[0]);
+      m = q ? `${q.price} day ${q.priceDay} chg ${(p => p == null ? '?' : p.toFixed(2))(mkIndexPct(q))}` : 'no price';
+    }catch(x){ m = 'none'; }
+    log(`${kind} ${id} ${sym} ${m}` + (e ? ' | er ' + (erRate(er, e) ?? 'none') : ''));
+  };
+  let k = 0;
+  await Promise.all(Array.from({length: 4}, async () => { while(k < jobs.length) await run(jobs[k++]); }));
+  log('done ' + jobs.length);
 }
 
 // the answers arrive one by one: the tape is redrawn once they stop for 2 s, or when the refresh ends
@@ -1665,7 +1785,7 @@ function tapeRender(){
     const h = TAPE_Q[i];
     if(!h) return '';
     const cls = h.dir > 0 ? ' up' : h.dir < 0 ? ' down' : '';
-    return `<span class="tape-i"><span class="tape-n">${esc(t.name)}</span><span class="tape-v">${h.value}</span>`
+    return `<span class="tape-i"><span class="tape-n">${tapeName(t)}</span><span class="tape-v">${h.value}</span>`
       + (h.change ? `<span class="tape-c${cls}" dir="ltr">${h.change}</span>` : '') + '</span><i class="tape-dot"></i>';
   }).join('');
   if(!html || html === TAPE_HTML) return;   // nothing yet (the strip stays hidden), or the same: no restart
@@ -3634,6 +3754,7 @@ function restoreSnap(){
 
 function boot(){
   if(CONFIG.feedTest) setTimeout(feedTest, 3000);   // tests only (#feedtest=1)
+  if(CONFIG.tapeTest) setTimeout(tapeTest, 3000);   // tests only (#tapetest=1)
   if(CONFIG.ticker){ bootTicker(); return; }
   if(CONFIG.detail){ bootDetail(); return; }
   if(CONFIG.home){ bootHome(); return; }
