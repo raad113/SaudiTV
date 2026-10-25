@@ -72,7 +72,7 @@ public class SettingsActivity extends Activity {
         scroll.addView(frame);
         setContentView(scroll);
         justUpdated = AppUpdate.takeJustUpdated(this);   // the first launch after a self-update
-        if (justUpdated != null) toast("تم التحديث إلى " + AppUpdate.digits(justUpdated));
+        if (justUpdated != null) toast("تم التحديث إلى " + AppUpdate.digits(this, justUpdated));
         render();
         AppInstaller.setListener(installListener);   // an update still running shows its progress again
         if (getIntent().getBooleanExtra("app_update", false)) openAppUpdate();   // the home screen's «تحديث متوفر»
@@ -121,7 +121,7 @@ public class SettingsActivity extends Activity {
         row("المدينة", prefs.city()[0], R.drawable.ic_place, new Runnable() { public void run() { pickCity(); } });
 
         header("المباريات");
-        row("الفرق المتابعة (" + arabicNum(prefs.teams().size()) + "/" + arabicNum(Prefs.MAX_TEAMS) + ")", teamsLabel(),
+        row("الفرق المتابعة (" + num(prefs.teams().size()) + "/" + num(Prefs.MAX_TEAMS) + ")", teamsLabel(),
             R.drawable.ic_trophy, new Runnable() { public void run() { manageTeams(); } });
 
         header("بجانب الساعة");
@@ -132,6 +132,17 @@ public class SettingsActivity extends Activity {
             new Runnable() { public void run() { pickPanel(true); } });
         row("ترتيب التطبيقات المفضلة", "قائمة ترتّب فيها المفضلة بالأسهم", R.drawable.ic_star,
             new Runnable() { public void run() { openDockSettings(); } });
+
+        // each news page on a card: its sources (Prefs.NEWS_SOURCES), ticked in a list like the cards'
+        boolean anyNews = false;
+        for (String page : Prefs.NEWS_PAGES) anyNews |= hasPanel(prefs.panel(), page) || hasPanel(prefs.homePanel(), page);
+        if (anyNews) {
+            header("مصادر الأخبار");
+            for (final String page : Prefs.NEWS_PAGES) {
+                if (!hasPanel(prefs.panel(), page) && !hasPanel(prefs.homePanel(), page)) continue;
+                row(Prefs.panelLabel(page), sourcesLabel(page), R.drawable.ic_category, new Runnable() { public void run() { pickSources(page); } });
+            }
+        }
 
         if (hasPanel(prefs.panel(), "shows") || hasPanel(prefs.homePanel(), "shows")) {   // only matter for the shows card (in a list too)
         header("جديد المسلسلات");
@@ -145,8 +156,9 @@ public class SettingsActivity extends Activity {
         }
 
         header("التطبيق");
+        row("شكل الأرقام", numeralsLabel(), R.drawable.ic_language, new Runnable() { public void run() { pickNumerals(); } });
         updateRow = row("تحديث التطبيق", appUpdateLabel(), R.drawable.ic_sync, new Runnable() { public void run() { appUpdateNow(); } });
-        row("التحديث التلقائي للصفحة", prefs.autoUpdate() ? "يعمل · كل ٦ ساعات" : "متوقف", R.drawable.ic_sync, new Runnable() { public void run() {
+        row("التحديث التلقائي للصفحة", prefs.autoUpdate() ? "يعمل · كل " + num(6) + " ساعات" : "متوقف", R.drawable.ic_sync, new Runnable() { public void run() {
             prefs.setAutoUpdate(!prefs.autoUpdate()); render(); } });
         row("تحقق من التحديث الآن", null, R.drawable.ic_sync, new Runnable() { public void run() { updateNow(); } });
         row("وقت تشغيل شاشة التوقف", "يفتح إعدادات التلفاز (قد تظهر بالإنجليزية)", R.drawable.ic_screensaver, new Runnable() { public void run() { openDreamSettings(); } });
@@ -222,7 +234,7 @@ public class SettingsActivity extends Activity {
 
     private void addTeam(String id, String name) {
         if (prefs.addTeam(id, name)) toast("تمت متابعة " + name);
-        else toast(prefs.teams().size() >= Prefs.MAX_TEAMS ? "الحد الأعلى ١٠ فرق" : "متابَع مسبقاً");
+        else toast(prefs.teams().size() >= Prefs.MAX_TEAMS ? "الحد الأعلى " + num(Prefs.MAX_TEAMS) + " فرق" : "متابَع مسبقاً");
         render();
     }
 
@@ -397,13 +409,13 @@ public class SettingsActivity extends Activity {
             .setNegativeButton("إلغاء", null).show();
     }
 
-    /** Each card's name, with its turn (١، ٢، …) in gold when ticked. */
-    private static void panelLabels(List<String> ids, List<String> order, CharSequence[] out) {
+    /** Each card's name, with its turn (1، 2، … in the chosen digits) in gold when ticked. */
+    private void panelLabels(List<String> ids, List<String> order, CharSequence[] out) {
         for (int i = 0; i < out.length; i++) {
             String name = Prefs.panelLabel(ids.get(i));
             int turn = order.indexOf(ids.get(i));
             if (turn < 0) { out[i] = name; continue; }
-            android.text.SpannableString s = new android.text.SpannableString(name + "   " + arabicNum(turn + 1));
+            android.text.SpannableString s = new android.text.SpannableString(name + "   " + num(turn + 1));
             s.setSpan(new android.text.style.ForegroundColorSpan(0xFFD6AF6B), name.length(), s.length(), 0);
             s.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), name.length(), s.length(), 0);
             out[i] = s;
@@ -414,6 +426,55 @@ public class SettingsActivity extends Activity {
     private static boolean hasPanel(String list, String id) {
         for (String s : list.split(",")) if (s.trim().equals(id)) return true;
         return false;
+    }
+
+    /** «شكل الأرقام»: 0 1 2 3 or ٠ ١ ٢ ٣, everywhere (the page, the home screen, these screens) */
+    private void pickNumerals() {
+        String[] labels = new String[Prefs.NUMERALS.length];
+        int sel = 0;
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = Prefs.NUMERALS[i][1];
+            if (Prefs.NUMERALS[i][0].equals(prefs.numerals())) sel = i;
+        }
+        new AlertDialog.Builder(this, DIALOG_THEME).setTitle("شكل الأرقام")
+            .setSingleChoiceItems(labels, sel, (d, i) -> { prefs.setNumerals(Prefs.NUMERALS[i][0]); d.dismiss(); changed(); render(); })
+            .show();
+    }
+
+    private String numeralsLabel() {
+        for (String[] x : Prefs.NUMERALS) if (x[0].equals(prefs.numerals())) return x[1];
+        return Prefs.NUMERALS[0][1];
+    }
+
+    /** A news page's sources: tick the ones to read (they are shown together, newest first); none = the defaults. */
+    private void pickSources(final String page) {
+        final String[][] all = Prefs.newsSources(page);
+        final List<String> cur = prefs.sources(page);
+        String[] labels = new String[all.length];
+        final boolean[] on = new boolean[all.length];
+        for (int i = 0; i < all.length; i++) { labels[i] = all[i][1]; on[i] = cur.contains(all[i][0]); }
+        new AlertDialog.Builder(this, DIALOG_THEME)
+            .setTitle("مصادر " + Prefs.panelLabel(page) + " (بدون اختيار = الافتراضية)")
+            .setMultiChoiceItems(labels, on, (d, i, checked) -> on[i] = checked)
+            .setPositiveButton("تم", (d, w) -> {
+                List<String> v = new ArrayList<>();
+                for (int i = 0; i < all.length; i++) if (on[i]) v.add(all[i][0]);
+                prefs.setSources(page, v);
+                changed();
+                render();
+            })
+            .setNegativeButton("إلغاء", null).show();
+    }
+
+    private String sourcesLabel(String page) {
+        List<String> names = new ArrayList<>(), ids = prefs.sources(page);
+        for (String[] x : Prefs.newsSources(page)) if (ids.contains(x[0])) names.add(x[1]);
+        return Prefs.join(names, "، ");
+    }
+
+    /** a home screen in front (behind a dialog) shows the new settings now, as after saver.sh */
+    private void changed() {
+        sendBroadcast(new Intent(SaverReceiver.CHANGED).setPackage("com.raad.sauditv.home"));
     }
 
     private void pickRating() {
@@ -438,11 +499,11 @@ public class SettingsActivity extends Activity {
 
     /** The installed version, and «محدّث» or «تحديث متوفر: …» from the last check. */
     private String appUpdateLabel() {
-        String v = "النسخة " + AppUpdate.digits(AppUpdate.installedName(this));
+        String v = "النسخة " + AppUpdate.digits(this, AppUpdate.installedName(this));
         if (AppInstaller.running()) return v + " · جارٍ التحديث…";
-        if (justUpdated != null) return "تم التحديث إلى " + AppUpdate.digits(justUpdated);
+        if (justUpdated != null) return "تم التحديث إلى " + AppUpdate.digits(this, justUpdated);
         AppUpdate.Manifest m = AppUpdate.available(this);
-        if (m != null) return v + " · تحديث متوفر: " + AppUpdate.digits(m.versionName);
+        if (m != null) return v + " · تحديث متوفر: " + AppUpdate.digits(this, m.versionName);
         return AppUpdate.sp(this).getLong("checked", 0) > 0 ? v + " · محدّث" : v;
     }
 
@@ -492,13 +553,13 @@ public class SettingsActivity extends Activity {
         }
         StringBuilder msg = new StringBuilder();
         if (!m.notes.isEmpty()) msg.append(m.notes).append("\n\n");
-        msg.append("المثبتة: ").append(AppUpdate.digits(AppUpdate.installedName(this)))
-           .append(" · حجم التنزيل: ").append(AppUpdate.size(m.bytes(this)));
+        msg.append("المثبتة: ").append(AppUpdate.digits(this, AppUpdate.installedName(this)))
+           .append(" · حجم التنزيل: ").append(AppUpdate.size(this, m.bytes(this)));
         msg.append("\n\nيُنزَّل التحديث ويُتحقَّق منه أولاً، ثم يطلب التلفاز موافقتك على تثبيت ")
            .append(self && home ? "كل تطبيق (الواجهة الرئيسية ثم الإعدادات)" : "التطبيق").append('.');
         if (self) msg.append(" في النهاية يُغلق هذا التطبيق ويعود التلفاز إلى الشاشة الرئيسية.");
         new AlertDialog.Builder(this, DIALOG_THEME)
-            .setTitle("تحديث متوفر: " + AppUpdate.digits(m.versionName))
+            .setTitle("تحديث متوفر: " + AppUpdate.digits(this, m.versionName))
             .setMessage(msg)
             .setPositiveButton("تثبيت", (d, w) -> install(m))
             .setNegativeButton("لاحقاً", null)
@@ -660,11 +721,8 @@ public class SettingsActivity extends Activity {
         return names.isEmpty() ? "لا شيء" : Prefs.join(names, "، ");
     }
 
-    private static String arabicNum(int n) {
-        StringBuilder b = new StringBuilder();
-        for (char c : String.valueOf(n).toCharArray()) b.append((char) ('٠' + (c - '0')));
-        return b.toString();
-    }
+    /** a number in the chosen digits («شكل الأرقام») */
+    private String num(long n) { return Prefs.digits(this, n); }
 
     private String showsLabel() {
         List<String> v = prefs.shows();

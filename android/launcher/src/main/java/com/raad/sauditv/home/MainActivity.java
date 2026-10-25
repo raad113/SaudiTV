@@ -684,7 +684,7 @@ public class MainActivity extends Activity {
             labels.add("إضافة إلى المفضلة");
             actions.add(() -> { dock.add(pkg); saveDock(dock, pkg); });
         } else {
-            labels.add("المفضلة ممتلئة (" + MAX_DOCK + ")");
+            labels.add("المفضلة ممتلئة (" + arabicDigits(String.valueOf(MAX_DOCK)) + ")");
             actions.add(() -> { });
         }
         labels.add("إعادة المفضلة الافتراضية");
@@ -816,10 +816,8 @@ public class MainActivity extends Activity {
 
     // ---------------------------------------------------------------- status
 
-    static String arabicDigits(String s) {   // also QuickPanel's clock (was private)
-        StringBuilder b = new StringBuilder(s.length());
-        for (char c : s.toCharArray()) b.append(c >= '0' && c <= '9' ? (char) ('٠' + (c - '0')) : c);
-        return b.toString();
+    static String arabicDigits(String s) {   // also QuickPanel's clock: the digits as «شكل الأرقام» says (Numerals)
+        return Numerals.digits(s);
     }
 
     /** Connected or not comes from ConnectivityManager: WifiManager hides the network (id -1, "<unknown ssid>")

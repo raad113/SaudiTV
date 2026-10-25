@@ -655,7 +655,7 @@
     </div>
 
     <div class="panel p-mid">
-      <div class="label" id="ramadan-label">رمضان ١٤٤٨</div>
+      <div class="label" id="ramadan-label">رمضان</div>
       <div class="big"><span class="num" id="ramadan-days">—</span></div>
       <div class="sub" id="ramadan-sub">—</div>
     </div>
@@ -688,6 +688,8 @@ __BG_SET__
 const _Q = new URLSearchParams((location.hash || '').replace(/^#/, ''));
 const _list = k => (_Q.get(k) || '').split(',').map(x=>x.trim()).filter(Boolean);
 const _num = (k, d) => { const v = parseFloat(_Q.get(k)); return isNaN(v) ? d : v; };
+// every card (and detail page) the page has; the settings app, the launcher (HomePage.PANELS) and SaverReceiver list the same
+const PANEL_IDS = ['shows','prayers','forecast','matches','verse','hadith','standings','news','local','world','tech'];
 const CONFIG = {
   city: _Q.get('city') || 'الرياض',
   latitude: _num('lat', 24.7136),
@@ -699,14 +701,15 @@ const CONFIG = {
             : [_Q.has('team1') ? _Q.get('team1') : '136013', _Q.has('team2') ? _Q.get('team2') : '136137'])
     .map(x=>(x||'').trim()).filter(x=>/^\d+$/.test(x)).slice(0, 10),
   sportsKey: '123',
-  // the card beside the clock: shows | prayers | forecast | matches | verse | standings | news | local | tech | none
-  // (#week=0 from older builds = none); standings, news and tech added; local = news of the city (loadLocalNews)
-  panel: (p => ['shows','prayers','forecast','matches','verse','standings','news','local','tech','none'].includes(p) ? p : 'shows')
+  // the card beside the clock: shows | prayers | forecast | matches | verse | hadith | standings | news | local | world
+  // | tech | none (#week=0 from older builds = none); local = news of the city (loadLocalNews); verse = a verse of the
+  // Quran, hadith = a hadith of Sahih al-Bukhari (loadHadith); world = news of the world
+  panel: (p => PANEL_IDS.includes(p) || p === 'none' ? p : 'shows')
          (_Q.get('panel') || (_Q.get('week') === '0' ? 'none' : 'shows')),
   // the card can rotate through several panels (#panels=prayers,forecast,matches&rotate=10),
   // on the home screen and on the screensaver
   // shows too (it was missing here, so a rotation that listed it never showed it)
-  panels: _list('panels').filter(p => ['prayers','forecast','matches','verse','standings','news','local','tech','shows'].includes(p)),
+  panels: _list('panels').filter(p => PANEL_IDS.includes(p)),
   rotateMs: Math.max(5, _num('rotate', 10)) * 1000,
   // minutes from adhan to iqama (Ministry of Islamic Affairs defaults); Friday Dhuhr has none
   iqama: {Fajr:25, Dhuhr:20, Asr:20, Maghrib:10, Isha:20},
@@ -722,7 +725,7 @@ const CONFIG = {
   // #widget=1: only the card, on a transparent page (the launcher's home screen shows it)
   widget: _Q.get('widget') === '1',
   // #detail=<panel>: that one panel full screen (the launcher opens it from the home card)
-  detail: (p => ['prayers','forecast','matches','standings','news','local','tech','shows','verse'].includes(p) ? p : '')(_Q.get('detail') || ''),   // shows, verse, local
+  detail: (p => PANEL_IDS.includes(p) ? p : '')(_Q.get('detail') || ''),   // every card has its detail page
   // #ticker=1: only the market ticker tape, on a transparent page (bootTicker)
   ticker: _Q.get('ticker') === '1',
   // #home=1: the launcher's home screen (bootHome); dockh / dockb / pillsh: the room its own views
@@ -735,13 +738,22 @@ const CONFIG = {
   swapMin: Math.max(1, _num('swapmin', 60)),
   breakMin: Math.max(2, _num('breakmin', 30)),
   nightH: _num('nighth', -1),
+  // #numerals=latn (0 1 2 3, the default) or arab (٠ ١ ٢ ٣): how every number on the page is written
+  numerals: _Q.get('numerals') === 'arab' ? 'arab' : 'latn',
+  // each news page's sources, picked in the settings (#src_news=aawsat,okaz,…); none valid = the page's defaults
+  // (NEWS_SOURCES, newsSources)
+  sources: {news: _list('src_news'), tech: _list('src_tech'), local: _list('src_local'), world: _list('src_world')},
 };
 // in detail mode the loaders' own "redraw if this panel is shown" checks draw the detail page
 if(CONFIG.detail) CONFIG.panel = CONFIG.detail;
 
-const GREG = 'ar-SA-u-ca-gregory-nu-arab';
+// the numbers as the settings ask (#numerals): 0 1 2 3 with . and %, or ٠ ١ ٢ ٣ with ٫ and ٪. Every number the page
+// writes goes through ar() (digits in either form come out in the chosen one), NU (Intl's numbering system), DEC or PCT
+const NUM_AR = CONFIG.numerals === 'arab';
+const NU = NUM_AR ? 'arab' : 'latn', DEC = NUM_AR ? '٫' : '.', PCT = NUM_AR ? '٪' : '%';
+const GREG = 'ar-SA-u-ca-gregory-nu-' + NU, HIJRI = 'ar-SA-u-ca-islamic-umalqura-nu-' + NU;
 const AR = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-const ar = s => String(s).replace(/[0-9]/g, d => AR[+d]);
+const ar = s => NUM_AR ? String(s).replace(/[0-9]/g, d => AR[+d]) : String(s).replace(/[٠-٩]/g, d => AR.indexOf(d));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad = n => String(n).padStart(2,'0');
 
@@ -768,11 +780,12 @@ function fmt12(h, mi){
 function tickVpn(){
   const el = document.getElementById('vpn');
   if(!el || !window.SaudiTVNative || CONFIG.widget) return;
-  // 0 = no VPN, 1 = VPN working, 2 = VPN reported but no traffic gets through
+  // 0 = no VPN, 1 = VPN working, 2 = VPN reported but no traffic gets through; -1 = no VPN app on the TV at all
+  // (SaudiTVNative.vpnApp: none answers android.net.VpnService): no badge and no flag. An app older than vpnApp: as before
   let st = 0, cc = '';
   try{
     const N = window.SaudiTVNative;
-    st = N.vpnState ? N.vpnState() : (N.vpn() ? 1 : 0);
+    st = N.vpnApp && !N.vpnApp() ? -1 : N.vpnState ? N.vpnState() : (N.vpn() ? 1 : 0);
     // the VPN server's country (ISO code, '' while unknown), shown only while the VPN works
     if(st === 1 && N.vpnCountry) cc = String(N.vpnCountry() || '').toUpperCase();
   }catch(_){ return; }
@@ -781,7 +794,8 @@ function tickVpn(){
   // repainted the clock around it (its wide text shadows) every 3 s
   if(st + cc === tickVpn.last) return;
   tickVpn.last = st + cc;
-  el.hidden = false;
+  el.hidden = st < 0;
+  if(st < 0){ const f = document.getElementById('vpn-flag'); if(f){ f.className = 'vpn-f'; f.textContent = ''; } return; }
   el.className = 'vpn ' + (st === 1 ? 'on' : st === 2 ? 'warn' : 'off');
   el.querySelector('b').textContent = st === 1 ? '\u2713' : st === 2 ? '!' : '\u2715';
   const f = document.getElementById('vpn-flag');   // its flag, or its two letters (flagEmojiOk)
@@ -827,7 +841,7 @@ function tickClock(){
 function tickDates(){
   const now = new Date();
   try{
-    let h = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',{
+    let h = new Intl.DateTimeFormat(HIJRI,{
       timeZone: CONFIG.timezone, weekday:'long', day:'numeric', month:'long', year:'numeric'
     }).format(now);
     h = h.replace(/\s*هـ\s*$/,'').replace(/،\s*$/,'');
@@ -1444,11 +1458,11 @@ const TAPE = [
 ];
 
 // ---- market formatting (value and daily change), pure: no DOM, no network
-// Arabic-Indic digits and separators; every number group is its own left-to-right isolate, so the sign,
-// ٪, $ and the brackets keep their places inside the right-to-left page.
+// the chosen digits and their separators (NU); every number group is its own left-to-right isolate, so the sign,
+// the percent sign, $ and the brackets keep their places inside the right-to-left page.
 const MK_NF = {};
 function mkNum(x, d){
-  const f = MK_NF[d] || (MK_NF[d] = new Intl.NumberFormat('ar-SA', {minimumFractionDigits:d, maximumFractionDigits:d, numberingSystem:'arab'}));
+  const f = MK_NF[d] || (MK_NF[d] = new Intl.NumberFormat('ar-SA', {minimumFractionDigits:d, maximumFractionDigits:d, numberingSystem:NU}));
   return f.format(x);
 }
 const mkIso = s => `<span dir="ltr">${s}</span>`;
@@ -1486,7 +1500,7 @@ function mkTapeHtml(price, pct, fmt){
   const value = mkIso(mkNum(price, d) + (fmt === 'usd' ? ' $' : ''));
   if(typeof pct !== 'number' || !isFinite(pct) || pct <= -100) return {value, change:'', dir:0};
   const r = Math.round(pct * 100) / 100, dir = r > 0 ? 1 : r < 0 ? -1 : 0;
-  return {value, dir, change: dir ? `${dir > 0 ? '▲' : '▼'} ${mkSigned(r, dir > 0, 2, '٪')}` : mkIso(mkNum(0, 2) + '٪')};
+  return {value, dir, change: dir ? `${dir > 0 ? '▲' : '▼'} ${mkSigned(r, dir > 0, 2, PCT)}` : mkIso(mkNum(0, 2) + PCT)};
 }
 // ---- end: market formatting
 
@@ -1778,7 +1792,8 @@ let FORECAST = [];
 let WX_NOW = null, WX_HOURS = [];   // current conditions and the next 12 hours (detail page only)
 let LIST_PAGE = 0;
 const PANEL_TITLE = {shows:'هذا الأسبوع', prayers:'مواقيت اليوم', forecast:'الأيام القادمة', matches:'مباريات فرقك',
-  standings:'ترتيب دوري روشن', news:'أخبار السعودية', tech:'أخبار التقنية والذكاء الاصطناعي'};   // last three
+  standings:'ترتيب دوري روشن', news:'أخبار السعودية', tech:'أخبار التقنية والذكاء الاصطناعي', world:'أخبار العالم',
+  verse:'آية اليوم', hadith:'حديث اليوم'};
 
 // the card's paint, shared by every panel. A rotation (swapPanel) fades the list and the title out,
 // then paints the next panel and slides it in; while that runs, any other redraw waits (one is kept) and runs
@@ -1814,7 +1829,8 @@ function cardHasData(P){
   if(P === 'shows') return WEEK_POOL.length > 0;
   if(P === 'forecast') return FORECAST.length > 0;
   if(P === 'standings') return STANDINGS.length > 0;
-  if(isNewsPanel(P)) return (NEWS[P] || []).length > 0;   // news, local, tech
+  if(isNewsPanel(P)) return (NEWS[P] || []).length > 0;   // news, local, world, tech
+  if(P === 'hadith') return !!HADITH_DAY;
   return true;
 }
 // the index of the panel d steps on from i in list L (wrapping) that has data; i when none has
@@ -1886,7 +1902,8 @@ function renderPanel(animate, own){   // own = the rotation's own paint (paintCa
   else if(P === 'matches') rows = matchRows();
   else if(P === 'standings') rows = standingRows();
   else if(isNewsPanel(P)) rows = newsRows(P);
-  else if(P === 'verse'){ const q = quoteOfDay(); title = q.title; rows = q.rows; }
+  else if(P === 'verse') rows = quoteOfDay().rows;
+  else if(P === 'hadith') rows = hadithRows();
   if(PANEL_TITLE[P]) title = PANEL_TITLE[P];
   if(P === 'local') title = localTitle();   // «أخبار <city>»
   if(P === 'forecast' && CONFIG.city) title += ' · ' + CONFIG.city;   // whose weather it is
@@ -2026,33 +2043,70 @@ function standingRows(){
     + `<span class="ep">${n0(x.gp)} مباراة</span><span class="dt">${n0(x.pts)} نقطة</span></li>`);
 }
 
-// feeds per panel, tried in order until one yields items. A publisher feed first
-// (Google News can answer with a consent page instead of RSS from some regions, e.g. through a UK VPN),
-// then Google News RSS, Saudi Arabic edition: top stories, and AI / technology from the last two days.
-// source: the label shown for every item of that feed; null = Google style ("headline - Source").
-// a general feed (Asharq Al-Awsat, ~300 items; BBC Arabic) keeps only Saudi headlines (filter)
-// and counts only when at least `min` of them pass.
+// Each news page's sources (NEWS_SOURCES), picked in the settings app (#src_<page>=id,id; Prefs.NEWS_SOURCES there
+// lists the same ids, names and defaults: tests/check.py compares them). The page reads every picked source at once and
+// shows them together: each story once, newest first (loadNews). Checked through the TVs' VPN (a UK exit): a publisher's
+// own RSS where it answers there; where it has none, or answers the VPN with a block page (Al Arabiya 403, Sabq's
+// Cloudflare check), a Google News search of its site stands in, kept to the items Google says come from that site
+// (site: the <source url> host) and labelled with the site's name.
+// name: the label shown for every item of the source; null = Google style ("headline - Source", each its own).
+// filter: only the headlines it matches (a general feed on the Saudi or the tech page); min: fewer matches = no answer.
+// on: picked by default (a page with no valid pick in the fragment).
 const SAUDI_RE = /السعودي|السعودية|الرياض|جدة|المملكة|ولي العهد|خادم الحرمين|نيوم|الرؤية|رؤية 2030|سعودي/;
-// technology / AI headlines in a general feed ("آبل" only: "أبل" also matches "أبلغ")
-const TECH_RE = /الذكاء الاصطناعي|ذكاء اصطناعي|تقني|تكنولوج|رقمي|آبل|غوغل|جوجل|مايكروسوفت|ميتا|سامسونغ|إنفيديا|أوبن إيه آي|شات جي بي تي|ChatGPT|OpenAI|روبوت|رقائق|أشباه الموصلات|سيبراني|آيفون/;
-const NEWS_FEEDS = {
+// technology / AI headlines in a general feed ("آبل" only: "أبل" also matches "أبلغ"; "تقني" but not "تقنين")
+const TECH_RE = /الذكاء الاصطناعي|ذكاء اصطناعي|تقني(?!ن)|تكنولوج|رقمي|آبل|غوغل|جوجل|مايكروسوفت|ميتا|سامسونغ|إنفيديا|أوبن إيه آي|شات جي بي تي|ChatGPT|OpenAI|روبوت|رقائق|أشباه الموصلات|سيبراني|آيفون/;
+const GN_SA = 'hl=ar&gl=SA&ceid=SA:ar';   // Google News, the Saudi Arabic edition
+const gnSearch = (q, days) => `https://news.google.com/rss/search?q=${encodeURIComponent(q + ' when:' + (days || 2) + 'd')}&${GN_SA}`;
+const NEWS_SOURCES = {
   news: [
-    {url: 'https://aawsat.com/feed', source: 'الشرق الأوسط', filter: SAUDI_RE, min: 3},
-    {url: 'https://www.alarabiya.net/feed/rss2/ar/saudi-today.xml', source: 'العربية'},
-    {url: 'https://news.google.com/rss?hl=ar&gl=SA&ceid=SA:ar', source: null},
-    {url: 'https://feeds.bbci.co.uk/arabic/middleeast/rss.xml', source: 'بي بي سي عربي', filter: SAUDI_RE, min: 1},
+    {id: 'aawsat', name: 'الشرق الأوسط', url: 'https://aawsat.com/feed', filter: SAUDI_RE, min: 3, on: true},
+    {id: 'okaz', name: 'عكاظ', url: 'https://www.okaz.com.sa/rssFeed/1', on: true},   // its local section
+    {id: 'sabq', name: 'سبق', url: gnSearch('site:sabq.org'), site: 'sabq.org', on: true},
+    {id: 'spa', name: 'واس', url: gnSearch('site:spa.gov.sa'), site: 'spa.gov.sa', on: true},
+    {id: 'alarabiya', name: 'العربية', url: gnSearch('site:alarabiya.net'), site: 'alarabiya.net', filter: SAUDI_RE},
+    {id: 'alriyadh', name: 'الرياض', url: gnSearch('site:alriyadh.com'), site: 'alriyadh.com'},
+    {id: 'alwatan', name: 'الوطن', url: 'https://www.alwatan.com.sa/rssFeed/1'},   // its local section
+    {id: 'bbc', name: 'بي بي سي عربي', url: 'https://feeds.bbci.co.uk/arabic/rss.xml', filter: SAUDI_RE, min: 1},
+    {id: 'google', name: null, url: `https://news.google.com/rss?${GN_SA}`},
   ],
   tech: [
-    {url: 'https://aitnews.com/feed/', source: 'عالم التقنية'},
-    // fallbacks that answer through the TV's VPN (aitnews and Google may block or redirect it)
-    {url: 'https://aawsat.com/feed', source: 'الشرق الأوسط', filter: TECH_RE, min: 3},
-    {url: 'https://feeds.bbci.co.uk/arabic/scienceandtech/rss.xml', source: 'بي بي سي عربي', filter: TECH_RE, min: 2},
-    {url: 'https://news.google.com/rss/search?q=%D8%A7%D9%84%D8%B0%D9%83%D8%A7%D8%A1+%D8%A7%D9%84%D8%A7%D8%B5%D8%B7%D9%86%D8%A7%D8%B9%D9%8A+OR+%D8%A7%D9%84%D8%AA%D9%82%D9%86%D9%8A%D8%A9+when:2d&hl=ar&gl=SA&ceid=SA:ar', source: null},
+    {id: 'techwd', name: 'عالم التقنية', url: 'https://www.tech-wd.com/wd/feed/', on: true},
+    {id: 'aitnews', name: 'البوابة العربية للأخبار التقنية', url: 'https://aitnews.com/feed/', on: true},
+    // no technology feed of its own (aawsat.com/feed holds a few tech items among 300)
+    {id: 'aawsat', name: 'الشرق الأوسط', url: gnSearch('site:aawsat.com الذكاء الاصطناعي OR تقنية OR التقنية', 3), site: 'aawsat.com', filter: TECH_RE, on: true},
+    // its science and technology feed now answers with the general one
+    {id: 'bbc', name: 'بي بي سي عربي', url: gnSearch('site:bbc.com/arabic', 7), site: 'bbc.com', filter: TECH_RE},
+    {id: 'argaam', name: 'أرقام', url: gnSearch('site:argaam.com الذكاء الاصطناعي OR تقنية OR التقنية', 7), site: 'www.argaam.com', filter: TECH_RE},
+    {id: 'google', name: null, url: gnSearch('الذكاء الاصطناعي OR التقنية')},
+  ],
+  world: [
+    {id: 'alarabiya', name: 'العربية', url: gnSearch('site:alarabiya.net'), site: 'alarabiya.net', on: true},
+    {id: 'skynews', name: 'سكاي نيوز عربية', url: 'https://www.skynewsarabia.com/rss', on: true},
+    {id: 'bbc', name: 'بي بي سي عربي', url: 'https://feeds.bbci.co.uk/arabic/rss.xml', on: true},
+    {id: 'cnn', name: 'CNN بالعربية', url: 'https://arabic.cnn.com/api/v1/rss/rss.xml', on: true},
+    {id: 'aawsat', name: 'الشرق الأوسط', url: 'https://aawsat.com/feed'},
+    {id: 'aljazeera', name: 'الجزيرة', url: 'https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9'},
+    {id: 'france24', name: 'فرانس 24', url: 'https://www.france24.com/ar/rss'},
+    {id: 'google', name: null, url: `https://news.google.com/rss/headlines/section/topic/WORLD?${GN_SA}`},
+  ],
+  // the city's news (loadLocalNews): two searches of the city's name, and the local sections of two Saudi papers
+  // kept to the items that name the city (only for a city searched in Arabic)
+  local: [
+    {id: 'google', name: null, search: 'google', on: true},
+    {id: 'bing', name: null, search: 'bing', on: true},
+    {id: 'okaz', name: 'عكاظ', url: 'https://www.okaz.com.sa/rssFeed/1', on: true},
+    {id: 'alwatan', name: 'الوطن', url: 'https://www.alwatan.com.sa/rssFeed/1'},
   ],
 };
-const NEWS = {news: [], tech: [], local: []};   // [{headline, source, t}] newest first
-// the panels drawn as news items: Saudi news, the city's news (loadLocalNews) and tech
-const isNewsPanel = P => P === 'news' || P === 'local' || P === 'tech';
+// the sources page P reads: the ones picked in the settings, else its defaults
+function newsSources(P){
+  const all = NEWS_SOURCES[P] || [], want = (CONFIG.sources && CONFIG.sources[P]) || [];
+  const picked = all.filter(x => want.includes(x.id));
+  return picked.length ? picked : all.filter(x => x.on);
+}
+const NEWS = {news: [], tech: [], local: [], world: []};   // [{headline, source, t}] newest first
+// the panels drawn as news items: Saudi news, the city's news (loadLocalNews), the world's news and tech
+const isNewsPanel = P => P === 'news' || P === 'local' || P === 'tech' || P === 'world';
 
 // "headline - Source": the source is after the last " - ", unless the item's <source> (which can itself
 // contain " - ", e.g. "ارقام : ... - تاسي") is what the title ends with
@@ -2083,12 +2137,15 @@ function plainText(s){
 }
 
 // items: [{title, pubDate, source}] as read from the feed
-// feedSource : the publisher label (titles are bare headlines), or null for Google style
-function newsFrom(items, feedSource){
-  return items.map(it => Object.assign(feedSource ? {headline: plainText(it.title), source: feedSource}
-                                                  : splitNewsTitle(plainText(it.title), plainText(it.source)),
-                                       {t: Date.parse(it.pubDate || ''), link: String(it.link || '').trim(), // link
-                                        desc: it.description || ''}))
+// feed.name: the publisher label (titles are bare headlines), or null for Google style. A Google search standing in
+// for a site (feed.site) writes "headline - Site" too: split like Google's, then labelled with the site's name.
+function newsFrom(items, feed){
+  const label = feed.name, google = !label || feed.site;
+  return items.map(it => {
+    const x = google ? splitNewsTitle(plainText(it.title), plainText(it.source)) : {headline: plainText(it.title), source: label};
+    if(label) x.source = label;
+    return Object.assign(x, {t: Date.parse(it.pubDate || ''), link: String(it.link || '').trim(), desc: it.description || ''});
+  })
     .filter(x => x.headline)
     .sort((a, b) => (Number.isFinite(b.t) ? b.t : -Infinity) - (Number.isFinite(a.t) ? a.t : -Infinity))
     // six newest, shown NEWS_ROWS at a time; the detail page keeps NEWS_DETAIL_KEEP, each with its summary
@@ -2133,35 +2190,46 @@ function newsRows(kind){
   return (NEWS[kind] || []).map(x => newsRow(x, now, kind));
 }
 
-// one feed -> list ([] when the response is not an RSS document with items)
-async function loadNewsFeed(feed){
+// one feed -> its items as read ([{title, pubDate, source, link, description}]), null when the answer is not an RSS
+// document with items (e.g. an HTML consent or block page). site: only Google's items from that host (<source url>).
+async function readFeed(feed, withDesc){
   try{
     const r = await fetchT(feed.url, 15000);
-    if(!r.ok) return [];
+    if(!r.ok) return null;
     const text = await r.text();
-    if(!/<item[\s>]/.test(text)) return [];            // e.g. an HTML consent page
+    if(!/<item[\s>]/.test(text)) return null;
     const doc = new DOMParser().parseFromString(text, 'text/xml');
-    if(doc.getElementsByTagName('parsererror').length) return [];
+    if(doc.getElementsByTagName('parsererror').length) return null;
     const txt = (el, tag) => { const n = el.getElementsByTagName(tag)[0]; return n ? n.textContent : ''; };
-    // with a filter, only the matching items are read further (a 300-item feed keeps a few dozen)
+    const host = u => { try{ return new URL(u).hostname; }catch(e){ return ''; } };
     const items = [];
     for(const it of Array.from(doc.getElementsByTagName('item'))){
-      const title = txt(it, 'title');
-      if(feed.filter && !feed.filter.test(plainText(title))) continue;
-      items.push({title, pubDate: txt(it, 'pubDate'), source: feed.source ? '' : txt(it, 'source'),
-                  link: txt(it, 'link'), description: CONFIG.detail ? txt(it, 'description') : ''});
+      const src = it.getElementsByTagName('source')[0];
+      if(feed.site){ const h = host(src && src.getAttribute('url')); if(h !== feed.site && !h.endsWith('.' + feed.site)) continue; }
+      items.push({title: txt(it, 'title'), pubDate: txt(it, 'pubDate'), source: src ? src.textContent : '',
+                  link: txt(it, 'link'), description: CONFIG.detail || withDesc ? txt(it, 'description') : ''});
     }
-    if(items.length < (feed.min || 1)) return [];
-    return newsFrom(items, feed.source);
-  }catch(e){ return []; }
+    return items;
+  }catch(e){ return null; }
+}
+// one source of a news page -> its newest stories ([] when it did not answer, or too few matched its filter)
+async function loadNewsFeed(feed){
+  const all = await readFeed(feed);
+  if(!all) return [];
+  // with a filter, only the matching items are read further (a 300-item feed keeps a few dozen)
+  const items = feed.filter ? all.filter(it => feed.filter.test(plainText(it.title))) : all;
+  return items.length < (feed.min || 1) ? [] : newsFrom(items, feed);
 }
 
+// a news page: every picked source at once (newsSources), each story once (the same headline or link), newest first
+let NEWS_LOG = {};
 async function loadNews(kind){
-  let list = [];
-  for(const feed of NEWS_FEEDS[kind] || []){          // in order, the first with items wins
-    list = await loadNewsFeed(feed);
-    if(list.length) break;
-  }
+  const feeds = newsSources(kind);
+  const got = await Promise.all(feeds.map(loadNewsFeed));
+  const list = got.reduce((a, b) => newsMerge(a, b), []).slice(0, CONFIG.detail ? NEWS_DETAIL_KEEP : NEWS_KEEP);
+  // which sources answered, in the TV's log when that changes (a VPN exit can block one)
+  const how = feeds.map((f, i) => f.id + (got[i].length ? '' : ' (none)')).join(', ');
+  if(how !== NEWS_LOG[kind]){ NEWS_LOG[kind] = how; console.warn('SaudiTV: ' + kind + ' news from ' + how); }
   if(!list.length) return false;                      // keep the last good list on a failed refresh
   NEWS[kind] = list;
   if(CONFIG.panel === kind) renderPanel(false);
@@ -2171,9 +2239,10 @@ async function loadNews(kind){
 // ---- local news: the city the TV is set to (#city, #lat, #lon)
 // The place's English name, county and region come from a reverse geocoder (no key: BigDataCloud, then Nominatim,
 // then Photon), asked once per lat/lon and kept in localStorage. A Saudi or other Arab city is searched in Arabic by
-// the name the settings hold (#city), anywhere else in English. Each search: Google News RSS (the country's edition,
-// the last 3 days), then Bing News RSS when Google gave fewer than LOCAL_FEW items (Google answers some VPN exits
-// with HTTP 403 or a consent page; Bing gives the TV's WebView its news page, read as cards: bingCards). Still fewer
+// the name the settings hold (#city), anywhere else in English. Each search, through the picked sources (localSearch):
+// Google News RSS (the country's edition, the last 3 days) and Bing News RSS (Google answers some VPN exits with HTTP
+// 403 or a consent page; Bing gives the TV's WebView its news page, read as cards: bingCards), and for an Arabic search
+// the local sections of Okaz and Al-Watan, kept to the items that name the place. Still fewer
 // for the city: the county (US) or the region too, e.g. «منطقة القصيم» for الرس. Kept: items that name the city (or
 // that area), at most LOCAL_DAYS old, each story once, newest first. Titles stay in their language; one without
 // Arabic letters gets dir="auto" (bidiAttr).
@@ -2252,13 +2321,13 @@ function localSearches(p){
   const ed = arabic ? 'hl=ar&gl=SA&ceid=SA:ar' : GN_EN.includes(cc) ? `hl=en-${cc}&gl=${cc}&ceid=${cc}:en` : 'hl=en-US&gl=US&ceid=US:en';
   const mkt = arabic ? 'ar-SA' : GN_EN.includes(cc) ? 'en-' + cc : 'en-US';
   const name = arabic ? CONFIG.city : p.name;
-  const out = [{what: 'city', q: arabic ? `"${name}"` : `"${name}" ${p.region || ''}`.trim(), ed, mkt, terms: [name]}];
+  const out = [{what: 'city', q: arabic ? `"${name}"` : `"${name}" ${p.region || ''}`.trim(), ed, mkt, terms: [name], arabic}];
   const area = arabic ? (p && p.regionAr) : (p.county || p.region);
   // the area's own name without its kind, as headlines write it ("Orange County" -> "Orange", «أمطار القصيم»)
   const core = String(area || '').replace(/\s+(County|Parish|Borough|District|Governorate|Province|Region)$/i, '')
     .replace(/^(منطقة|محافظة|إمارة|ولاية)\s+/, '').trim();
   if(core && core !== name)
-    out.push({what: 'area', q: `"${area}"` + (cc === 'US' && p.county && p.region ? ' ' + p.region : ''), ed, mkt, terms: [name, core]});
+    out.push({what: 'area', q: `"${area}"` + (cc === 'US' && p.county && p.region ? ' ' + p.region : ''), ed, mkt, terms: [name, core], arabic});
   return out;
 }
 
@@ -2328,52 +2397,65 @@ async function localFeed(kind, url){
   });
 }
 
-const localKey = x => x.headline.toLowerCase().replace(/[\s"'“”‘’«».,:;!?()|\-–—]+/g, '');
-// a and b together: each story once (same headline, or same link), newest first
-function localMerge(a, b){
-  const seen = new Set();
-  return a.concat(b).filter(x => {
-    const k = localKey(x);
+const newsKey = x => x.headline.toLowerCase().replace(/[\s"'“”‘’«».,:;!?()|\-–—]+/g, '');
+// a and b together: newest first (an item without a date last), each story once (same headline, or same link: the
+// newest copy stays)
+function newsMerge(a, b){
+  const seen = new Set(), t = x => Number.isFinite(x.t) ? x.t : -Infinity;
+  return a.concat(b).sort((x, y) => t(y) - t(x)).filter(x => {
+    const k = newsKey(x);
     if(seen.has(k) || (x.link && seen.has(x.link))) return false;
     seen.add(k); if(x.link) seen.add(x.link);
     return true;
-  }).sort((x, y) => y.t - x.t);
+  });
 }
 
-// a search s: Google, then Bing while fewer than LOCAL_FEW. Resolves to {items, answered, used}
-async function localSearch(s){
+// a search s through the picked sources of the city's news (newsSources('local')), all at once: Google and Bing search
+// for it; a Saudi paper's local section (an Arabic search only) is read once per refresh (papers) and kept to the
+// items that name the place. Resolves to {items, answered, used}
+async function localSearch(s, papers){
   const since = Date.now() - LOCAL_DAYS * 86400000;
   const keep = x => x.headline && Number.isFinite(x.t) && x.t >= since && x.t <= Date.now() + 3600000
     && !LOCAL_JUNK.test(x.source || '') && !/\bobituary\b/i.test(x.headline)
     && s.terms.some(n => namesPlace(x.headline, n) || namesPlace(x.desc, n));
-  const feeds = [
-    ['google', `https://news.google.com/rss/search?q=${encodeURIComponent(s.q + ' when:' + LOCAL_DAYS + 'd')}&${s.ed}`],
-    ['bing', `https://www.bing.com/news/search?q=${encodeURIComponent(s.q)}&format=rss&qft=${encodeURIComponent('interval="8"')}&mkt=${s.mkt}`],   // the past week
-  ];
+  const URLS = {
+    google: `https://news.google.com/rss/search?q=${encodeURIComponent(s.q + ' when:' + LOCAL_DAYS + 'd')}&${s.ed}`,
+    bing: `https://www.bing.com/news/search?q=${encodeURIComponent(s.q)}&format=rss&qft=${encodeURIComponent('interval="8"')}&mkt=${s.mkt}`,   // the past week
+  };
+  const feeds = newsSources('local').filter(f => f.search ? URLS[f.search] : s.arabic);
   let items = [], answered = false;
   const used = [];
-  for(const [kind, url] of feeds){
+  await Promise.all(feeds.map(async f => {
     try{
-      const got = (await localFeed(kind, url)).filter(keep);
+      const all = f.search ? await localFeed(f.search, URLS[f.search]) : await paperItems(f, papers);
+      const got = all.filter(keep);
       answered = true;
-      if(got.length){ used.push(kind + ' (' + s.what + ')'); items = localMerge(items, got); }
-    }catch(e){ console.warn('SaudiTV: local news: ' + kind + ' failed for the ' + s.what + ' (' + e + ')'); }
-    if(items.length >= LOCAL_FEW) break;
-  }
+      if(got.length){ used.push(f.id + ' (' + s.what + ')'); items = newsMerge(items, got); }
+    }catch(e){ console.warn('SaudiTV: local news: ' + f.id + ' failed for the ' + s.what + ' (' + e + ')'); }
+  }));
   return {items, answered, used};
+}
+// a paper's feed, read once per refresh (papers: id -> promise), as [{headline, source, t, link, desc}]
+function paperItems(f, papers){
+  if(!papers[f.id]) papers[f.id] = readFeed(f, true).then(all => {
+    if(!all) throw 'not RSS';
+    return all.map(it => ({headline: plainText(it.title), source: f.name, t: Date.parse(it.pubDate || ''),
+                           link: String(it.link || '').trim(), desc: plainText(it.description)}));
+  });
+  return papers[f.id];
 }
 
 // resolves to false when nothing answered (see firstLoad), or nothing was found while the place is still unknown
 // (the geocoders are asked again); an answer with no recent item empties the card (cardHasData then passes over it)
 let LOCAL_LOG = '';
 async function loadLocalNews(){
-  const place = await localPlace(), searches = localSearches(place);
+  const place = await localPlace(), searches = localSearches(place), papers = {};
   let items = [], answered = false;
   const used = [];
   for(const s of searches){   // the city; the wider area only while there are fewer than LOCAL_FEW
-    const r = await localSearch(s);
+    const r = await localSearch(s, papers);
     answered = answered || r.answered;
-    items = localMerge(items, r.items);
+    items = newsMerge(items, r.items);
     used.push(...r.used);
     if(items.length >= LOCAL_FEW) break;
   }
@@ -2413,7 +2495,8 @@ function startPanelData(list, matchesLoaded){
     firstLoad(loadStandings, 'standings'); setInterval(loadStandings, 3*3600*1000);
     if(!matchesLoaded){ firstLoad(loadMatches, 'matches'); setInterval(loadMatches, 30*60*1000); }
   }
-  ['news', 'tech'].forEach(k => { if(list.includes(k)){ firstLoad(() => loadNews(k), k); setInterval(() => loadNews(k), 30*60*1000); } });
+  ['news', 'tech', 'world'].forEach(k => { if(list.includes(k)){ firstLoad(() => loadNews(k), k); setInterval(() => loadNews(k), 30*60*1000); } });
+  if(list.includes('hadith')) firstLoad(loadHadith, 'hadith');   // a new day's: hadithRows
   if(list.includes('local')){ firstLoad(loadLocalNews, 'local'); setInterval(loadLocalNews, 30*60*1000); }   // the city's news
   // the shows in a rotation (a single shows card is loaded by boot / cardStart)
   if(list.length > 1 && list.includes('shows')){ firstLoad(loadWeek, 'shows'); setInterval(loadWeek, 6*3600*1000); }
@@ -2426,21 +2509,77 @@ function startPanelData(list, matchesLoaded){
 }
 // ---- end
 
-// verse one day, hadith the next. Verse texts come from the Quran API via CI (.github/tools/fetch_verses.py), never typed.
+// ---- the verse of the day (the Quran only) and the hadith of the day (Sahih al-Bukhari only)
+// Verse texts come from the Quran API (.github/tools/fetch_verses.py), never typed; one a day, in turn.
 const VERSES = __VERSES__;   // assets/shared/verses.json
-// hadith: only those .github/tools/verify_hadith.py found in the six books, each shown in full as the book has it,
-// isnad and all: parts are ["n", narration] and ["q", the Prophet's words]; source is the book and its number
-const HADITH = __HADITH__;   // assets/shared/hadith.json, through src/build.py
 function quoteOfDay(){
-  const n = riyadhDayNumber(), half = Math.floor(n / 2);
-  if(VERSES.length && n % 2 === 0){
-    const v = VERSES[half % VERSES.length];
-    return {title:'آية اليوم', rows:[`<li class="quote"><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></li>`, `<li class="src">${esc(v.surah)} · ${ar(v.ayah)}</li>`]};
+  const v = VERSES[riyadhDayNumber() % VERSES.length];
+  return {title: PANEL_TITLE.verse, rows: !v ? [] : [`<li class="quote"><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></li>`,
+                                                    `<li class="src">${esc(v.surah)} · ${ar(v.ayah)}</li>`]};
+}
+// Sahih al-Bukhari from fawazahmed0/hadith-api on jsDelivr (its ara-bukhari edition), as .github/tools/fetch_bukhari.py
+// wrote it into assets/shared/bukhari.json: short = the numbers of its short narrations of the Prophet's words ﷺ that
+// fit the card (isnad and all), maxWords their longest; fallback = about 60 of them, verbatim, with their numbers, for a
+// TV without the internet. One a day (hadithNumber, the same all day), fetched once and kept (loadHadith).
+const BUKHARI = __BUKHARI__;
+const BUKHARI_URL = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/';
+const HADITH_KEY = 'sauditv-hadith';
+let HADITH_DAY = null;   // {day, n, text, offline}: the day's hadith (loadHadith)
+// the day's number in the short list: a prime stride (7919), so the days go through all of it
+const hadithNumber = day => { const L = BUKHARI.short; return L[((day * 7919) % L.length + L.length) % L.length]; };
+const hadithFits = t => String(t || '').trim().split(/\s+/).length <= BUKHARI.maxWords;
+// resolves to false while the day's hadith is a bundled one because the API did not answer (see firstLoad)
+async function loadHadith(){
+  const day = riyadhDayNumber();
+  if(HADITH_DAY && HADITH_DAY.day === day && !HADITH_DAY.offline) return true;
+  try{
+    const c = JSON.parse(localStorage.getItem(HADITH_KEY) || 'null');
+    if(c && c.day === day && c.n && hadithFits(c.text)){ HADITH_DAY = c; hadithDrawn(); return true; }
+  }catch(e){}
+  const n = hadithNumber(day), local = BUKHARI.fallback.find(h => h.n === n);
+  let text = local ? local.text : '';
+  for(const ext of text ? [] : ['.min.json', '.json']){   // the API's advice: the other form when one fails
+    try{
+      const r = await fetchT(BUKHARI_URL + n + ext, 15000);
+      if(!r.ok) continue;
+      const h = ((await r.json()).hadiths || [])[0];
+      if(h && +h.hadithnumber === n && String(h.text || '').trim()){ text = String(h.text); break; }
+    }catch(e){}
   }
-  const h = HADITH[half % HADITH.length];
-  const saw = s => s.replace(/ﷺ/g, '<span class="saw">ﷺ</span>').replace(/[﴿﴾]/g, m => `<span class="orn">${m}</span>`);
-  const body = h.parts.map(([k, t]) => k === 'q' ? `«${saw(esc(t))}»` : `<span class="nar">${saw(esc(t))}</span>`).join(' ');
-  return {title:'حديث اليوم', rows:[`<li class="quote hadith">${body}</li>`, `<li class="src">${esc(h.source)}</li>`]};
+  if(text && hadithFits(text)){
+    HADITH_DAY = {day, n, text};
+    try{ localStorage.setItem(HADITH_KEY, JSON.stringify(HADITH_DAY)); }catch(e){}
+  } else if(!HADITH_DAY || HADITH_DAY.day !== day){
+    // no answer (or one that does not fit the card): a bundled one, the day's own, until the API answers
+    const f = BUKHARI.fallback[day % BUKHARI.fallback.length];
+    HADITH_DAY = {day, n: f.n, text: f.text, offline: true};
+  }
+  hadithDrawn();
+  return !HADITH_DAY.offline;
+}
+function hadithDrawn(){ if(CONFIG.panel === 'hadith') renderPanel(false); }
+// the book's text, typography only: no direction marks, «صلى الله عليه وسلم» as ﷺ, {…} as ﴿…﴾, no space before a
+// comma or full stop; his words (between the book's straight quotes) apart from the narration around them
+const HK = '[\u064B-\u0652\u0670]*';
+const SAW_RE = new RegExp('صلى الله عليه وسلم'.split(' ').map(w => [...w].join(HK) + HK).join('\\s+'), 'g');
+function hadithParts(text){
+  const t = String(text || '').replace(/[\u200e\u200f]/g, '').replace(SAW_RE, 'ﷺ').replace(/\{/g, '﴿').replace(/\}/g, '﴾')
+    .replace(/\s+([،,.:؛])/g, '$1');
+  const parts = [];
+  t.split('"').forEach((piece, i) => {
+    piece = piece.replace(/\s+/g, ' ').replace(/^[\s.]+|[\s.]+$/g, '');
+    if(piece && !/^[.،,:]+$/.test(piece)) parts.push([i % 2 ? 'q' : 'n', piece]);
+  });
+  return parts;
+}
+const sawHtml = s => s.replace(/ﷺ/g, '<span class="saw">ﷺ</span>').replace(/[﴿﴾]/g, m => `<span class="orn">${m}</span>`);
+// the narration small and muted, the Prophet's words at full size; under it «صحيح البخاري، رقم N»
+function hadithRows(){
+  if(HADITH_DAY && HADITH_DAY.day !== riyadhDayNumber()) loadHadith();   // a new day: its own (redrawn when known)
+  const h = HADITH_DAY;
+  if(!h) return [];
+  const body = hadithParts(h.text).map(([k, t]) => k === 'q' ? `«${sawHtml(esc(t))}»` : `<span class="nar">${sawHtml(esc(t))}</span>`).join(' ');
+  return [`<li class="quote hadith">${body}</li>`, `<li class="src">صحيح البخاري، رقم ${ar(h.n)}</li>`];
 }
 
 const WX_CODES = {
@@ -2715,12 +2854,12 @@ function applyBackground(force){
 // ◀ ▶ switch to the next / previous page of the card's list (#panels; RTL: left = next), wrapping.
 // answered / failed: per page, by its first load (see dvStart)
 const DV = {answered:{}, failed:{}, html:null, items:[], focus:0};
-const DV_PAGES = ['prayers', 'forecast', 'matches', 'standings', 'news', 'local', 'tech', 'shows', 'verse'];   // shows, verse, local
+const DV_PAGES = ['prayers', 'forecast', 'matches', 'standings', 'news', 'local', 'world', 'tech', 'shows', 'verse', 'hadith'];
 // the pages ◀ ▶ go through: the card's list (#panels) as far as the detail window has pages for it; without
 // a list of two or more that holds the opened page, all of them
 const DV_LIST = (L => L.length > 1 && L.includes(CONFIG.detail) ? L : DV_PAGES)(CONFIG.panels.filter(p => DV_PAGES.includes(p)));
 const dvT = v => Number.isFinite(v) ? ar(Math.round(v)) + '°' : '—';
-const dvPct = v => Number.isFinite(v) ? ar(Math.round(v)) + '٪' : '—';
+const dvPct = v => Number.isFinite(v) ? ar(Math.round(v)) + PCT : '—';
 const dvHM = s => { const m = /(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? fmt12(+m[1] % 24, +m[2]) : '—'; };
 // the icon before each page's title: 24px outline, gold (currentColor of .dv-ic)
 const DV_SVG = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -2739,16 +2878,18 @@ const DV_ICON = {
   local: DV_SVG('<path d="M12 21.5s-6.5-5.9-6.5-11.2a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11.2-6.5 11.2z"/><circle cx="12" cy="10.3" r="2.4"/>'),
   // chip
   tech: DV_SVG('<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5" rx=".5"/><path d="M9.5 2.5V6M14.5 2.5V6M9.5 18v3.5M14.5 18v3.5M2.5 9.5H6M2.5 14.5H6M18 9.5h3.5M18 14.5h3.5"/>'),
-  // a TV screen on its stand (shows); an open book (verse)
+  // a globe: the world's news
+  world: DV_SVG('<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/>'),
+  // a TV screen on its stand (shows); an open book (verse); a closed book with its ribbon (hadith)
   shows: DV_SVG('<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M9 21h6M12 17v4"/><path d="M10.5 9v4.5l3.6-2.25z"/>'),
   verse: DV_SVG('<path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5v13"/>'),
+  hadith: DV_SVG('<path d="M5.5 4.5A1.5 1.5 0 0 1 7 3h11.5v15H7a1.5 1.5 0 0 0-1.5 1.5z"/><path d="M5.5 19.5A1.5 1.5 0 0 0 7 21h11.5v-3"/><path d="M14 3v6l-1.75-1.25L10.5 9V3"/>'),
 };
 function dvTitle(){
   const P = CONFIG.detail;
   if(P === 'prayers') return 'مواقيت الصلاة · ' + CONFIG.city;
   if(P === 'forecast') return 'الطقس · ' + CONFIG.city;
   if(P === 'shows') return 'جديد المسلسلات · ' + PANEL_TITLE.shows;
-  if(P === 'verse') return quoteOfDay().title;
   if(P === 'local') return localTitle();
   return PANEL_TITLE[P] || '';
 }
@@ -2771,7 +2912,7 @@ function dvPrayers(){
   const t12 = m => fmt12(Math.floor(m/60) % 24, m % 60);
   let today = '';
   try{
-    today = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {timeZone:CONFIG.timezone, day:'numeric', month:'long'}).format(new Date())
+    today = new Intl.DateTimeFormat(HIJRI, {timeZone:CONFIG.timezone, day:'numeric', month:'long'}).format(new Date())
       + ' · ' + new Intl.DateTimeFormat(GREG, {timeZone:CONFIG.timezone, weekday:'long', day:'numeric', month:'long'}).format(new Date());
   }catch(e){}
   const rows = keys.map(k => `<div class="dv-tr${k === hot ? ' hot' : ''}"><span>${names[k]}</span><span>${t12(at(k))}</span>`
@@ -2785,7 +2926,7 @@ function dvPrayers(){
     let t;
     try{ t = computePrayers(d); }catch(e){ continue; }
     week += `<div class="dv-tr"><span><b>${fD({f:{weekday:'long'}}, d)}</b> <span class="dv-meta">${fD({f:{day:'numeric', month:'long'}}, d)}`
-      + ` · ${fD({cal:'ar-SA-u-ca-islamic-umalqura', f:{day:'numeric', month:'long'}}, d)}</span></span>`
+      + ` · ${fD({cal:HIJRI, f:{day:'numeric', month:'long'}}, d)}</span></span>`
       + PRAYER_KEYS.map(k => `<span>${dvHM(t[k])}</span>`).join('') + '</div>';
   }
   return `<div class="dv-scroll"><div class="dv-sec">اليوم<span class="dv-meta">${today}</span></div>`
@@ -2874,7 +3015,7 @@ function dvStandings(){
 // (poster, name, channel or streaming service · SxxExx · day and time · rating), ▲▼ moving the focus; on the left
 // the focused series: a larger poster, the same facts and its summary (TVMaze's, in English)
 const dvSE = o => o.s && o.n ? `<span dir="ltr">S${pad(o.s)}E${pad(o.n)}</span>` : '';
-const dvRate = o => o.rating ? '★ ' + ar(o.rating.toFixed(1)).replace('.', '٫') : '';
+const dvRate = o => o.rating ? '★ ' + ar(o.rating.toFixed(1)).replace('.', DEC) : '';
 function dvShowWhen(o){
   const at = o.at ? new Date(o.at) : null;
   if(!at || !Number.isFinite(at.getTime())) return showDay(o, false);
@@ -2900,10 +3041,10 @@ function dvShowSide(o){
     + (o.sum ? `<div class="dv-sum" dir="auto">${esc(o.sum)}</div>` : '<div class="dv-sum none">لا يوجد ملخص</div>');
 }
 
-// the day's verse or hadith (quoteOfDay, as on the card), large, its source under it
+// the day's verse (quoteOfDay) or hadith (hadithRows), as on the card, large, its source under it
 function dvVerse(){
-  const q = quoteOfDay();
-  return `<div class="dv-scroll"><ul class="dv-q">${q.rows.join('')}</ul></div>`;
+  const rows = CONFIG.detail === 'hadith' ? hadithRows() : quoteOfDay().rows;
+  return rows.length ? `<div class="dv-scroll"><ul class="dv-q">${rows.join('')}</ul></div>` : '';
 }
 
 function dvNews(P){
@@ -2958,7 +3099,7 @@ function renderDetail(){
   try{
     html = P === 'prayers' ? dvPrayers() : P === 'forecast' ? dvForecast() : P === 'matches' ? dvMatches()
          : P === 'standings' ? dvStandings() : P === 'shows' ? dvShows() : news ? dvNews(P)
-         : P === 'verse' ? dvVerse() : '';   // shows, verse
+         : P === 'verse' || P === 'hadith' ? dvVerse() : '';
   }catch(e){ console.error('SaudiTV: detail ' + (e && e.message)); }
   if(!html) html = `<div class="dv-empty">${DV.answered[P] ? (P === 'matches' ? 'لا مباريات في هذه الفترة' : 'لا تتوفر بيانات الآن')
                                           : DV.failed[P] ? 'لا تتوفر بيانات الآن' : 'جارٍ التحميل…'}</div>`;
@@ -3014,7 +3155,8 @@ function dvStart(P){
     watch(loadStandings, 'standings'); setInterval(loadStandings, 3*3600*1000);
     if(!DV_STARTED.has('matches')) firstLoad(loadMatches, 'matches');
   }
-  if(P === 'news' || P === 'tech'){ watch(() => loadNews(P), P); setInterval(() => loadNews(P), 30*60*1000); setInterval(renderDetail, 5*60*1000); }
+  if(P === 'news' || P === 'tech' || P === 'world'){ watch(() => loadNews(P), P); setInterval(() => loadNews(P), 30*60*1000); setInterval(renderDetail, 5*60*1000); }
+  if(P === 'hadith') watch(loadHadith, 'hadith');
   if(P === 'local'){ watch(loadLocalNews, P); setInterval(loadLocalNews, 30*60*1000); setInterval(renderDetail, 5*60*1000); }
   if(P === 'shows'){ watch(loadWeek, 'shows'); setInterval(loadWeek, 6*3600*1000); }   // (verse: offline)
 }

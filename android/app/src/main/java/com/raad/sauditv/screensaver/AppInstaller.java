@@ -118,7 +118,7 @@ final class AppInstaller {
         done.clear();
         confirm = null;
         session = -1;
-        post(DOWNLOADING, 0, "جارٍ التنزيل… ٠٪");
+        post(DOWNLOADING, 0, "جارٍ التنزيل… " + AppUpdate.digits(app, "0") + Prefs.percent(app));
         new Thread(() -> prepare(app, m)).start();
     }
 
@@ -151,7 +151,7 @@ final class AppInstaller {
             if (!dir.isDirectory() && !dir.mkdirs()) throw new Fail("تعذّر حفظ التحديث على التلفاز");
             List<AppUpdate.Apk> need = m.needed(app);
             if (need.isEmpty()) {
-                finish(app, "محدّث · النسخة " + AppUpdate.digits(AppUpdate.installedName(app)));
+                finish(app, "محدّث · النسخة " + AppUpdate.digits(app, AppUpdate.installedName(app)));
                 return;
             }
             long total = 0;
@@ -161,7 +161,7 @@ final class AppInstaller {
             long before = 0;
             for (AppUpdate.Apk a : need) {
                 File f = new File(dir, a.file);
-                download(a, f, before, total);
+                download(app, a, f, before, total);
                 before += a.size;
                 steps.add(new Step(a, f));
             }
@@ -182,7 +182,7 @@ final class AppInstaller {
         }
     }
 
-    private static void download(AppUpdate.Apk a, File out, long before, long total) throws Fail {
+    private static void download(Context app, AppUpdate.Apk a, File out, long before, long total) throws Fail {
         File part = new File(out.getPath() + ".part");
         long got = 0;
         HttpURLConnection con = null;
@@ -193,7 +193,7 @@ final class AppInstaller {
             con.setInstanceFollowRedirects(true);   // github.com -> release-assets.githubusercontent.com, https both
             con.setRequestProperty("Accept-Encoding", "identity");
             int code = con.getResponseCode();
-            if (code != HttpURLConnection.HTTP_OK) throw new Fail("تعذّر تنزيل التحديث (رمز " + AppUpdate.digits(String.valueOf(code)) + ")، لم يتغير شيء");
+            if (code != HttpURLConnection.HTTP_OK) throw new Fail("تعذّر تنزيل التحديث (رمز " + AppUpdate.digits(app, String.valueOf(code)) + ")، لم يتغير شيء");
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             InputStream in = con.getInputStream();
             OutputStream o = new FileOutputStream(part);
@@ -209,7 +209,7 @@ final class AppInstaller {
                     int pct = (int) ((before + got) * 100 / Math.max(1, total));
                     if (pct != shown) {
                         shown = pct;
-                        post(DOWNLOADING, pct, "جارٍ التنزيل… " + AppUpdate.digits(String.valueOf(pct)) + "٪");
+                        post(DOWNLOADING, pct, "جارٍ التنزيل… " + AppUpdate.digits(app, String.valueOf(pct)) + Prefs.percent(app));
                     }
                 }
             } finally {
@@ -280,7 +280,7 @@ final class AppInstaller {
     private static void next(final Context app) {
         if (!running) return;
         if (queue.isEmpty()) {
-            finish(app, "تم التحديث إلى " + AppUpdate.digits(manifest.versionName));
+            finish(app, "تم التحديث إلى " + AppUpdate.digits(app, manifest.versionName));
             return;
         }
         final Step s = queue.get(0);

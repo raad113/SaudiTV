@@ -16,8 +16,9 @@ import java.util.List;
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.CITIES
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.SET
  *       [--es city 'الرس'] [--es lat 25.86 --es lon 43.49] [--es teams '136013:Al-Hilal,150643:Al-Zulfi']
- *       [--es panel prayers | prayers,forecast,news,local] [--es home_panel none] [--es minrating 7] [--es genres Drama,Comedy] [--es langs English]
- *       [--es autoupdate true|false]
+ *       [--es panel prayers | prayers,forecast,news,local,world,verse,hadith] [--es home_panel none] [--es minrating 7]
+ *       [--es genres Drama,Comedy] [--es langs English] [--es autoupdate true|false] [--es numerals latn|arab]
+ *       [--es src_news aawsat,okaz] [--es src_tech …] [--es src_local …] [--es src_world …]   ("" = the page's defaults)
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.UPDATE
  *   am broadcast -n com.raad.sauditv.screensaver/.SaverReceiver -a com.raad.sauditv.screensaver.APP_CHECK
  *       (checks the GitHub release for a newer version of both apps; installing is the settings screen's)
@@ -109,7 +110,7 @@ public class SaverReceiver extends BroadcastReceiver {
             if (teams.size() > Prefs.MAX_TEAMS) return "error: at most " + Prefs.MAX_TEAMS + " teams";
         }
         String panel = i.getStringExtra("panel"), home = i.getStringExtra("home_panel");
-        // both cards can rotate through up to 9 panels (all of them, local news too), comma-separated
+        // both cards can rotate through every panel (PANELS but "none": world and hadith too), comma-separated
         // (e.g. prayers,forecast,matches); "none" only on its own
         if (panel != null) {
             panel = panelList(panel);
@@ -124,6 +125,24 @@ public class SaverReceiver extends BroadcastReceiver {
         String rating = i.getStringExtra("minrating");
         if (rating != null && !Arrays.asList(Prefs.MIN_RATINGS).contains(rating))
             return "error: minrating is one of " + Prefs.join(Arrays.asList(Prefs.MIN_RATINGS), " ");
+        String numerals = i.getStringExtra("numerals");
+        if (numerals != null && !numerals.equals("latn") && !numerals.equals("arab"))
+            return "error: numerals is latn (0 1 2 3) or arab (٠ ١ ٢ ٣)";
+        java.util.Map<String, List<String>> sources = new java.util.LinkedHashMap<>();
+        for (String page : Prefs.NEWS_PAGES) {
+            String raw = i.getStringExtra("src_" + page);
+            if (raw == null) continue;
+            List<String> ids = new ArrayList<>();
+            for (String s : raw.split(",")) {
+                s = s.trim();
+                if (s.isEmpty()) continue;
+                boolean known = false;
+                for (String[] x : Prefs.newsSources(page)) known |= x[0].equals(s);
+                if (!known) return "error: src_" + page + " is a comma list of " + names(Prefs.newsSources(page)) + " (\"\" = the defaults)";
+                if (!ids.contains(s)) ids.add(s);
+            }
+            sources.put(page, ids);
+        }
         List<String> genres = codes(i.getStringExtra("genres"), Prefs.GENRES);
         List<String> langs = codes(i.getStringExtra("langs"), Prefs.LANGS);
         if (genres != null && genres.contains(null)) return "error: genres are " + names(Prefs.GENRES);
@@ -137,6 +156,8 @@ public class SaverReceiver extends BroadcastReceiver {
         if (auto != null) p.setAutoUpdate(Boolean.parseBoolean(auto));
         if (genres != null) p.setList("genres", genres);
         if (langs != null) p.setList("langs", langs);
+        if (numerals != null) p.setNumerals(numerals);
+        for (java.util.Map.Entry<String, List<String>> e : sources.entrySet()) p.setSources(e.getKey(), e.getValue());
         // a home screen already in front shows the new settings now, not at its next resume
         c.sendBroadcast(new Intent(CHANGED).setPackage("com.raad.sauditv.home"));
         return "saved\n" + describe(p);
@@ -149,7 +170,18 @@ public class SaverReceiver extends BroadcastReceiver {
             + "\npanel: " + p.panel() + "\nhome_panel: " + p.homePanel()
             + "\nminrating: " + p.minRating()
             + "\ngenres: " + Prefs.join(p.list("genres"), ",") + "\nlangs: " + Prefs.join(p.list("langs"), ",")
-            + "\nautoupdate: " + p.autoUpdate();
+            + "\nautoupdate: " + p.autoUpdate()
+            + "\nnumerals: " + p.numerals()
+            + sourcesLine(p);
+    }
+
+    /** "\nsources_news: aawsat,okaz (default)" for each news page */
+    private static String sourcesLine(Prefs p) {
+        StringBuilder b = new StringBuilder();
+        for (String page : Prefs.NEWS_PAGES)
+            b.append("\nsources_").append(page).append(": ").append(Prefs.join(p.sources(page), ","))
+             .append(p.raw().contains("src_" + page) ? "" : " (default)");
+        return b.toString();
     }
 
     private static boolean isPanel(String v) {

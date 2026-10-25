@@ -136,8 +136,8 @@ final class AppUpdate {
         // a running home screen shows or hides its pill now
         c.sendBroadcast(new Intent(STATE_CHANGED).setPackage(HOME_PKG));
         Manifest a = available(c);
-        return a != null ? new Result(AVAILABLE, "تحديث متوفر: " + digits(a.versionName), a)
-                         : new Result(NONE, "محدّث · النسخة " + digits(installedName(c)), null);
+        return a != null ? new Result(AVAILABLE, "تحديث متوفر: " + digits(c, a.versionName), a)
+                         : new Result(NONE, "محدّث · النسخة " + digits(c, installedName(c)), null);
     }
 
     /** The last manifest checked, when it is newer than an installed app; else null. */
@@ -242,15 +242,11 @@ final class AppUpdate {
 
     // ---------- labels ----------
 
-    static String digits(String s) {
-        if (s == null) return "";
-        StringBuilder b = new StringBuilder(s.length());
-        for (char ch : s.toCharArray()) b.append(ch >= '0' && ch <= '9' ? (char) ('٠' + (ch - '0')) : ch);
-        return b.toString();
-    }
+    /** the digits as «شكل الأرقام» asks (Prefs.digits) */
+    static String digits(Context c, String s) { return Prefs.digits(c, s); }
 
-    /** «٧٫٤ ميغابايت» */
-    static String size(long bytes) {
-        return digits(String.format(Locale.US, "%.1f", bytes / 1048576.0)).replace('.', '٫') + " ميغابايت";
+    /** «7.4 ميغابايت» or «٧٫٤ ميغابايت» */
+    static String size(Context c, long bytes) {
+        return digits(c, String.format(Locale.US, "%.1f", bytes / 1048576.0)).replace('.', Prefs.decimal(c)) + " ميغابايت";
     }
 }

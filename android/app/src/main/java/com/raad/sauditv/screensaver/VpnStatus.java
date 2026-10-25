@@ -72,6 +72,31 @@ public final class VpnStatus {
     @JavascriptInterface
     public String vpnCountry() { return country; }
 
+    /** false when no app on the TV offers a VPN (none answers android.net.VpnService): the badge and the flag are
+     *  hidden then. An installed VPN app that is off still shows the red ✕. */
+    @JavascriptInterface
+    public boolean vpnApp() { return appInstalled(app); }
+
+    private static volatile boolean appKnown, appThere;
+    private static volatile long appAt;
+
+    /** asked at most once a minute (the page asks every 3 s); needs <queries> for the VpnService intent */
+    public static boolean appInstalled(Context c) {
+        long now = SystemClock.elapsedRealtime();
+        if (appKnown && now - appAt < 60_000) return appThere;
+        boolean there = false;
+        try {
+            for (android.content.pm.ResolveInfo r : c.getPackageManager().queryIntentServices(
+                    new android.content.Intent("android.net.VpnService"), 0)) {
+                if (r.serviceInfo != null && !r.serviceInfo.packageName.startsWith("com.raad.sauditv.")) { there = true; break; }
+            }
+        } catch (RuntimeException e) {
+            there = true;   // not known: as before, the badge stays
+        }
+        appThere = there; appKnown = true; appAt = now;
+        return there;
+    }
+
     @SuppressWarnings("deprecation")
     static boolean hasVpn(Context c) {
         try {

@@ -21,9 +21,10 @@
 
 ## المزايا
 
-- **بطاقة تتبدّل كل ٣٠ ثانية** جنب الساعة، في شاشة التوقف وفي الواجهة: مواقيت اليوم، آية أو حديث اليوم، طقس الأيام
-  القادمة، مباريات فرقك، ترتيب دوري روشن، أخبار السعودية، أخبار مدينتك، أخبار التقنية والذكاء الاصطناعي، جديد المسلسلات. تختار
-  البطاقات وترتيبها لكل شاشة.
+- **بطاقة تتبدّل كل ٣٠ ثانية** جنب الساعة، في شاشة التوقف وفي الواجهة: مواقيت اليوم، آية اليوم، حديث اليوم (من صحيح
+  البخاري فقط)، طقس الأيام القادمة، مباريات فرقك، ترتيب دوري روشن، أخبار السعودية، أخبار مدينتك، أخبار العالم، أخبار التقنية
+  والذكاء الاصطناعي، جديد المسلسلات. تختار البطاقات وترتيبها لكل شاشة، ومصادر كل صفحة أخبار (تنعرض مع بعض، الأحدث أول).
+- **شكل الأرقام:** «0 1 2 3» (الافتراضي) أو «٠ ١ ٢ ٣»، في كل مكان: الشاشة والواجهة والإعدادات.
 - **صفحات التفاصيل:** OK على البطاقة في الواجهة يفتحها على كامل الشاشة (المواقيت، الأخبار مع نص الخبر، الترتيب،
   المباريات، المسلسلات…)، ويمين ويسار يقلّبون بينها.
 - **الشريط:** أسعار الأسواق تتحرك أسفل الشاشة (تاسي، S&P 500، الذهب، برنت، الدولار/الريال، بيتكوين…)، وفوقه شريط
@@ -32,7 +33,8 @@
   واقف)، إزاحة خفيفة للمحتوى، وتعتيم بالليل (من ١١ الليل إلى ٦ الصبح حوالي ٤٠٪ من السطوع).
 - **الإعدادات السريعة** في الواجهة: واي فاي، بلوتوث، الصورة، الصوت، المصادر، شاشة التوقف، VPN، الطاقة، التاريخ
   والوقت، الحساب، سعودي TV، وكل الإعدادات.
-- **علامة VPN** جنب الساعة (يعمل، أو متصل بدون إنترنت، أو مطفي)، ومع علم بلد الخروج في الواجهة.
+- **علامة VPN** جنب الساعة (يعمل، أو متصل بدون إنترنت، أو مطفي)، ومع علم بلد الخروج في الواجهة. ما تظهر أبداً إذا
+  ما فيه تطبيق VPN على التلفزيون.
 - **يشتغل بدون إنترنت:** الساعة والتاريخ والمواقيت ورمضان تشتغل، وآخر بيانات تبقى على الشاشة.
 - **تحديث الصفحة تلقائياً** من هذا المستودع كل ٦ ساعات، بدون إعادة تركيب.
 - **تسريع التلفزيون:** إطفاء التتبّع والإعلانات والعروض (يمكن التراجع عنه)، تجميد التطبيقات المقفلة، حركة أسرع.
@@ -96,9 +98,11 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
 
 ## Features
 
-- **A card that rotates every 30 s** beside the clock, on the screensaver and the home screen: today's prayers, a verse
-  or hadith of the day, the forecast, your teams' matches, the Saudi Pro League table, Saudi news, your city's news,
-  tech and AI news, new episodes. Pick the cards and their order for each screen.
+- **A card that rotates every 30 s** beside the clock, on the screensaver and the home screen: today's prayers, the verse
+  of the day, the hadith of the day (Sahih al-Bukhari only), the forecast, your teams' matches, the Saudi Pro League
+  table, Saudi news, your city's news, world news, tech and AI news, new episodes. Pick the cards and their order for
+  each screen, and each news page's sources (read together, newest first).
+- **Number style:** «0 1 2 3» (the default) or «٠ ١ ٢ ٣», everywhere: the screen, the home screen and the settings.
 - **Detail pages:** OK on the home screen's card opens it full screen (prayers, news with the article text, the table,
   matches, episodes…); left and right step through them.
 - **The ticker:** market prices move along the bottom (TASI, S&P 500, gold, Brent, USD/SAR, Bitcoin…), with an info
@@ -108,7 +112,7 @@ Two TV apps, set up from a computer over ADB on the home Wi-Fi by one script:
 - **Quick settings** on the home screen: Wi-Fi, Bluetooth, picture, sound, inputs, screensaver, VPN, power, date and
   time, account, سعودي TV and all settings.
 - **A VPN mark** beside the clock (working, connected but no traffic, or off), and the exit country's flag on the home
-  screen.
+  screen; none at all when the TV has no VPN app.
 - **Works offline:** clock, dates, prayer times and Ramadan keep going; the last good data stays on screen.
 - **The page updates itself** from this repository every 6 hours, without a reinstall.
 - **A safe TV speed-up:** telemetry, ads and demos off (reversible), closed apps frozen, faster animations.
@@ -163,17 +167,19 @@ src/template.html     the screen (HTML/CSS/JS, no framework); edit it, then run 
 dist/                 saudi-tv.html (stand-alone, opens in any browser) and tv.html (the page the apps load)
 android/app           the screensaver app: DreamService, settings, page auto-update
 android/launcher      the home screen: dock, apps grid, quick settings, the card and its detail pages
-assets/ photos/       fonts, bundled and hosted photos, Arabic team names, verse and hadith texts
+assets/ photos/       fonts, bundled and hosted photos, Arabic team names, the verses and Sahih al-Bukhari's hadith
 optimize/             TV tools over ADB (pure Python, no adb binary): setup-new-tv.sh, install.sh, saver.sh, dock.sh…
-.github/tools/        data tools (verses, hadith checks, clubs, photos), run by hand
+.github/tools/        data tools (verses, Bukhari's hadith, clubs, photos), run by hand
 tools/release.sh      a new release: version, build, update.json (what the apps' in-app update reads), tests, GitHub
 tests/                checks: build, data, fonts, scripts, private data, the page in a browser
 ```
 
 **Data** (free, no keys): Aladhan (prayer times), Open-Meteo (weather), Yahoo and CoinGecko (markets), TVMaze
-(episodes), TheSportsDB and ESPN (matches and the table), news feeds (Asharq Al-Awsat, Al Arabiya, Google News, BBC
-Arabic). Verse and hadith texts are never typed by hand: verses come from the Quran API
-(`.github/tools/fetch_verses.py`) and each hadith is checked against the six books (`.github/tools/verify_hadith.py`).
+(episodes), TheSportsDB and ESPN (matches and the table), news feeds (Asharq Al-Awsat, Okaz, Al-Watan, Sky News
+Arabia, BBC Arabic, CNN Arabic, Al Jazeera, France 24, Tech-WD, AIT News; Google News for the sites without a feed
+that answers, Bing for the city's news). Verse and hadith texts are never typed by hand: verses come from the Quran API
+(`.github/tools/fetch_verses.py`), the hadith from Sahih al-Bukhari in fawazahmed0/hadith-api
+(`.github/tools/fetch_bukhari.py`: the day's one from jsDelivr, about 60 bundled for offline).
 
 ## Credits · الشكر
 

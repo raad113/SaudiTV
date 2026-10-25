@@ -49,6 +49,7 @@ DOCK_APPS="${DOCK_APPS:-}"                  # favourites row, left to right (app
                                             #   empty: the home screen's own default (config.xml), left as it is
 MINRATING="${MINRATING:-}"                  # episodes card's lowest rating (0 6 6.5 7 7.5 8); empty: the app's (7)
 AUTOUPDATE="${AUTOUPDATE:-}"                # the page's auto-update: on / off; empty: the app's default (on)
+NUMERALS="${NUMERALS:-}"                    # «شكل الأرقام»: 0-9 (0 1 2 3) or arabic (٠ ١ ٢ ٣); empty: the app's (0-9)
 EXTRA_OFF="${EXTRA_OFF:-}"                  # more packages to turn off, on top of optimize/extra/disable.txt
 EXTRA_REMOVE="${EXTRA_REMOVE:-}"            # more packages to remove for the TV's user (asked first), on top of
                                             #   optimize/extra/remove.txt
@@ -374,6 +375,10 @@ fi
 if [ -n "$AUTOUPDATE" ]; then
   case "$AUTOUPDATE" in on|true) want_au=true ;; *) want_au=false ;; esac
   if grep -qxF "autoupdate: $want_au" <<< "$show"; then ok "page auto-update: $AUTOUPDATE"; else saver_set "page auto-update ($AUTOUPDATE)" autoupdate "$AUTOUPDATE"; fi
+fi
+if [ -n "$NUMERALS" ]; then
+  case "$NUMERALS" in arabic|arab|٠-٩) want_nu=arab ;; *) want_nu=latn ;; esac
+  if grep -qxF "numerals: $want_nu" <<< "$show"; then ok "numbers: $NUMERALS"; else saver_set "numbers ($NUMERALS)" numerals "$NUMERALS"; fi
 fi
 if [ $changed = yes ]; then runx optimize/saver.sh update | sed 's/^/   /'; fi
 

@@ -75,7 +75,7 @@ final class QuickPanel {
     private final View dim;
     private final FrameLayout slider;   // the sheet and its shadow, slid in from the right
     private final List<View> tiles = new ArrayList<>();
-    private final TextView clock, vpnMark;
+    private final TextView clock, vpnMark, vpnDot;
     private TextView wifiSub, vpnSub, saudiSub;
     private boolean update;   // the screensaver app found a newer release: «تحديث متوفر» under «سعودي TV»
     private View before, lastTile;   // the focus before it opened; the tile that had it last
@@ -121,6 +121,7 @@ final class QuickPanel {
         vpnMark.setIncludeFontPadding(false);
         TextView dot = a.text(11, "sans-serif", 0x59FFFFFF);
         dot.setText("  ·  ");
+        vpnDot = dot;
         clock = a.text(11, "sans-serif-medium", MainActivity.GOLD);
         clock.setIncludeFontPadding(false);
         TextView title = a.text(18, "display", 0xFFFFFFFF);
@@ -296,6 +297,11 @@ final class QuickPanel {
         String t = MainActivity.arabicDigits(h + ":" + String.format(Locale.US, "%02d", now.get(Calendar.MINUTE)));
         clock.setText(h24 ? t : t + (now.get(Calendar.AM_PM) == Calendar.AM ? " ص" : " م"));
 
+        // no VPN app on the TV at all: no VPN mark, no flag, nothing under the VPN tile (an app that is off: ✕)
+        boolean app = VpnStatus.appInstalled(a);
+        vpnMark.setVisibility(app ? View.VISIBLE : View.GONE);
+        vpnDot.setVisibility(app ? View.VISIBLE : View.GONE);
+        if (!app) { vpnSub.setVisibility(View.GONE); return; }
         int st = VpnStatus.state(a);
         String flag = VpnStatus.flag();
         String mark = st == 1 ? "✓" : st == 2 ? "!" : "✕";

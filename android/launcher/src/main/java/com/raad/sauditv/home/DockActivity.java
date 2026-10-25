@@ -41,6 +41,7 @@ public class DockActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Numerals.load(this);   // also opened from the screensaver's settings, without the home screen
         apps = Dock.launchable(this);
         row.addAll(Dock.shown(this, apps));
 
@@ -269,9 +270,5 @@ public class DockActivity extends Activity {
 
     private int dp(float v) { return Math.round(v * getResources().getDisplayMetrics().density); }
 
-    private static String ar(int n) {
-        StringBuilder b = new StringBuilder();
-        for (char ch : String.valueOf(n).toCharArray()) b.append((char) ('٠' + (ch - '0')));
-        return b.toString();
-    }
+    private static String ar(int n) { return Numerals.digits(n); }   // «شكل الأرقام»
 }

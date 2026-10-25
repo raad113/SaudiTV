@@ -53,147 +53,11 @@ def verses_for_screen():
     return out
 
 
-HADITH_MAX_WORDS = 70   # a longer hadith does not fit the card beside the clock; it stays in the data
-ISNAD_MAX_WORDS = 35    # nor is one shown whose chain of narrators runs longer (.github/tools/verify_hadith.py)
-HARAKAT = "[\u064B-\u0652\u0670]*"
-SAW = re.compile(r"\s+".join(HARAKAT.join(w) + HARAKAT for w in "صلى الله عليه وسلم".split()))
-
-
-def narration_parts(text):
-    """A full narration as the book has it -> [["n", narration], ["q", the Prophet's words], ...].
-
-    The books put his words between straight quotes; everything else (the isnad, who asked what, the compiler's
-    note) is narration. Only typography changes: direction marks and the tatweel used as a dash go, «صلى الله
-    عليه وسلم» becomes ﷺ, {verse} becomes ﴿verse﴾, and no space before a comma or full stop."""
-    t = re.sub("[\u200e\u200f]", "", text)
-    t = re.sub(r"\s+ـ\s+", " ", t)
-    t = SAW.sub("ﷺ", t).replace("{", "﴿").replace("}", "﴾")
-    t = re.sub(r"\s+([،,.:؛])", r"\1", t)
-    parts = []
-    for i, piece in enumerate(t.split('"')):
-        piece = " ".join(piece.split()).strip(" .")
-        if piece and piece not in ".،:":
-            parts.append(["q" if i % 2 else "n", piece])
-    return parts
-
-
-LINK = re.compile(r"(?:^|(?<=[\s،,:]))(?:عن|سمعت|سمع|سمعا|حدثني|حدثنا|أخبرني|أخبرنا|أن|أنه|إن|يحدث|(?<=قال )قال)(?=[\s،,:])")
-TRAIL = re.compile(r"(?:[\s،,:.]|\b(?:قال|قالت|يقول|سمعت|سمع|عن|أن|أنه|إن|أخبره|حدثه|لي|لنا)\b)+$")
-SECOND_CHAIN = re.compile(r"ﷺ\s*\.\s*و?(?:عن|حدثنا|حدثني)\s")
-NOT_A_NAME = {"أبيه", "أبيها", "جده", "أذناى", "أذناي", "أذني", "رجل", "رجلا"}
-NOTE = re.compile(r"قال أبو عيسى|وفي الباب|حدثنا|حدثني|أخبرنا|وفي رواية|وفي حديث|وبهذا الإسناد|وزاد|نحوه|قال أبو داود|قال أبو معاوية")
-PROPHET = re.compile(r"رسول الله|النبي")
-
-
-def bare_map(text):
-    """text without harakat, and for each of its characters the index in text (to cut the original there)."""
-    keep = [(c, i) for i, c in enumerate(text) if not re.match(HARAKAT[:-1], c)]
-    return "".join(c for c, _ in keep), [i for _, i in keep] + [len(text)]
-
-
-def simple_parts(parts):
-    """The «Riyad as-Salihin» form: from the companion who narrated it, «عن أبي هريرة …», then the hadith as the book
-    has it. The narrators before the companion, and the compiler's notes after the Prophet's last words, go."""
-    if not parts or parts[0][0] != "n":
-        return parts
-    head = parts[0][1]
-    bare, at = bare_map(head)
-    second = list(SECOND_CHAIN.finditer(bare))   # «… عن النبي ﷺ. وحدثنا …»: the book gives a second chain, use it
-    if second:
-        head = head[at[second[-1].end()]:]
-        bare, at = bare_map(head)
-    m = PROPHET.search(bare)
-    if not m:
-        return None
-    pre = TRAIL.sub("", bare[:m.start()].rstrip())
-    links = list(LINK.finditer(pre))
-    if not links:
-        return None
-    pick = -1   # «عن أبيه», «عن جده», «سمعت أذناي», «قال رجل»: start a narrator earlier until it says who
-    while pre[links[pick].end():].strip(" ،,:").split(" ")[0].strip("،,") in NOT_A_NAME and len(links) > -pick:
-        pick -= 1
-    start = links[pick].end()
-    while start < len(bare) and bare[start] in " ،,:":
-        start += 1
-    rest = head[at[start]:].strip()
-    rest = re.sub("^" + HARAKAT.join("أبا") + "|^" + HARAKAT.join("أبو"), "أبي", rest)   # after «عن»: أبي هريرة
-    rest = re.sub(r"\s" + HARAKAT.join("أخبره") + HARAKAT + "(?:" + HARAKAT.join("ما") + "|م)?" + HARAKAT + r"(?=\s)", "", rest)   # «… أخبره أن …»
-    rest = re.sub("^([^\\s،,]{3,}?)" + "ا" + "[\u064B\u064E]*" + r"(?=[\s،,])", r"\1", rest)   # «سمعت أنسا» -> «عن أنس»
-    out = [["n", "عن " + rest]]
-    for k, t in parts[1:]:   # stop at the compiler's notes or a further chain between his words
-        if k == "n" and NOTE.search(re.sub(HARAKAT, "", t)):
-            break
-        out.append([k, t])
-    while out and out[-1][0] == "n":
-        out.pop()
-    return out
-
-
-WEAK = re.compile(r"da.?if|weak|munkar|mawdu|fabricat|shadh|mudtarib", re.I)   # as .github/tools/verify_hadith.py
-GRADE_AR = {"sahih": "صحيح", "hasan": "حسن", "hasan sahih": "حسن صحيح", "sahih lighairihi": "صحيح لغيره",
-            "hasan lighairihi": "حسن لغيره"}
-
-
-def scholars(grades):
-    """The four Sunan: Al-Albani's grade decides when the scholars differ; with no Al-Albani, all of them."""
-    albani = [g for g in grades or [] if "albani" in g.get("name", "").lower()]
-    return albani or grades or []
-
-
-def weak_by_scholars(grades):
-    return any(WEAK.search(g.get("grade", "")) for g in scholars(grades))
-
-
-def albani_grade(grades):
-    for g in grades or []:
-        if "albani" in g.get("name", "").lower():
-            ar = GRADE_AR.get(re.sub(r"[^a-z ]", "", g.get("grade", "").lower()).strip())
-            return f"{ar} عند الألباني" if ar else ""
-    return ""
-
-
-def tirmidhi_grade(text):
-    bare = re.sub(HARAKAT, "", text)
-    if "قال أبو عيسى" not in bare:
-        return ""
-    g = re.search("حسن صحيح|صحيح حسن|حسن غريب|صحيح غريب|حسن|صحيح", bare[bare.index("قال أبو عيسى"):])
-    return g.group(0) if g else ""
-
-
-def weak_in_tirmidhi(text):
-    """al-Tirmidhi grades each hadith after it («قال أبو عيسى …»). Not shown: one he grades only غريب or ضعيف,
-    or says is more correctly a companion's own words (موقوف, «ولم يرفعه»)."""
-    bare = re.sub(HARAKAT, "", text)
-    if "قال أبو عيسى" not in bare:
-        return False
-    note = bare[bare.index("قال أبو عيسى"):]
-    return not re.search("حديث حسن|حديث صحيح|حسن صحيح", note) or "ولم يرفعه" in bare or "موقوفا" in bare
-
-
-def hadith_for_screen():
-    """assets/shared/hadith.json -> each hadith from its companion on (simple_parts) if it fits the card, with the
-    book, its number and a grade: al-Tirmidhi's own, or for the other Sunan Al-Albani's. One a scholar grades weak
-    (or al-Tirmidhi does not grade حسن or صحيح) is not shown."""
-    digits = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
-    out = []
-    for h in json.loads((ROOT / "assets/shared/hadith.json").read_text(encoding="utf-8")):
-        full = h.get("full")
-        if not (h.get("found") and full):
-            continue
-        whole = narration_parts(full["text"])
-        if whole and whole[0][0] == "n" and len(whole[0][1].split()) > ISNAD_MAX_WORDS:
-            continue
-        parts = simple_parts(whole)
-        if not parts:
-            continue
-        words = sum(len(p[1].split()) for p in parts)
-        if weak_in_tirmidhi(full["text"]) or weak_by_scholars(full.get("grades")):
-            continue
-        if any(k == "q" for k, _ in parts) and words <= HADITH_MAX_WORDS:
-            grade = tirmidhi_grade(full["text"]) or albani_grade(full.get("grades"))
-            source = f"{full['book']} · {str(full['number']).translate(digits)}" + (f" · {grade}" if grade else "")
-            out.append({"parts": parts, "source": source})
-    return out
+def bukhari():
+    """assets/shared/bukhari.json (.github/tools/fetch_bukhari.py): «حديث اليوم», Sahih al-Bukhari only. The page gets
+    the short list, its longest in words and the bundled texts; nothing else of the file."""
+    d = json.loads((ROOT / "assets/shared/bukhari.json").read_text(encoding="utf-8"))
+    return {"maxWords": d["maxWords"], "short": d["short"], "fallback": d["fallback"]}
 
 
 def data_uri(path, mime):
@@ -209,7 +73,7 @@ def main():
     teams = json.loads((ROOT / "assets/shared/teams-ar.json").read_text(encoding="utf-8"))
     html = html.replace("__TEAMS_AR__", json.dumps(teams, ensure_ascii=False))
     html = html.replace("__VERSES__", json.dumps(verses_for_screen(), ensure_ascii=False))
-    html = html.replace("__HADITH__", json.dumps(hadith_for_screen(), ensure_ascii=False))   # checked by CI
+    html = html.replace("__BUKHARI__", json.dumps(bukhari(), ensure_ascii=False, separators=(",", ":")))
 
     bg_dir = ROOT / "assets/backgrounds"
     bgs = json.loads((bg_dir / "backgrounds.json").read_text(encoding="utf-8"))

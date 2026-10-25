@@ -15,9 +15,13 @@
         android:name="com.raad.sauditv.screensaver.READ_CONFIG"
         android:protectionLevel="signature" />
 
-    <!-- opens the launcher's «ترتيب المفضلة» from settings; reads its version for «تحديث التطبيق» -->
+    <!-- opens the launcher's «ترتيب المفضلة» from settings; reads its version for «تحديث التطبيق»; and whether the
+         TV has a VPN app at all (VpnStatus.appInstalled: without one the VPN badge is hidden) -->
     <queries>
         <package android:name="com.raad.sauditv.home" />
+        <intent>
+            <action android:name="android.net.VpnService" />
+        </intent>
     </queries>
 
     <uses-feature android:name="android.software.leanback" android:required="false" />

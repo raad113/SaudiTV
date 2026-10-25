@@ -21,7 +21,7 @@
 
 ### ٣. إعدادات بيتك: `household.env`
 انسخ `household.env.example` إلى `household.env` وعدّله: المدينة وإحداثياتها، المنطقة الزمنية، الفرق، بطاقة شاشة التوقف
-وبطاقة الواجهة، صف المفضلة، أقل تقييم للمسلسلات، التحديث التلقائي، تطبيقات زيادة تنطفي أو تنحذف، ومدة إطفاء الشاشة.
+وبطاقة الواجهة، صف المفضلة، شكل الأرقام (`NUMERALS`)، أقل تقييم للمسلسلات، التحديث التلقائي، تطبيقات زيادة تنطفي أو تنحذف، ومدة إطفاء الشاشة.
 - الملف **ما يُرفع لـ git أبداً** (فيه مكان سكنك). بدونه: الرياض، أم القرى، الأندية السعودية الكبيرة، وست بطاقات.
 - تلفزيون ثاني بإعدادات مختلفة: `household-tv2.env` و `HOUSEHOLD_ENV=household-tv2.env optimize/setup-new-tv.sh <IP>`.
 - أرقام الفرق: `optimize/saver.sh find-team الهلال`. المدن السعودية الجاهزة: `optimize/saver.sh cities`.
@@ -130,7 +130,8 @@ LOCAL_APK_DIR=android/out optimize/install.sh all && optimize/check-home.sh
 
 ### 3. Your household's settings: `household.env`
 Copy `household.env.example` to `household.env` and edit it: the city and its coordinates, the time zone, the teams, the
-screensaver's and the home screen's cards, the favourites row, the episodes' lowest rating, the page auto-update, extra
+screensaver's and the home screen's cards, the favourites row, the number style (`NUMERALS`), the episodes' lowest
+rating, the page auto-update, extra
 apps to turn off or remove, and when the screen turns off.
 - git **never tracks** it (it says where you live). Without it: Riyadh, Umm al-Qura, the big Saudi clubs, six cards.
 - A second TV with other settings: `household-tv2.env`, and `HOUSEHOLD_ENV=household-tv2.env optimize/setup-new-tv.sh <IP>`.
@@ -231,7 +232,7 @@ The commands are in section ٩ above: `src/build.py`, Gradle 8.10 with Android S
 ### 10. The tools
 | | |
 |---|---|
-| `optimize/saver.sh` | the screensaver's settings: `show`, `city`, `teams`, `find-team`, `card`, `home-card`, `minrating`, `autoupdate`, `update`, `app-check` |
+| `optimize/saver.sh` | the screensaver's settings: `show`, `city`, `teams`, `find-team`, `card`, `home-card`, `numerals`, `sources`, `minrating`, `autoupdate`, `update`, `app-check` |
 | `optimize/dock.sh` | the favourites row: `show`, `apps`, `set`, `reset` |
 | `optimize/check-home.sh` | opens an app, presses Home, says whether our home screen came back |
 | `optimize/start-saver.sh` · `shot.sh` | start the screensaver now · screenshots without navigating |

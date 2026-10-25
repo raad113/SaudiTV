@@ -67,53 +67,34 @@ check("photos: every photo credited in docs/PHOTO-CREDITS.md", all(f in credits 
 bundled = json.loads((ROOT / "assets/backgrounds/backgrounds.json").read_text(encoding="utf-8"))
 check("bundled backgrounds exist", all((ROOT / "assets/backgrounds" / b["file"]).is_file() for b in bundled))
 
-# ---- verse and hadith: only checked text, and every character has a glyph
+# ---- the verse of the day (the Quran) and the hadith of the day (Sahih al-Bukhari only): fetched text, every
+# character has a glyph
 page = (ROOT / "dist/tv.html").read_text(encoding="utf-8")
 verses = json.loads(re.search(r"const VERSES = (\[.*?\]);", page, re.S).group(1))
-hadith = json.loads(re.search(r"const HADITH = (\[.*?\]);", page, re.S).group(1))
+bukhari = json.loads(re.search(r"const BUKHARI = (\{.*?\});\n", page, re.S).group(1))
 check("verses present", len(verses) >= 200, len(verses))
-check("hadith present", len(hadith) >= 200, len(hadith))
-check("at least 500 verses and hadith together (a new one every day for over a year)", len(verses) + len(hadith) >= 500, len(verses) + len(hadith))
 basmala = [v["surah"] for v in verses if v["surah"] != "سورة الفاتحة"
-           and re.sub("[\u064B-\u065F\u0670]", "", v["text"]).startswith("بسم الله الرحمن الرحيم")]
+           and re.sub("[ً-ٰٟ]", "", v["text"]).startswith("بسم الله الرحمن الرحيم")]
 check("no basmala in front of a verse (it is not part of the verse)", not basmala, basmala)
 check("surah names keep آ (آل عمران)", all("سورة ال " not in v["surah"] for v in verses), sorted({v["surah"] for v in verses if "سورة ال " in v["surah"]}))
-shown = [json.dumps(h["parts"], ensure_ascii=False) for h in hadith]
-check("no verse or hadith twice", len({v["text"] for v in verses}) == len(verses) and len(set(shown)) == len(shown))
-raw = json.loads((ROOT / "assets/shared/hadith.json").read_text(encoding="utf-8"))
-sys.path.insert(0, str(ROOT / "src"))
-from build import narration_parts, simple_parts, weak_in_tirmidhi, weak_by_scholars, HADITH_MAX_WORDS, ISNAD_MAX_WORDS   # noqa: E402
-sys.path.insert(0, str(ROOT / ".github/tools"))
-from verify_hadith import norm as plain   # noqa: E402  (the six-book check's own matching)
-form = lambda h: json.dumps(simple_parts(narration_parts(h["full"]["text"])), ensure_ascii=False)
-found = {form(h) for h in raw if h.get("found") and h.get("full")}
-check("hadith on screen come from narrations found in the six books", set(shown) <= found, len(set(shown) - found))
-full_text = {plain(h["full"]["text"]) for h in raw if h.get("full")}
-spelled = lambda t: plain(t.replace("ﷺ", " صلى الله عليه وسلم "))   # ﷺ on screen is the book's «صلى الله عليه وسلم»
-cut = [t[:40] for h in hadith for k, t in h["parts"] if k == "q" and not any(spelled(t) in f for f in full_text)]
-check("his words on screen are the book's words, uncut", not cut, cut)
-opener = lambda h: plain(h["parts"][0][1]).split()[1:2]
-not_a_name = [plain(h["parts"][0][1])[:30] for h in hadith if h["parts"][0][0] != "n" or not h["parts"][0][1].startswith("عن ")
-              or opener(h)[0] in ("رسول", "النبي", "لي", "لنا", "قال", "سمع", "يقول", "ابا", "ابو", "ابيه", "جده", "اذناي", "رجل", "انسا", "سعدا")]
-check("each hadith starts from the companion («عن أبي هريرة …»)", not not_a_name, not_a_name)
-check("each full narration holds the words it was found by",
-      all(plain(h["text"]) in plain(h["full"]["text"]) for h in raw if h.get("full")),
-      [h["text"] for h in raw if h.get("full") and plain(h["text"]) not in plain(h["full"]["text"])])
-weak = {form(h) for h in raw if h.get("full") and weak_in_tirmidhi(h["full"]["text"])}
-check("no hadith al-Tirmidhi grades only غريب/ضعيف, or as a companion's words, is shown", weak and not (weak & set(shown)), len(weak & set(shown)))
-long_chain = {form(h) for h in raw if h.get("full") and (lambda w: w and w[0][0] == "n" and len(w[0][1].split()) > ISNAD_MAX_WORDS)(narration_parts(h["full"]["text"]))}
-check(f"no hadith with an isnad over {ISNAD_MAX_WORDS} words is shown", not (long_chain & set(shown)), len(long_chain & set(shown)))
-graded_weak = {form(h) for h in raw if h.get("full") and weak_by_scholars(h["full"].get("grades"))}
-check("no hadith the scholars grade weak (Al-Albani first) is shown", graded_weak and not (graded_weak & set(shown)), len(graded_weak & set(shown)))
-sunan = [h for h in raw if h.get("full") and h["full"]["book"] not in ("صحيح البخاري", "صحيح مسلم")]
-check("every narration from the four Sunan carries the scholars' grades", all(h["full"].get("grades") for h in sunan),
-      [h["text"][:30] for h in sunan if not h["full"].get("grades")])
-check("every hadith on screen has the Prophet's words and fits the card",
-      all(any(k == "q" for k, _ in h["parts"]) and sum(len(t.split()) for _, t in h["parts"]) <= HADITH_MAX_WORDS for h in hadith))
+check("no verse twice", len({v["text"] for v in verses}) == len(verses))
+src = json.loads((ROOT / "assets/shared/bukhari.json").read_text(encoding="utf-8"))
+check("hadith: Sahih al-Bukhari only, the ara-bukhari edition of fawazahmed0/hadith-api (.github/tools/fetch_bukhari.py)",
+      "fawazahmed0/hadith-api" in src.get("source", "") and "/ara-bukhari" in src["source"] and src.get("book") == "صحيح البخاري", src.get("source"))
+check("hadith: the page has the file's short list and bundled texts", bukhari == {k: src[k] for k in ("maxWords", "short", "fallback")})
+short, fallback = bukhari["short"], bukhari["fallback"]
+check("hadith: over a year of short narrations, each once", len(short) >= 366 and len(set(short)) == len(short), len(short))
+check("hadith: about 60 bundled for a TV offline, each from the short list, each once",
+      50 <= len(fallback) <= 70 and all(f["n"] in short for f in fallback) and len({f["n"] for f in fallback}) == len(fallback), len(fallback))
+check("hadith: each bundled text the Prophet's words ﷺ between the book's quotes, at most maxWords words",
+      all(f["text"].count('"') == 2 and "صلى الله عليه وسلم" in re.sub("[ً-ْٰ]", "", f["text"])
+          and len(f["text"].split()) <= bukhari["maxWords"] <= 45 for f in fallback))
+check("no other hadith collection anywhere on the screen (the six books' hadith are gone)",
+      "const HADITH = " not in page and not re.search("صحيح مسلم|سنن الترمذي|سنن أبي داود|سنن النسائي|سنن ابن ماجه|جامع الترمذي", page))
 font = set(TTFont(ROOT / "assets/fonts/Thmanyah-Regular.woff2").getBestCmap())
 marks = set(TTFont(ROOT / "assets/fonts/NotoNaskhArabic-Marks.woff2").getBestCmap())
-text = "".join(v["text"] + v["surah"] for v in verses) + "".join(t for h in hadith for _, t in h["parts"]) \
-    + "".join(h["source"] for h in hadith)
+saw = re.compile(r"\s+".join("[ً-ْٰ]*".join(w) + "[ً-ْٰ]*" for w in "صلى الله عليه وسلم".split()))
+text = "".join(v["text"] + v["surah"] for v in verses) + "".join(saw.sub("ﷺ", re.sub("[‎‏\"]", "", f["text"])) for f in fallback)
 missing = sorted({c for c in text if not c.isspace() and ord(c) not in font and c not in "ﷺ﴿﴾"})   # those: NotoMarks
 check("verse/hadith text: every character in Thmanyah", not missing, missing)
 check("NotoMarks has ﷺ ﴿ ﴾", {0xFDFA, 0xFD3E, 0xFD3F} <= marks)
@@ -136,6 +117,27 @@ if upd.is_file():
           all(a.get("url", "").startswith(tag) and re.fullmatch(r"[0-9a-f]{64}", a.get("sha256", "")) and a.get("size", 0) > 0
               and a.get("versionCode") == u.get("versionCode") for a in apks.values()), list(apks.values()))
     check("update.json: Arabic notes", bool(re.search(r"[\u0600-\u06FF]", u.get("notes", ""))), u.get("notes"))
+
+# ---- the cards and the news sources: the page, the settings app and the launcher list the same ones
+tmpl = (ROOT / "src/template.html").read_text(encoding="utf-8")
+prefs = (ROOT / "android/app/src/main/java/com/raad/sauditv/screensaver/Prefs.java").read_text(encoding="utf-8")
+home = (ROOT / "android/launcher/src/main/java/com/raad/sauditv/home/HomePage.java").read_text(encoding="utf-8")
+page_panels = re.findall(r"'(\w+)'", re.search(r"const PANEL_IDS = \[(.*?)\];", tmpl).group(1))
+prefs_panels = [x for x in re.findall(r'\{"(\w+)", "', re.search(r"static final String\[\]\[\] PANELS = \{(.*?)\n    \};", prefs, re.S).group(1)) if x != "none"]
+home_panels = re.findall(r'"(\w+)"', re.search(r"PANELS = Arrays\.asList\((.*?)\);", home, re.S).group(1))
+check("cards: the page, the settings app (Prefs.PANELS) and the launcher (HomePage.PANELS) list the same ones",
+      sorted(page_panels) == sorted(prefs_panels) == sorted(home_panels), (page_panels, prefs_panels, home_panels))
+block = re.search(r"const NEWS_SOURCES = \{(.*?)\n\};", tmpl, re.S).group(1)
+page_src = {}
+for m in re.finditer(r"\n  (\w+): \[(.*?)\n  \],", block, re.S):
+    page_src[m.group(1)] = [(i.group(1), "on: true" in i.group(0)) for i in re.finditer(r"\{id: '(\w+)'.*?\}", m.group(2))]
+pages = re.findall(r'"(\w+)"', re.search(r"NEWS_PAGES = \{(.*?)\};", prefs).group(1))
+java_blocks = re.findall(r"\{   // .*?\n(.*?)\n        \},", re.search(r"NEWS_SOURCES = \{(.*?)\n    \};", prefs, re.S).group(1), re.S)
+java_src = {pg: [(i, d == "1") for i, _, d in re.findall(r'\{"(\w+)", "([^"]+)", "([01])"\}', b)] for pg, b in zip(pages, java_blocks)}
+check("news sources: the page (NEWS_SOURCES) and the settings app (Prefs.NEWS_SOURCES) have the same ids, order and defaults",
+      page_src == java_src and set(pages) == {"news", "tech", "local", "world"}, (page_src, java_src))
+check("news sources: 3 or 4 on by default on every page", all(3 <= sum(d for _, d in v) <= 4 for v in java_src.values()),
+      {k: sum(d for _, d in v) for k, v in java_src.items()})
 
 # ---- launcher config
 cfg = ET.parse(ROOT / "android/launcher/src/main/res/values/config.xml").getroot()

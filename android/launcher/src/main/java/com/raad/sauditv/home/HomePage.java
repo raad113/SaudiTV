@@ -50,8 +50,8 @@ final class HomePage {
     private static final String FONTS = REPO + "assets/fonts/", BUNDLED = REPO + "assets/backgrounds/", HOSTED = REPO + "photos/";
     private static final int KEEP_PHOTOS = 12;   // the page's 12-photo set (photoSet), downloaded once each
     /** the page's panel ids (window.sauditvCurrentPanel() returns one of these) */
-    static final List<String> PANELS = Arrays.asList("prayers", "forecast", "matches", "standings", "news", "local", "tech",
-            "shows", "verse");   // shows, verse (they have detail pages now); local, the city's news
+    static final List<String> PANELS = Arrays.asList("prayers", "forecast", "matches", "standings", "news", "local", "world",
+            "tech", "shows", "verse", "hadith");   // as the page's PANEL_IDS: each has a detail page
     /** The room the launcher's views take, in dp (= the page's CSS px): the pills' height (top left, TOP_DP from the
      *  top), the apps row's height and its distance from the bottom edge (above the page's 42px ticker tape and,
      *  its 30px info strip: DOCK_B_DP - 42). */
@@ -162,6 +162,7 @@ final class HomePage {
         // a comma list ("prayers,forecast,matches") = one card that shows each in turn, 30 s each
         String[] panels = panel.replace(" ", "").split(",");
         panel = panels[0].isEmpty() ? "none" : panels[0];
+        Numerals.fromFragment(frag);   // «شكل الأرقام» for the launcher's own text too
         frag = frag.replaceAll("(^|&)(panel|panels|rotate|week|widget|home)=[^&]*", "");   // the screensaver's own card choice
         fragment = frag;
         firstPanel = panel;
@@ -240,6 +241,7 @@ final class HomePage {
         @JavascriptInterface public boolean vpn() { return vpn.vpn(); }
         @JavascriptInterface public int vpnState() { return vpn.vpnState(); }
         @JavascriptInterface public String vpnCountry() { return vpn.vpnCountry(); }
+        @JavascriptInterface public boolean vpnApp() { return vpn.vpnApp(); }
         @JavascriptInterface public void cardRect(double l, double t, double w, double h, double vw) {
             final WebView from = web;
             activity.runOnUiThread(() -> { if (web == from && !activity.isDestroyed()) placeCard(l, t, w, h, vw); });

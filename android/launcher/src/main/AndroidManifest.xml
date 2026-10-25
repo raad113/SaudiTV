@@ -37,6 +37,10 @@
         <package android:name="com.tcl.suspension" />
         <package android:name="com.mediatek.wwtv.tvcenter" />   <!-- live_tv_package on MediaTek sets (Hisense and others) -->
         <package android:name="com.raad.sauditv.screensaver" />
+        <!-- VPN apps (VpnStatus.appInstalled): without one the VPN badge, its flag and the panel's VPN mark are hidden -->
+        <intent>
+            <action android:name="android.net.VpnService" />
+        </intent>
     </queries>
 
     <application

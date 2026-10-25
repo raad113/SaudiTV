@@ -7,7 +7,8 @@
 #   optimize/saver.sh find-team الهلال             a club's id (Arabic or English name): id:Name | league
 #   optimize/saver.sh teams 136013:Al-Hilal 150643:Al-Zulfi    followed teams in order (up to 10)
 #   optimize/saver.sh card prayers,forecast,news   beside the clock: one, or several that rotate every 30 s, of
-#                                                  prayers verse forecast matches standings news local tech shows; or none
+#                                                  prayers verse hadith forecast matches standings news local world tech
+#                                                  shows; or none (verse: the Quran; hadith: Sahih al-Bukhari)
 #   optimize/saver.sh home-card prayers,news       the home screen's card: the same choices
 #   optimize/saver.sh genres Drama,Comedy          episodes card: Drama Comedy Action Crime Thriller Mystery
 #                                                  Science-Fiction Fantasy Adventure Romance Family History Horror
@@ -15,6 +16,9 @@
 #   optimize/saver.sh langs Arabic,English         episodes card: English Arabic Korean Japanese Turkish Spanish
 #                                                  French Hindi German  ("" = all)
 #   optimize/saver.sh minrating 7.5                episodes card: lowest rating, one of 0 6 6.5 7 7.5 8
+#   optimize/saver.sh numerals 0-9|arabic          «شكل الأرقام»: 0 1 2 3 (the default) or ٠ ١ ٢ ٣, everywhere
+#   optimize/saver.sh sources world skynews,bbc    a news page's sources (news tech local world), read together; ""
+#                                                  = its defaults. The ids: optimize/saver.sh show (sources_…)
 #   optimize/saver.sh autoupdate on|off            the page's auto-update from github.com/raad113/SaudiTV (on by default)
 #   optimize/saver.sh update                       download the latest screen now; says where from and which page shows
 #   optimize/saver.sh app-check                    is there a newer release of both apps? (checks only; installing is
@@ -53,6 +57,13 @@ case "${1:-}" in
   autoupdate)
     case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh autoupdate on|off"; exit 1 ;; esac
     send SET "--es autoupdate $v" ;;
+  numerals)
+    case "${2:-}" in 0-9|latin|western|latn) v=latn ;; arabic|arab|٠-٩) v=arab ;; *) echo "usage: optimize/saver.sh numerals 0-9|arabic"; exit 1 ;; esac
+    send SET "--es numerals $v" ;;
+  sources)
+    case "${2:-}" in news|tech|local|world) ;; *) echo "usage: optimize/saver.sh sources news|tech|local|world id,id (\"\" = the defaults)"; exit 1 ;; esac
+    [ $# -ge 3 ] || { echo "usage: optimize/saver.sh sources $2 id,id (\"\" = the defaults)"; exit 1; }
+    send SET "--es src_$2 $(quote "$3")" ;;
   find-team) shift; "$PY" -I optimize/find-team.py "$@" ;;   # Arabic or English name
-  *) sed -n '2,21p' "$0"; exit 1 ;;
+  *) sed -n '2,25p' "$0"; exit 1 ;;
 esac

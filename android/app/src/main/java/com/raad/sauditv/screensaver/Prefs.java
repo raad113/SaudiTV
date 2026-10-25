@@ -99,16 +99,88 @@ final class Prefs {
         return true;
     }
 
-    // The card beside the clock: value sent to the page (#panel=), Arabic label
+    // The card beside the clock: value sent to the page (#panel=), Arabic label. The page (PANEL_IDS), the launcher
+    // (HomePage.PANELS) and optimize/saver.sh list the same ids.
     static final String[][] PANELS = {
         {"shows", "جديد المسلسلات"}, {"prayers", "مواقيت الصلاة اليوم"}, {"forecast", "طقس الأيام القادمة"},
-        {"matches", "مباريات فرقك القادمة"}, {"verse", "آية أو حديث اليوم"},
-        // three more cards the page now has
+        {"matches", "مباريات فرقك القادمة"},
+        {"verse", "آية اليوم"},     // a verse of the Quran
+        {"hadith", "حديث اليوم"},   // a hadith of Sahih al-Bukhari (the page's loadHadith)
         {"standings", "ترتيب دوري روشن"}, {"news", "أخبار السعودية"},
         {"local", "أخبار المدينة"},   // the news of the city set above (the page's loadLocalNews)
+        {"world", "أخبار العالم"},
         {"tech", "أخبار التقنية والذكاء الاصطناعي"},
         {"none", "لا شيء"},
     };
+
+    // ---------- «شكل الأرقام»: 0 1 2 3 (latn, the default) or ٠ ١ ٢ ٣ (arab), on the page (#numerals), the launcher
+    // (ConfigProvider's numerals) and this app's own screens
+    static final String[][] NUMERALS = {{"latn", "0 1 2 3"}, {"arab", "٠ ١ ٢ ٣"}};
+
+    String numerals() { return "arab".equals(sp.getString("numerals", "latn")) ? "arab" : "latn"; }
+    void setNumerals(String v) { sp.edit().putString("numerals", "arab".equals(v) ? "arab" : "latn").apply(); }
+
+    /** the digits of s (either form) in the chosen one */
+    static String digits(Context c, String s) {
+        if (s == null) return "";
+        boolean arab = "arab".equals(new Prefs(c).numerals());
+        StringBuilder b = new StringBuilder(s.length());
+        for (char ch : s.toCharArray()) {
+            if (arab && ch >= '0' && ch <= '9') b.append((char) ('٠' + (ch - '0')));
+            else if (!arab && ch >= '٠' && ch <= '٩') b.append((char) ('0' + (ch - '٠')));
+            else b.append(ch);
+        }
+        return b.toString();
+    }
+    static String digits(Context c, long n) { return digits(c, String.valueOf(n)); }
+    /** the decimal point and the percent sign that go with the digits: ٫ ٪ or . % */
+    static char decimal(Context c) { return "arab".equals(new Prefs(c).numerals()) ? '٫' : '.'; }
+    static char percent(Context c) { return "arab".equals(new Prefs(c).numerals()) ? '٪' : '%'; }
+
+    // ---------- each news page's sources: id (the page's NEWS_SOURCES in src/template.html), label, on by default.
+    // Sent as #src_<page>=id,id; a page without a pick reads its defaults. tests/check.py compares both lists.
+    static final String[] NEWS_PAGES = {"news", "tech", "local", "world"};
+    static final String[][][] NEWS_SOURCES = {
+        {   // news: أخبار السعودية
+            {"aawsat", "الشرق الأوسط", "1"}, {"okaz", "عكاظ", "1"}, {"sabq", "سبق", "1"}, {"spa", "واس", "1"},
+            {"alarabiya", "العربية", "0"}, {"alriyadh", "الرياض", "0"}, {"alwatan", "الوطن", "0"},
+            {"bbc", "بي بي سي عربي", "0"}, {"google", "أخبار Google", "0"},
+        },
+        {   // tech
+            {"techwd", "عالم التقنية", "1"}, {"aitnews", "البوابة العربية للأخبار التقنية", "1"},
+            {"aawsat", "الشرق الأوسط", "1"}, {"bbc", "بي بي سي عربي", "0"}, {"argaam", "أرقام", "0"},
+            {"google", "أخبار Google", "0"},
+        },
+        {   // local: the city's news
+            {"google", "أخبار Google", "1"}, {"bing", "أخبار Bing", "1"}, {"okaz", "عكاظ (محليات)", "1"},
+            {"alwatan", "الوطن (محليات)", "0"},
+        },
+        {   // world
+            {"alarabiya", "العربية", "1"}, {"skynews", "سكاي نيوز عربية", "1"}, {"bbc", "بي بي سي عربي", "1"},
+            {"cnn", "CNN بالعربية", "1"}, {"aawsat", "الشرق الأوسط", "0"}, {"aljazeera", "الجزيرة", "0"},
+            {"france24", "فرانس 24", "0"}, {"google", "أخبار Google", "0"},
+        },
+    };
+
+    static String[][] newsSources(String page) {
+        for (int i = 0; i < NEWS_PAGES.length; i++) if (NEWS_PAGES[i].equals(page)) return NEWS_SOURCES[i];
+        return new String[0][];
+    }
+
+    /** the picked sources of a news page, in the list's order; none picked = its defaults */
+    List<String> sources(String page) {
+        String[][] all = newsSources(page);
+        List<String> want = list("src_" + page), out = new ArrayList<>(), def = new ArrayList<>();
+        for (String[] x : all) { if (want.contains(x[0])) out.add(x[0]); if ("1".equals(x[2])) def.add(x[0]); }
+        return out.isEmpty() ? def : out;
+    }
+    /** an empty list (or exactly the defaults) is stored as none: the page's own defaults */
+    void setSources(String page, List<String> ids) {
+        List<String> def = new ArrayList<>(), keep = new ArrayList<>();
+        for (String[] x : newsSources(page)) { if ("1".equals(x[2])) def.add(x[0]); if (ids.contains(x[0])) keep.add(x[0]); }
+        if (keep.isEmpty() || keep.equals(def)) sp.edit().remove("src_" + page).apply();
+        else setList("src_" + page, keep);
+    }
 
     /** Older builds had an on/off switch for the shows card; off becomes "none". */
     String panel() { return sp.getString("panel", sp.getBoolean("showWeek", true) ? "shows" : "none"); }
@@ -188,7 +260,16 @@ final class Prefs {
             + "&genres=" + Uri.encode(join(list("genres"), ","))
             + "&langs=" + Uri.encode(join(list("langs"), ","))
             + "&shows=" + join(ids, ",")
-            + "&minrating=" + minRating();
+            + "&minrating=" + minRating()
+            + "&numerals=" + numerals()
+            + sourceParams();
+    }
+
+    /** "&src_news=a,b…" for each news page whose sources were picked (the others: the page's defaults) */
+    String sourceParams() {
+        StringBuilder b = new StringBuilder();
+        for (String page : NEWS_PAGES) if (sp.contains("src_" + page)) b.append("&src_").append(page).append('=').append(join(sources(page), ","));
+        return b.toString();
     }
 
     /** "a,b,c" becomes a rotating card (&panel=a&panels=a,b,c&rotate=30); one value stays &panel=v. */
