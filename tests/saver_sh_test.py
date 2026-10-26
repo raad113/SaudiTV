@@ -102,9 +102,9 @@ with tempfile.TemporaryDirectory() as tmp:
           "optimize/saver.sh photos ours,bing" in saver("help")[1]
           and all(w in saver("help")[1] for w in ("saudi (", "ours (", "bing (", "world (", '"" = ours', "read as ours")), "")
     usage = saver("help")[1]
-    check("saver.sh usage lists rotate («مدة كل بطاقة») and facts («سطور شاشة التوقف»: its five ids, up to 4)",
+    check("saver.sh usage lists rotate («مدة كل بطاقة») and facts («سطور شاشة التوقف»: its five ids, up to 5)",
           "optimize/saver.sh rotate 10|15|20|30|60" in usage and "optimize/saver.sh facts prayer,weather,hijri" in usage
-          and all(w in usage for w in ("prayer match weather ramadan hijri", "up to 4", "«بطاقات شاشة التوقف»"))
+          and all(w in usage for w in ("prayer match weather ramadan hijri", "up to 5", "«بطاقات شاشة التوقف»"))
           and "rotate every 30 s" not in usage, usage[-1500:])
     check("saver.sh usage lists the athan's commands (athan on|off, athan-test, athan-show)",
           all(c in usage for c in ("optimize/saver.sh athan on|off", "optimize/saver.sh athan-test fajr|dhuhr|asr|maghrib|isha",

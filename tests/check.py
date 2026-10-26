@@ -197,7 +197,7 @@ prefs_src = (SAVER_SRC / "Prefs.java").read_text(encoding="utf-8")
 # in «الجديد» only, «سطور شاشة التوقف» (at most four: «أربعة على الأكثر»)
 saver_sec = settings_src[settings_src.index('header("شاشة التوقف");'):settings_src.index('header("الشاشة الرئيسية (سعودي TV)");')]
 check("settings: the screensaver section is «شاشة التوقف» with «البطاقات», «مدة كل بطاقة» and («الجديد» only) «سطور شاشة التوقف»",
-      'row("البطاقات", prefs.panelTitle(prefs.panel())' in saver_sec and 'row("مدة كل بطاقة", rotateLabel(prefs.rotateSec())' in saver_sec
+      'row("بطاقات شاشة التوقف", prefs.panelTitle(prefs.panel())' in saver_sec and 'row("مدة كل بطاقة", rotateLabel(prefs.rotateSec())' in saver_sec
       and re.search(r'if \(Look\.NEW\.equals\(prefs\.look\(\)\)\)\s*row\("سطور شاشة التوقف"', saver_sec) is not None
       and 'header("بجانب الساعة")' not in settings_src and 'row("المحتوى"' not in settings_src
       and '"بطاقات شاشة التوقف") + " (تتناوب بترتيب الأرقام)"' in settings_src and '"بجانب الساعة")' not in settings_src)

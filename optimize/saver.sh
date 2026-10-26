@@ -26,7 +26,7 @@
 #                                                  in that order, the news pages one card; none: its own four)
 #   optimize/saver.sh rotate 10|15|20|30|60        «مدة كل بطاقة»: each card's seconds (15 by default), the screensaver's
 #                                                  and the home screen's, both looks
-#   optimize/saver.sh facts prayer,weather,hijri   «سطور شاشة التوقف», «الجديد»'s screensaver lines bottom left: up to 4,
+#   optimize/saver.sh facts prayer,weather,hijri   «سطور شاشة التوقف», «الجديد»'s screensaver lines bottom left: up to 5,
 #                                                  in order, of prayer match weather ramadan hijri (the Hijri date); ""
 #                                                  = the default prayer,match,weather,ramadan
 #   optimize/saver.sh numerals 0-9|arabic          «شكل الأرقام»: 0 1 2 3 (the default) or ٠ ١ ٢ ٣, everywhere
@@ -124,8 +124,8 @@ case "${1:-}" in
     case "${2:-}" in 10|15|20|30|60) ;; *) echo "usage: optimize/saver.sh rotate 10|15|20|30|60 (seconds)"; exit 1 ;; esac
     send SET "--es rotate $2" ;;
   facts)
-    [ $# -ge 2 ] || { echo "usage: optimize/saver.sh facts prayer,match,weather,ramadan,hijri (up to 4; \"\" = the default)"; exit 1; }
-    case ",$2," in *[!a-z,]*) echo "usage: optimize/saver.sh facts prayer,match,weather,ramadan,hijri (up to 4; \"\" = the default)"; exit 1 ;; esac
+    [ $# -ge 2 ] || { echo "usage: optimize/saver.sh facts prayer,match,weather,ramadan,hijri (up to 5; \"\" = the default)"; exit 1; }
+    case ",$2," in *[!a-z,]*) echo "usage: optimize/saver.sh facts prayer,match,weather,ramadan,hijri (up to 5; \"\" = the default)"; exit 1 ;; esac
     send SET "--es facts $(quote "$2")" ;;
   autoupdate)
     case "${2:-}" in on|true) v=true ;; off|false) v=false ;; *) echo "usage: optimize/saver.sh autoupdate on|off"; exit 1 ;; esac

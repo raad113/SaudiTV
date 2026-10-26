@@ -358,8 +358,8 @@ public class LogicTest {
             PhotoSize.cacheName("abc").equals("a9993e364706816aba3e25717850c26c9cd0d89d.jpg")
                 && !PhotoSize.cacheName(th).equals(PhotoSize.cacheName(PhotoSize.commonsWidth(th, 1280, 720))), PhotoSize.cacheName("abc"));
 
-        // ---- «سطور شاشة التوقف» (SaverOptions.parseFacts, the page's #facts=): ids in order, each once, at most four;
-        // "" the default four, sent as nothing (the page's own); unknown ids or five refused
+        // ---- «سطور شاشة التوقف» (SaverOptions.parseFacts, the page's #facts=): ids in order, each once, at most five (all
+        // of them); "" the default four, sent as nothing (the page's own); unknown ids refused
         List<String> fx = SaverOptions.parseFacts("hijri, weather,prayer");
         check("facts: ids kept in their order (hijri, weather, prayer); sent as &facts=hijri,weather,prayer",
             fx != null && String.join(",", fx).equals("hijri,weather,prayer")
@@ -370,14 +370,15 @@ public class LogicTest {
             String.join(",", SaverOptions.parseFacts("")).equals("prayer,match,weather,ramadan")
             && SaverOptions.parseFacts("default").equals(SaverOptions.DEFAULT_FACTS)
             && SaverOptions.factsParam(SaverOptions.parseFacts("")).isEmpty(), SaverOptions.parseFacts(""));
-        check("facts: an unknown id, five ids, or none at all refused (null)",
-            SaverOptions.parseFacts("prayer,clock") == null && SaverOptions.parseFacts("prayer,match,weather,ramadan,hijri") == null
+        check("facts: all five ids kept; an unknown id or none at all refused (null)",
+            SaverOptions.parseFacts("prayer,clock") == null
+            && String.join(",", SaverOptions.parseFacts("prayer,match,weather,ramadan,hijri")).equals("prayer,match,weather,ramadan,hijri")
             && SaverOptions.parseFacts(",,") == null && SaverOptions.parseFacts(null) == null, "");
         check("facts: a stored bad or missing value shows the default four",
             SaverOptions.facts(null).equals(SaverOptions.DEFAULT_FACTS) && SaverOptions.facts("x,y").equals(SaverOptions.DEFAULT_FACTS)
             && String.join(",", SaverOptions.facts("hijri")).equals("hijri"), "");
         check("facts: each has its Arabic label («التاريخ الهجري»)", SaverOptions.factLabel("hijri").equals("التاريخ الهجري")
-            && SaverOptions.FACTS.length == 5 && SaverOptions.MAX_FACTS == 4, "");
+            && SaverOptions.FACTS.length == 5 && SaverOptions.MAX_FACTS == 5, "");
         // ---- «مدة كل بطاقة» (SaverOptions.parseRotate, the page's #rotate=; the launcher's HomeLook.rotateSec)
         check("rotate: 10, 15, 20, 30, 60 (\"15s\" too); 15 by default",
             SaverOptions.parseRotate("10") == 10 && SaverOptions.parseRotate(" 15s") == 15 && SaverOptions.parseRotate("60") == 60

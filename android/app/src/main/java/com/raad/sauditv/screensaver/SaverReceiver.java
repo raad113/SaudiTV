@@ -31,7 +31,7 @@ import java.util.List;
  *       [--es tile_shape rounded|circle] [--es focus_style google|apple]   (the home screen's app tiles)
  *       [--es look classic|new]   («شكل الواجهة»: the home screen and the screensaver, Look)
  *       [--es rotate 10|15|20|30|60]   («مدة كل بطاقة»: each card's seconds, both looks, the screensaver and the home screen)
- *       [--es facts prayer,match,weather,ramadan,hijri]   («سطور شاشة التوقف», «الجديد»'s screensaver: up to 4 in order;
+ *       [--es facts prayer,match,weather,ramadan,hijri]   («سطور شاشة التوقف», «الجديد»'s screensaver: up to 5 in order;
  *       "" = the default prayer,match,weather,ramadan; SaverOptions)
  *       [--es radio on|off] [--es radio_station saudi|cairo|63|https://…] [--es radio_volume 10…100]
  *       [--es radio_when both|saver|home]

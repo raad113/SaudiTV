@@ -20,7 +20,7 @@ final class SaverOptions {
     static final String[][] FACTS = {
         {"prayer", "الصلاة القادمة"}, {"match", "المباراة القادمة"}, {"weather", "الطقس"},
         {"ramadan", "رمضان"}, {"hijri", "التاريخ الهجري"}};
-    static final int MAX_FACTS = 4;
+    static final int MAX_FACTS = 5;
     static final List<String> DEFAULT_FACTS = Arrays.asList("prayer", "match", "weather", "ramadan");
 
     static final int[] ROTATE_SECS = {10, 15, 20, 30, 60};

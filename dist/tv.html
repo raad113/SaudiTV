@@ -495,6 +495,11 @@
   .nx-ck b{direction:ltr;unicode-bidi:isolate}
   .nx-ck i{font:700 30px/1 ThmanyahDisplay,serif;color:var(--g);margin-top:10px;letter-spacing:0}
   .nx-dk{width:300px;padding-inline-start:22px;padding-bottom:4px;border-inline-start:1px solid var(--gl)}
+  .nx-mx{width:220px;padding-inline-start:22px;padding-bottom:4px;border-inline-start:1px solid var(--gl)}
+  .nx-mx>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nx-mx .tm{margin-top:5px;font-size:16px;font-weight:500}
+  .nx-mx .wh{margin:3px 0 2px;font:700 19px/1.32 ThmanyahDisplay,serif}
+  #nx .nx-mx .m{font-size:12px}
   .nx-st{margin:5px 0 6px;font:700 21px/1.32 ThmanyahDisplay,serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .nx-rh{position:absolute;right:40px;left:40px;top:166px;display:flex;align-items:center;gap:12px;font-size:15px;font-weight:500}
   .nx-rh i{flex:1;height:1px;background:linear-gradient(270deg,var(--gl),rgba(235,203,139,0))}
@@ -502,19 +507,19 @@
   #nx-ah{top:var(--ah,374px)}
   .nx-rail{position:absolute;top:196px;right:40px;display:flex;gap:12px;align-items:flex-start;
     transition:transform 140ms cubic-bezier(.23,1,.32,1)}
-  .nx-c{flex:none;height:164px;padding:13px 16px;border-radius:14px;background:rgba(11,10,18,.66);border:1px solid rgba(255,255,255,.1);
+  .nx-c{position:relative;flex:none;height:164px;padding:13px 16px;border-radius:14px;background:rgba(11,10,18,.66);border:1px solid rgba(255,255,255,.1);
     overflow:hidden;transition:transform 140ms cubic-bezier(.23,1,.32,1),background-color 140ms cubic-bezier(.23,1,.32,1)}
   #nx .nx-c.o{visibility:hidden}
   #nx .nx-c.f{background:var(--pp);color:var(--pi);border-color:transparent;transform:translateY(-4px);box-shadow:0 0 0 3px rgba(246,239,225,.24)}
   #nx .f .k,#nx .f s,#nx .f .pt small,#nx .f .orn,#nx .nx-q.f .m{color:var(--pg)}
   #nx .f .m{color:var(--p2)}
-  .nx-p{width:268px}
+  .nx-d,.nx-n{width:434px}
   .nx-p .pm{display:flex;align-items:baseline;justify-content:space-between;margin-top:3px}
   .nx-p .pn{font:700 31px/1.05 ThmanyahDisplay,serif}
   .nx-p .pt{font:700 27px/1.2 ThmanyahDisplay,serif}
   .nx-p .pt small{font-size:15px;color:var(--g);margin-inline-start:3px}
   .nx-p .m{margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .nx-tl{list-style:none;display:flex;margin-top:14px;position:relative}
+  .nx-tl{list-style:none;display:flex;margin-top:9px;position:relative}
   .nx-tl::before,.nx-tl::after{content:'';position:absolute;top:3.5px;right:10%;height:1.5px}
   .nx-tl::before{left:10%;background:rgba(255,255,255,.2)}
   .nx-tl::after{width:var(--w);background:var(--gl)}
@@ -531,22 +536,31 @@
   .f .nx-tl .p i{background:#8E7F69}
   .f .nx-tl .n{color:var(--pi)}
   .f .nx-tl .n i{background:var(--pg);border-color:var(--pg);box-shadow:0 0 0 3px rgba(135,90,20,.2)}
-  .nx-n{width:264px;padding:12px 14px 10px}
-  .nx-n.ni .k span{display:none}
-  .nx-n .nh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .nx-n{padding:12px 14px 10px}
+  .ni .k span{display:none}
+  :is(.nx-n,.nx-d) .nh{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .nx-ch{display:flex;gap:4px;min-width:0;overflow:hidden}
   .nx-ch span{height:20px;line-height:18px;padding:0 7px;border-radius:10px;border:1px solid rgba(255,255,255,.16);font-size:11.5px;
     color:var(--i2);white-space:nowrap}
   .nx-ch .on{background:var(--g);color:var(--pi);border-color:transparent;font-weight:500}
-  .nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sm{transition:opacity .15s ease}
-  .nx-n.tx .nx-ch,.nx-n.tx .nx-nl,.nx-n.tx .nx-sm{opacity:0}
-  .nx-n.ti .nx-ch,.nx-n.ti .nx-nl,.nx-n.ti .nx-sm{animation:nxTabIn .15s ease both}
+  .nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sl,.nx-d>:is(.nh,.nx-db){transition:opacity .15s ease}
+  .nx-n.tx .nx-ch,.nx-n.tx .nx-nl,.nx-n.tx .nx-sl,.nx-d.tx>:is(.nh,.nx-db){opacity:0}
+  .nx-n.ti .nx-ch,.nx-n.ti .nx-nl,.nx-n.ti .nx-sl,.nx-d.ti>:is(.nh,.nx-db){animation:nxTabIn .15s ease both}
   @keyframes nxTabIn{from{opacity:0}}
-  @media (prefers-reduced-motion:reduce){.nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sm{transition:none;animation:none}}
+  @media (prefers-reduced-motion:reduce){.nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sl,.nx-d>:is(.nh,.nx-db){transition:none;animation:none}}
+  .nx-ln{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,255,255,.12)}
+  .nx-ln i{display:block;height:100%;background:var(--g);transform:scaleX(0);transform-origin:right center}
+  .nx-dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:6px;height:7px}
+  #nx .nx-dots b{display:block;flex:none;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3)}
+  #nx .nx-dots b.on{width:7px;height:7px;background:var(--g)}
+  .f .nx-ln{background:rgba(28,22,15,.12)}
+  .f .nx-ln i{background:var(--pg)}
+  #nx .f .nx-dots b{background:rgba(28,22,15,.25)}
+  #nx .f .nx-dots b.on{background:var(--pg)}
   .f .nx-ch span{color:var(--p2);border-color:rgba(28,22,15,.22)}
   .f .nx-ch .on{background:var(--pi);color:var(--pp);border-color:transparent}
   .nx-nl{list-style:none;margin-top:3px;min-width:0}
-  .nx-nl li{position:relative;padding:2px 0;border-top:1px solid rgba(255,255,255,.1)}
+  .nx-nl li{position:relative;padding:1px 0;border-top:1px solid rgba(255,255,255,.1)}
   .nx-nl li:first-child{border-top:0}
   .nx-nl b,.nx-nl li>span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .nx-nl b{font-size:13.5px;font-weight:500;line-height:1.38}
@@ -555,38 +569,23 @@
   .f .nx-nl li{border-top-color:rgba(28,22,15,.12)}
   .f .nx-nl li>span{color:var(--p2)}
   .f .nx-nl em{color:var(--pi)}
-  .nx-sm{display:none}
-  #nx .w{width:590px;display:grid;grid-template-columns:308px minmax(0,1fr);column-gap:18px}
-  .w .nh{grid-column:1/-1}
-  .w .nx-nl li:first-child{margin-inline:-8px;padding-inline:8px;border-radius:7px;background:rgba(135,90,20,.1)}
-  .w .nx-nl li:first-child::before{content:'';position:absolute;right:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--pg)}
-  .w .nx-nl li:nth-child(2){border-top-color:transparent}
-  #nx .w .nx-sm{display:flex;flex-direction:column;min-width:0;margin-top:6px;padding-bottom:3px;padding-inline-start:16px;
-    border-inline-start:1px solid rgba(28,22,15,.14)}
-  .nx-sm p{font-size:13px;line-height:1.62;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-  .nx-sm div{margin-top:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--p2)}
-  .nx-sm u{text-decoration:none;display:inline-grid;place-items:center;min-width:22px;height:18px;padding:0 5px;border-radius:5px;
-    border:1px solid;font-size:10.5px;direction:ltr;color:var(--pi)}
-  .nx-wx{width:104px}
-  .nx-wx .nb{margin-top:16px;font:700 46px/1 ThmanyahDisplay,serif;direction:ltr;text-align:right}
-  .nx-wx .sb{margin:7px 0 2px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .nx-m{width:208px}
-  .nx-m .tm,.nx-m .wh,.nx-m .m{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .nx-m .tm{margin-top:16px;font-size:16px;font-weight:500}
-  .nx-m .wh{margin:12px 0 2px;font:700 21px/1.3 ThmanyahDisplay,serif}
-  #nx .nx-m .bc{font-size:11.5px}
-  .nx-q{width:268px}
-  .nx-q.h{width:300px}
+  .nx-ml .mt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
+  .nx-ml .mt b{min-width:0}
+  .nx-ml .w{flex:none;font-size:12px;color:var(--i2);white-space:nowrap}
+  .f .nx-ml .w{color:var(--p2)}
+  .nx-sl{list-style:none;margin-top:1px}
+  .nx-sl li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;font-size:13.5px;line-height:1.3;
+    border-top:1px solid rgba(255,255,255,.1);white-space:nowrap}
+  .nx-sl li:first-child{border-top:0}
+  .nx-sl span{overflow:hidden;text-overflow:ellipsis}
+  .nx-sl b{flex:none;font-weight:500}
+  #nx .nx-sl .y{color:var(--g);font-weight:500}
+  .f .nx-sl li{border-top-color:rgba(28,22,15,.12)}
+  #nx .f .nx-sl .y{color:var(--pg)}
   .nx-q p{margin:8px 0 4px;font-size:15px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
   #nx .nx-q .m{color:var(--g)}
   #nx :is(.orn,.saw){font-family:'NotoMarks',serif;color:var(--g)}
   .nx-q .nar{font-size:.85em;opacity:.8}
-  .nx-s{width:236px}
-  .nx-s ol{list-style:none;margin-top:6px}
-  .nx-s li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-top:1px solid rgba(255,255,255,.08);white-space:nowrap}
-  .nx-s li:first-child{border-top:0}
-  #nx .nx-s .y{color:var(--g);font-weight:500}
-  #nx .f.nx-s .y{color:var(--pg)}
   .nx-mk{position:absolute;right:40px;left:40px;bottom:12px;height:28px;line-height:26px;border-top:1px solid rgba(255,255,255,.1);
     font-size:13px;font-weight:500;color:var(--g)}
   html.nxh .tape{left:calc(var(--z)*40px + var(--cw,0px));right:calc(var(--z)*100px);bottom:calc(var(--z)*12px);height:calc(var(--z)*28px);padding:0;
@@ -607,7 +606,7 @@
     background:linear-gradient(90deg,rgba(8,6,4,0),rgba(8,6,4,.5) 60px,rgba(8,6,4,.5) calc(100% - 60px),rgba(8,6,4,0));
     -webkit-mask-image:linear-gradient(rgba(0,0,0,0),#000 36px,#000 calc(100% - 36px),rgba(0,0,0,0))}
   #nx .week .hd{margin-bottom:6px;font-size:12.5px;letter-spacing:0;color:var(--g)}
-  #nx .week .hd::after,#nx .week:has(.quote) .hd{display:none}
+  #nx .week .hd::after{display:none}
   #nx .week .rot{margin-top:10px}
   #nx .week .rot-ln{display:none}
   #nx .week .rot-dots{justify-content:flex-start;gap:6px;height:6px;margin-top:0}
@@ -2076,20 +2075,24 @@ function forecastRows(){
   });
 }
 
-function matchRows(){
-  const now = Date.now(), seen = new Set(), evs = [];
+function matchEvents(now){
+  const seen = new Set(), evs = [];
   CONFIG.teamIds.forEach(id => {
     const next = NEXT_LIST[id] || (MATCHES[id] ? [MATCHES[id]] : []);
     next.forEach(ev => { if(ev && ev.idEvent && !seen.has(ev.idEvent)){ seen.add(ev.idEvent); evs.push(MATCHES[id] && MATCHES[id].idEvent === ev.idEvent ? MATCHES[id] : ev); } });
     resultsFor(id).forEach(ev => { if(!seen.has(ev.idEvent)){ seen.add(ev.idEvent); evs.push(ev); } });
   });
-  const day = d => new Intl.DateTimeFormat(GREG, {timeZone:CONFIG.timezone, weekday:'long'}).format(d);
-  const today = new Intl.DateTimeFormat('en-CA', {timeZone:CONFIG.timezone}).format(new Date());
   return evs.map(ev => ({ev, t: toDate(ev).getTime()}))
     .filter(x => finishedRecently(x.ev, now)
       || (now < x.t + 2.5*3600000 && !FINAL.includes((x.ev.strStatus || '').toUpperCase())
           && x.t - now <= CONFIG.weekWindowDays * 86400000))
-    .sort((a, b) => a.t - b.t)
+    .sort((a, b) => a.t - b.t);
+}
+function matchRows(){
+  const now = Date.now();
+  const day = d => new Intl.DateTimeFormat(GREG, {timeZone:CONFIG.timezone, weekday:'long'}).format(d);
+  const today = new Intl.DateTimeFormat('en-CA', {timeZone:CONFIG.timezone}).format(new Date());
+  return matchEvents(now)
     .map(({ev, t}) => {
       const d = new Date(t), scored = ev.intHomeScore != null && ev.intAwayScore != null;
       const mid = scored && now >= t ? ` <span class="sc">${ar(+ev.intHomeScore)} - ${ar(+ev.intAwayScore)}</span> ` : ' × ';
@@ -3744,13 +3747,18 @@ function nxDur(s){
   if(m || !h) a.push(nxCount(Math.max(1, m), 'دقيقة', 'دقيقتين', 'دقائق'));
   return a.join(' و');
 }
-const NX_LIST = (L => L.length ? L : ['prayers', 'news', 'forecast', 'matches'])((CONFIG.panels.length ? CONFIG.panels : [CONFIG.panel]).filter(p => PANEL_IDS.includes(p)));
-const NX_TABS = NX_LIST.filter(isNewsPanel);
-const NX_ORDER = [...new Set(NX_LIST.map(p => isNewsPanel(p) ? 'news' : p))];   // the row's keys (data-k), in order
-const NX_MORE = NX_LIST.filter(p => ['verse', 'hadith', 'standings'].includes(p));
+const NX_SUBS = ['prayers', 'verse', 'hadith'], NX_TABS = ['news', 'world', 'tech', 'local', 'standings', 'matches'];
+const NX_VIEWS = {deen: NX_SUBS, news: NX_TABS};   // the row's keys (data-k), in order, and their views
+const NX_SUB_NAME = {prayers: 'الصلاة', verse: 'آية اليوم', hadith: 'حديث اليوم'};
+let NX_SUB = '';   // the deen card's view
+const nxHas = v => v === 'prayers' ? PRAYERS.length > 0 : v === 'verse' ? VERSES.length > 0 : v === 'hadith' ? !!(HADITH_DAY && HADITH_DAY.matn)
+  : v === 'standings' ? STANDINGS.length > 0 : v === 'matches' ? nxGames(Date.now()).length > 0 : (NEWS[v] || []).length > 0;
+const nxGames = now => { const L = matchEvents(now), live = x => !finishedRecently(x.ev, now) && now >= x.t;
+  return [...L.filter(live), ...L.filter(x => !live(x) && !finishedRecently(x.ev, now)), ...L.filter(x => finishedRecently(x.ev, now)).reverse()].slice(0, 3); };
+const nxView = k => k === 'news' ? NX_TAB : NX_SUB;
 const NX_FACT_IDS = ['prayer', 'match', 'weather', 'ramadan', 'hijri'];
-const NX_FACTS = (L => L.length ? L : NX_FACT_IDS.slice(0, 4))([...new Set(_list('facts'))].filter(f => NX_FACT_IDS.includes(f)).slice(0, 4));
-const NX_TAB_NAME = {news: CONFIG.newsName, world: 'العالم', tech: 'التقنية', local: 'مدينتك'};
+const NX_FACTS = (L => L.length ? L : NX_FACT_IDS.slice(0, 4))([...new Set(_list('facts'))].filter(f => NX_FACT_IDS.includes(f)).slice(0, 5));
+const NX_TAB_NAME = {news: CONFIG.newsName, world: 'العالم', tech: 'التقنية', local: 'مدينتك', standings: 'الترتيب', matches: 'المباريات'};
 function nxPrayer(){
   if(!PRAYERS.length) return null;
   const p = placeParts(), m = p.h * 60 + p.mi + p.s / 60, at = x => x.h * 60 + x.mi;
@@ -3784,37 +3792,49 @@ function nxMatch(M, now){
   return {t, w: (day(d) === day(new Date(now)) ? 'اليوم' : new Intl.DateTimeFormat(GREG, {timeZone: CONFIG.timezone, weekday: 'long'}).format(d)) + ' ' + t12,
           m: 'بعد ' + shortRemaining(d - now), bc: bc ? bcLine(bc) : ''};
 }
-function nxCards(P, W, M, now){
-  const N = (NEWS[NX_TAB] || []).slice(0, 3), k = (i, t) => `<div class="k">${DV_ICON[i]}${t}</div>`;
-  const card = {
-    prayers: () => P && ['prayers', 'nx-p', k('prayers', P.now ? 'حان الآن' : 'الصلاة القادمة')
-      + `<div class="pm"><b class="pn">${P.name}</b><span class="pt">${nxT12(P.x.h, P.x.mi)}<small>${P.x.h < 12 ? 'ص' : 'م'}</small></span></div>`
+function nxCards(P, now){
+  if(!nxHas(NX_TAB)) NX_TAB = NX_TABS.find(nxHas) || NX_TAB;
+  if(!nxHas(NX_SUB)) NX_SUB = NX_SUBS.find(nxHas) || NX_SUB;
+  const k = (i, t) => `<div class="k">${DV_ICON[i]}${t}</div>`;
+  const ch = (L, on, name) => '<div class="nx-ch">' + L.filter(nxHas).map(t => `<span${t === on ? ' class="on"' : ''}>${esc(name[t])}</span>`).join('') + '</div>';
+  const sub = {
+    prayers: () => P && ['nx-p', k('prayers', `<span>${P.now ? 'حان الآن' : 'الصلاة القادمة'}</span>`),
+      `<div class="pm"><b class="pn">${P.name}</b><span class="pt">${nxT12(P.x.h, P.x.mi)}<small>${P.x.h < 12 ? 'ص' : 'م'}</small></span></div>`
       + `<div class="m">${P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left) + (P.iq < 0 ? '' : ' · الإقامة ' + nxT12(Math.floor(P.iq / 60) % 24, P.iq % 60))}</div>`
       + `<ol class="nx-tl" style="--w:${P.w.toFixed(1)}%">` + PRAYERS.map((y, j) => `<li class="${j < P.i ? 'p' : j === P.i ? 'n' : ''}"><i></i>${prayerName(y)}<b>${nxT12(y.h, y.mi)}</b></li>`).join('') + '</ol>'],
-    news: () => {
-      if(!N.length) return null;
-      const x = N[0], b = (s, t) => `<${t}${bidiAttr(NX_TAB, s)}>${esc(s)}</${t}>`;
-      return ['news', 'nx-n', `<div class="nh">${k('news', '<span>الأخبار</span>')}<div class="nx-ch">`
-        + NX_TABS.map(t => `<span${t === NX_TAB ? ' class="on"' : ''}>${esc(NX_TAB_NAME[t])}</span>`).join('') + '</div></div><ol class="nx-nl">'
-        + N.map(y => `<li>${b(y.headline, 'b')}<span>${[y.source && '<em>' + newsSource(NX_TAB, y.source) + '</em>', Number.isFinite(y.t) && agoAr(now - y.t)].filter(Boolean).join(' · ')}</span></li>`).join('')
-        + `</ol><div class="nx-sm">${x.summary ? b(x.summary, 'p') : '<p class="m">لا يوجد ملخص</p>'}<div><u>OK</u>اقرأ الخبر كاملاً</div></div>`];
-    },
-    forecast: () => W && ['forecast', 'nx-wx', k('forecast', 'الطقس') + `<div class="nb">${ar(Math.round(W.t))}°</div><div class="sb">${esc(W.dust || WX_CODES[W.code] || '')}</div>`
-      + `<div class="m">${nxHiLo(W)}</div>`],
-    matches: () => { if(!M) return null; const x = nxMatch(M, now); return ['matches', 'nx-m', k('matches', M.done ? 'آخر نتيجة' : 'المباراة القادمة')
-      + `<div class="tm">${x.t}</div><div class="wh">${x.w}</div><div class="m">${x.m}</div>` + (x.bc ? `<div class="m bc">${x.bc}</div>` : '')]; },
     verse: () => { const v = VERSES[riyadhDayNumber() % VERSES.length];
-      return v && ['verse', 'nx-q', k('verse', PANEL_TITLE.verse) + `<p><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></p><div class="m">${esc(v.surah)} · ${ar(v.ayah)}</div>`]; },
+      return v && ['nx-q', k('verse', ''), `<p><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></p><div class="m">${esc(v.surah)} · ${ar(v.ayah)}</div>`]; },
     hadith: () => { const h = HADITH_DAY;
       if(h && h.day !== riyadhDayNumber()) loadHadith();
-      return h && h.matn ? ['hadith', 'nx-q h', k('hadith', PANEL_TITLE.hadith) + `<p><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</p><div class="m">صحيح البخاري، رقم ${ar(h.n)}</div>`] : null; },
-    standings: () => { if(!STANDINGS.length) return null; const f = standFollowed(), n = v => ar(Number.isFinite(v) ? Math.round(v) : 0);
-      return ['standings', 'nx-s', k('standings', esc(PANEL_TITLE.standings)) + '<ol>' + pickStandings(STANDINGS, f, 5).map(x =>
-        `<li${f(x) ? ' class="y"' : ''}><span>${n(x.rank)}. ${esc(standAr(x.name))}</span><b>${n(x.pts)}</b></li>`).join('') + '</ol>']; }
+      return h && h.matn ? ['nx-q', k('hadith', ''), `<p><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</p><div class="m">صحيح البخاري، رقم ${ar(h.n)}</div>`] : null; }
   };
-  const out = NX_ORDER.map(key => card[key] && card[key]()).filter(Boolean);
+  const out = [], d = sub[NX_SUB] && sub[NX_SUB]();
+  if(d) out.push(['deen', 'nx-d ' + d[0], `<div class="nh">${d[1]}${ch(NX_SUBS, NX_SUB, NX_SUB_NAME)}</div><div class="nx-db">${d[2]}</div>`]);
+  if(nxHas(NX_TAB)){
+    const head = `<div class="nh">${k('news', '<span>الأخبار</span>')}${ch(NX_TABS, NX_TAB, NX_TAB_NAME)}</div>`;
+    if(NX_TAB === 'standings'){   // the league's table, five rows, the followed team marked
+      const f = standFollowed(), n = v => ar(Number.isFinite(v) ? Math.round(v) : 0);
+      out.push(['news', 'nx-n', head + '<ol class="nx-sl">' + pickStandings(STANDINGS, f, 5).map(x =>
+        `<li${f(x) ? ' class="y"' : ''}><span>${n(x.rank)}. ${esc(standAr(x.name))}</span><b>${n(x.pts)}</b></li>`).join('') + '</ol>']);
+    } else if(NX_TAB === 'matches'){   // the games in the headlines' place: the teams (the score once on) and when, the channel under them
+      const today = new Intl.DateTimeFormat('en-CA', {timeZone: CONFIG.timezone}).format(new Date(now));
+      out.push(['news', 'nx-n', head + '<ol class="nx-nl nx-ml">' + nxGames(now).map(({ev, t}) => {
+        const d = new Date(t), on = ev.intHomeScore != null && ev.intAwayScore != null && now >= t, end = finishedRecently(ev, now), bc = bcastOf(ev, now);
+        const p = new Intl.DateTimeFormat('en-GB', {timeZone: CONFIG.timezone, hour: '2-digit', minute: '2-digit', hour12: false})
+          .formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {}), t12 = fmt12(+p.hour % 24, +p.minute);
+        const w = end ? 'انتهت' : now >= t ? '<span class="live">مباشر</span> ' + liveStatus(ev, t12)
+          : (new Intl.DateTimeFormat('en-CA', {timeZone: CONFIG.timezone}).format(d) === today ? 'اليوم' : new Intl.DateTimeFormat(GREG, {timeZone: CONFIG.timezone, weekday: 'long'}).format(d)) + ' ' + t12;
+        return `<li><div class="mt"><b>${esc(teamAr(ev.strHomeTeam))}${on ? ` <span class="sc">${ar(+ev.intHomeScore)} - ${ar(+ev.intAwayScore)}</span> ` : ' × '}${esc(teamAr(ev.strAwayTeam))}</b>`
+          + `<span class="w">${w}</span></div>${bc ? `<span>${bcLine(bc)}</span>` : ''}</li>`; }).join('') + '</ol>']);
+    } else {
+      const b = (s, t) => `<${t}${bidiAttr(NX_TAB, s)}>${esc(s)}</${t}>`;
+      out.push(['news', 'nx-n', head + '<ol class="nx-nl">' + NEWS[NX_TAB].slice(0, 3).map(y => `<li>${b(y.headline, 'b')}<span>${[y.source && '<em>' + newsSource(NX_TAB, y.source) + '</em>', Number.isFinite(y.t) && agoAr(now - y.t)].filter(Boolean).join(' · ')}</span></li>`).join('') + '</ol>']);
+    }
+  }
   if(!out.some(c => c[0] === NX_K) && out.length) NX_K = out[0][0];
-  return out.map(([key, cls, h]) => `<article class="nx-c ${cls}${NX_F && key === NX_K ? ' f' + (key === 'news' ? ' w' : '') : ''}" data-k="${key}">${h}</article>`).join('');
+  const ri = key => { const v = NX_VIEWS[key].filter(nxHas), i = v.indexOf(nxView(key));
+    return v.length < 2 ? '' : '<div class="nx-ln"><i></i></div><div class="nx-dots">' + v.map((_, j) => `<b${j === i ? ' class="on"' : ''}></b>`).join('') + '</div>'; };
+  return out.map(([key, cls, h]) => `<article class="nx-c ${cls}${NX_F && key === NX_K ? ' f' : ''}" data-k="${key}">${h}${ri(key)}</article>`).join('');
 }
 function nxDraw(){
   NX_T = 0;
@@ -3838,7 +3858,12 @@ function nxDraw(){
   nxSet('nx-st', nxLine(P, W));
   nxSet('nx-mt', W ? [W.hi != null && 'العظمى ' + nxDeg(W.hi), W.lo != null && 'الصغرى ' + nxDeg(W.lo),
     Number.isFinite(W.hum) && 'رطوبة ' + nxL(ar(Math.round(W.hum)) + PCT)].filter(Boolean).join(' · ') : '');
-  nxSet('nx-rail', nxCards(P, W, M, now));
+  const x = M && nxMatch(M, now), mx = nxEl('nx-mx');
+  nxSet('nx-mx', x ? `<div class="k">${DV_ICON.matches}${M.done ? 'آخر نتيجة' : 'المباراة القادمة'}</div><div class="tm">${x.t}</div>`
+    + `<div class="wh">${x.w}</div><div class="m">${x.bc || x.m}</div>` : '');
+  mx.hidden = !x;
+  if(x && nxEl('nx').querySelector('.nx-hero').offsetWidth > 880) mx.hidden = true;
+  nxSet('nx-rail', nxCards(P, now)); nxLnSync();
   nxEl('nx-mk').hidden = !TAPE_HTML;
   nxFocus(); nxRect();
 }
@@ -3847,7 +3872,7 @@ function nxFocus(){
   if(!rail) return;
   const cs = [...rail.children], c = cs.find(e => e.dataset.k === NX_K) || cs[0];
   NX_K = c ? c.dataset.k : '';
-  cs.forEach(e => { const on = NX_F && e === c; e.classList.toggle('f', on); if(e.dataset.k === 'news'){ e.classList.toggle('w', on); nxFit(e); } });
+  cs.forEach(e => { e.classList.toggle('f', NX_F && e === c); nxFit(e); });
   const W = nxEl('nx').offsetWidth, base = W - 40 - rail.offsetWidth, left = c ? base + c.offsetLeft : 40, x = left < 40 ? 40 - left : 0;
   rail.style.transform = x ? `translateX(${x}px)` : '';
   cs.forEach(e => { const l = base + x + e.offsetLeft; e.classList.toggle('o', l < -.5 || l + e.offsetWidth > W + .5); });
@@ -3895,36 +3920,61 @@ function nxCredit(b){
 function nxTab(){
   let s = null;
   try{ s = JSON.parse(localStorage.getItem('sauditv-card-pos') || 'null'); }catch(e){}
-  NX_TAB = s && NX_TABS.includes(s.panel) ? s.panel : NX_TABS.includes(NX_TAB) ? NX_TAB : NX_TABS[0] || '';
+  const p = s && s.panel;
+  NX_TAB = NX_TABS.includes(p) ? p : NX_TABS.includes(NX_TAB) ? NX_TAB : NX_TABS[0];
+  NX_SUB = NX_SUBS.includes(p) ? p : NX_SUBS.includes(NX_SUB) ? NX_SUB : NX_SUBS[0];
 }
-let NX_ROT = 0, NX_ROT_HOLD = false, NX_ROT_FADE = 0;
+let NX_ROT = 0, NX_ROT_N = 0, NX_ROT_HOLD = false, NX_ROT_FADE = 0;
 const nxRotStill = () => CARD_STILL || CONFIG.lowPower;
 function nxRotArm(){
-  clearInterval(NX_ROT); NX_ROT = 0;
-  if(!NX_ROT_HOLD && NX_TABS.length > 1) NX_ROT = setInterval(nxRotStep, CONFIG.rotateMs);
+  clearInterval(NX_ROT); NX_ROT = 0; NX_ROT_N = 0;
+  if(!NX_ROT_HOLD) NX_ROT = setInterval(() => { const n = ++NX_ROT_N; if(n % 2 === 0) nxRotStep('news'); else if(n > 1) nxRotStep('deen'); }, CONFIG.rotateMs / 2);
+  Object.keys(NX_VIEWS).forEach(k => { if(NX_ROT_HOLD || (NX_F && NX_K === k)) nxLnFreeze(k); else nxLnRun(k, CONFIG.rotateMs * (k === 'news' ? 1 : 1.5)); });
 }
-function nxRotStep(){
-  if(NX_ROT_HOLD || NX_ROT_FADE || (NX_F && NX_K === 'news')) return;
-  const n = NX_TABS.length, j = NX_TABS.indexOf(NX_TAB), has = t => (NEWS[t] || []).length > 0;
-  if(NX_TABS.filter(has).length < 2) return;
-  for(let k = 1; k < n; k++){ const t = NX_TABS[(j + k + n) % n]; if(has(t)){ nxRotTo(t); return; } }
+function nxRotStep(k){
+  if(NX_ROT_HOLD || (NX_F && NX_K === k)) return;
+  nxLnRun(k, CONFIG.rotateMs);   // its line again from empty, to its next switch (even when a fade under way skips this one)
+  if(NX_ROT_FADE) return;
+  const v = NX_VIEWS[k].filter(nxHas);
+  if(v.length > 1) nxRotTo(k, v[(v.indexOf(nxView(k)) + 1) % v.length]);
 }
-function nxRotTo(t){
-  const c = nxEl('nx-rail') && nxEl('nx-rail').querySelector('.nx-n');
-  if(!c || nxRotStill()){ NX_TAB = t; nxDraw(); return; }
+function nxRotTo(k, t){
+  const q = () => nxEl('nx-rail') && nxEl('nx-rail').querySelector(`[data-k="${k}"]`), set = () => { if(k === 'news') NX_TAB = t; else NX_SUB = t; }, c = q();
+  if(!c || nxRotStill()){ set(); nxDraw(); return; }
   c.classList.add('tx');
   NX_ROT_FADE = setTimeout(() => {
-    NX_ROT_FADE = 0; NX_TAB = t; nxDraw();
-    const e = nxEl('nx-rail').querySelector('.nx-n');
+    NX_ROT_FADE = 0; set(); nxDraw();
+    const e = q();
     if(e){ e.classList.remove('tx'); e.classList.add('ti'); }
   }, 150);
 }
+let NX_LN = {};
+const nxLnEl = k => { const r = nxEl('nx-rail'), c = r && r.querySelector(`[data-k="${k}"]`); return c && c.querySelector('.nx-ln i'); };
+function nxLnRun(k, d){ NX_LN[k] = {s: Date.now(), d}; nxLnPaint(k); }
+function nxLnFreeze(k){
+  const f = nxLnEl(k), L = NX_LN[k];
+  if(L && L.p != null) return;   // pinned already
+  const m = f && /^matrix\(([-\d.e]+)/.exec(getComputedStyle(f).transform);   // where the running fill is now
+  NX_LN[k] = {p: m ? Math.max(0, Math.min(1, +m[1])) : L ? Math.min(1, Math.floor((Date.now() - L.s) / 1000) / Math.max(1, Math.round(L.d / 1000))) : 0};
+  nxLnPaint(k);
+}
+function nxLnPaint(k){
+  const f = nxLnEl(k), L = NX_LN[k];
+  if(!f) return;
+  f._ln = L;
+  f.style.transition = 'none';
+  if(!L || L.p != null){ f.style.transform = 'scaleX(' + (L ? L.p : 0) + ')'; return; }
+  f.style.transform = 'scaleX(0)';
+  void f.offsetWidth;   // the empty line is applied before the fill starts
+  f.style.transition = `transform ${L.d}ms steps(${Math.max(1, Math.round(L.d / 1000))}, end) ${-Math.min(L.d, Date.now() - L.s)}ms`;
+  f.style.transform = 'scaleX(1)';
+}
+function nxLnSync(){ Object.keys(NX_VIEWS).forEach(k => { const f = nxLnEl(k); if(f && f._ln !== NX_LN[k]) nxLnPaint(k); }); }
 function nxRotHold(on){
   NX_ROT_HOLD = !!on;
-  if(on && NX_ROT_FADE){   // a fade under way stays on its tab
+  if(on && NX_ROT_FADE){   // a fade under way stays on its view
     clearTimeout(NX_ROT_FADE); NX_ROT_FADE = 0;
-    const e = nxEl('nx-rail').querySelector('.nx-n');
-    if(e) e.classList.remove('tx');
+    nxEl('nx-rail').querySelectorAll('.tx').forEach(e => e.classList.remove('tx'));
   }
   nxRotArm();
 }
@@ -3941,7 +3991,7 @@ function nxBoot(){
   document.documentElement.classList.add('nx', NXH ? 'nxh' : 'nxs');
   nx.id = 'nx';
   nx.innerHTML = NXH ? '<div class="nx-dl" id="nx-dl"></div><section class="nx-hero"><div class="nx-ck" id="nx-ck"></div><div class="nx-dk">'
-      + '<div class="k" id="nx-kk"></div><p class="nx-st" id="nx-st"></p><div class="m" id="nx-mt"></div></div></section>'
+      + '<div class="k" id="nx-kk"></div><p class="nx-st" id="nx-st"></p><div class="m" id="nx-mt"></div></div><div class="nx-mx" id="nx-mx" hidden></div></section>'
       + '<h2 class="nx-rh">اليوم<i></i></h2><div class="nx-rail" id="nx-rail"></div>'
       + '<h2 class="nx-rh" id="nx-ah">التطبيقات<i></i><span>كل التطبيقات ‹</span></h2><div class="nx-mk" id="nx-mk" hidden>الأسواق</div>'
     : '<div id="nx-pl"></div><div class="nx-cv"><div class="nx-dt"><b id="nx-hj"></b><span id="nx-gr"></span></div><div class="nx-ck" id="nx-ck"></div></div><ul class="nx-fx" id="nx-fx"></ul>';
@@ -3966,13 +4016,13 @@ function nxBoot(){
   if(NXH && document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if(NX_PHOTO) nxCredit(NX_PHOTO); nxFocus(); });   // measured in its fonts
 }
 function nxHome(){
-  const root = document.documentElement, cards = [...new Set(NX_TABS.concat(NX_MORE))];
+  const root = document.documentElement, cards = NX_TABS.concat('verse', 'hadith');   // every view's data, whatever is ticked
   root.classList.add('home');
   Object.entries(CONFIG.homeRoom).forEach(([k, v]) => { if(Number.isFinite(v) && v >= 0) root.style.setProperty(k, v + 'px'); });
   CONFIG.panel = 'none'; CONFIG.panels = [];   // the classic card is not drawn
   nxBoot(); nxTab();
-  window.sauditvCurrentPanel = () => NX_K === 'news' ? NX_TAB : NX_K || NX_LIST[0];
-  window.sauditvDetailList = () => [...nxEl('nx-rail').children].flatMap(e => e.dataset.k === 'news' ? NX_TABS : [e.dataset.k]).join(',');
+  window.sauditvCurrentPanel = () => NX_K ? nxView(NX_K) : NX_SUBS[0];   // the view shown on the card focused
+  window.sauditvDetailList = () => [...nxEl('nx-rail').children].flatMap(e => NX_VIEWS[e.dataset.k].filter(nxHas)).join(',');
   window.sauditvSetFocused = on => { NX_F = !!on; nxFocus(); nxRotArm(); };
   window.sauditvStep = d => {   // ◀ (+1) the next card to the left, ▶ (-1) back; no wrapping
     const cs = [...nxEl('nx-rail').children], i = cs.findIndex(e => e.dataset.k === NX_K);

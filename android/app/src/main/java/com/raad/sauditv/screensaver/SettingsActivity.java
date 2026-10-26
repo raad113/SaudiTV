@@ -206,7 +206,7 @@ public class SettingsActivity extends Activity {
             R.drawable.ic_trophy, new Runnable() { public void run() { pickTableLeague(); } });
 
         header("شاشة التوقف");
-        row("البطاقات", prefs.panelTitle(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
+        row("بطاقات شاشة التوقف", prefs.panelTitle(prefs.panel()), R.drawable.ic_eye, new Runnable() { public void run() { pickPanel(false); } });
         // «مدة كل بطاقة»: each card's seconds (SaverOptions.ROTATE_SECS), the screensaver's and the home screen's, both looks
         row("مدة كل بطاقة", rotateLabel(prefs.rotateSec()), R.drawable.ic_screensaver, new Runnable() { public void run() { pickRotate(); } });
         // «سطور شاشة التوقف»: «الجديد»'s screensaver lines bottom left (SaverOptions.FACTS), only in that look
@@ -481,7 +481,7 @@ public class SettingsActivity extends Activity {
         return Prefs.join(names, "، ");
     }
 
-    /** «سطور شاشة التوقف»: ticked and ordered as the cards are, one at least, four at most («أربعة على الأكثر»);
+    /** «سطور شاشة التوقف»: ticked and ordered as the cards are, one at least, five at most (all of them);
      *  «إعادة الافتراضي» = the page's four (the next prayer, the match, the weather, Ramadan) */
     private void pickFacts() {
         final List<String> ids = new ArrayList<>(), order = new ArrayList<>(prefs.saverFacts());
