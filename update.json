@@ -1,24 +1,24 @@
 {
-  "versionCode": 9048,
-  "versionName": "9048",
-  "tag": "v9048",
-  "notes": "أصوات أذان جديدة (منها المسجد الحرام) مع سماع الصوت قبل اختياره، الأذان القصير وتذكير قبل ٥ دقائق افتراضياً، اختيار شكل الواجهة، ترتيب البطاقات ونقاطها وسرعتها وسطور شاشة التوقف، «يُتلى الآن» مع اسم القارئ، تبديل تبويبات الأخبار تلقائياً، ٣٠ إطاراً في الثانية افتراضياً، وزر تحديث واحد.",
+  "versionCode": 9049,
+  "versionName": "9049",
+  "tag": "v9049",
+  "notes": "الشكل الجديد: الشاشة الرئيسية ببطاقتين تتناوبان مع النقاط والخط — الصلاة وآية اليوم وحديث اليوم، والأخبار (البلد والعالم والتقنية ومدينتك والترتيب والمباريات مع القناة الناقلة). المباراة القادمة بجانب الساعة. عناوين بطاقتي الآية والحديث في شاشة التوقف، وحتى خمسة أسطر أسفلها. «بطاقات شاشة التوقف» باسم أوضح في الإعدادات.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9048,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9048/saudi-tv-screensaver.apk",
-      "sha256": "d933e58eb1e664b5eb8917a7e11465d33881ae53b2652304daa1792d6903429c",
-      "size": 20004712
+      "versionCode": 9049,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9049/saudi-tv-screensaver.apk",
+      "sha256": "463965971b7ef7cfd40106d673091e596ea21685e851eaea5ced768b8a53dd4c",
+      "size": 20006890
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9048,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9048/saudi-tv-home.apk",
-      "sha256": "c75ca4ceae3ef07d5563dbc882bc9e22cda2ebb6bad8c82f7d1019492e3428a0",
-      "size": 2711077
+      "versionCode": 9049,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9049/saudi-tv-home.apk",
+      "sha256": "ac9f757298fad3a41cf03a69083052476cc29b98b152d828e629c1f9391761f6",
+      "size": 2712181
     }
   ]
 }
