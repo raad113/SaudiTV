@@ -1,24 +1,24 @@
 {
-  "versionCode": 9049,
-  "versionName": "9049",
-  "tag": "v9049",
-  "notes": "الشكل الجديد: الشاشة الرئيسية ببطاقتين تتناوبان مع النقاط والخط — الصلاة وآية اليوم وحديث اليوم، والأخبار (البلد والعالم والتقنية ومدينتك والترتيب والمباريات مع القناة الناقلة). المباراة القادمة بجانب الساعة. عناوين بطاقتي الآية والحديث في شاشة التوقف، وحتى خمسة أسطر أسفلها. «بطاقات شاشة التوقف» باسم أوضح في الإعدادات.",
+  "versionCode": 9050,
+  "versionName": "9050",
+  "tag": "v9050",
+  "notes": "الشاشة الرئيسية الجديدة: خمس بطاقات (الصلاة، الأخبار، آية وحديث اليوم، المباريات والترتيب، الطقس)، أربع منها على الشاشة والطقس على اليسار تصل إليه بالأسهم. البطاقة المختارة تتسع: جدول الصلوات مع الإقامة، والطقس اليوم مع الأسبوع. عناوين الأخبار على سطرين، والتاريخ بالهجري والميلادي.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-screensaver.apk",
-      "versionCode": 9049,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9049/saudi-tv-screensaver.apk",
-      "sha256": "463965971b7ef7cfd40106d673091e596ea21685e851eaea5ced768b8a53dd4c",
-      "size": 20006890
+      "versionCode": 9050,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9050/saudi-tv-screensaver.apk",
+      "sha256": "a23a8bf620115be231b0ddd9b8fc6a57ae00769ae60edaebd89cabf8624884a6",
+      "size": 20011620
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9049,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9049/saudi-tv-home.apk",
-      "sha256": "ac9f757298fad3a41cf03a69083052476cc29b98b152d828e629c1f9391761f6",
-      "size": 2712181
+      "versionCode": 9050,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9050/saudi-tv-home.apk",
+      "sha256": "bc0a9b09c2e5fd9331d29df7915a7ae69433a5adff6e344c214939eef165d8ce",
+      "size": 2714573
     }
   ]
 }
