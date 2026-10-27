@@ -613,7 +613,7 @@
     radial-gradient(67% 48% at 70% 26%,rgba(7,6,16,.45),rgba(7,6,16,0) 70%)}
   html.nxs .veil{background:linear-gradient(0deg,rgba(8,6,4,.86),rgba(8,6,4,.62) 26%,rgba(8,6,4,0) 52%),
     linear-gradient(180deg,rgba(8,6,4,.55),rgba(8,6,4,.25) 16%,rgba(8,6,4,0) 28%)}
-  #nx{position:absolute;left:0;top:0;width:960px;height:540px;transform-origin:0 0;font-size:13px;line-height:1.4;
+  #nx{position:absolute;left:0;top:0;width:960px;height:540px;overflow:hidden;transform-origin:0 0;font-size:13px;line-height:1.4;
     font-family:'Thmanyah','NotoMarks',system-ui,sans-serif;color:var(--ink);
     --ink:#FBF6EC;--i2:rgba(251,246,236,.82);--g:#EBCB8B;--gl:rgba(235,203,139,.45);--pp:#F6EFE1;--pi:#1C160F;--p2:#54473A;--pg:#875A14}
   #nx svg{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -646,54 +646,65 @@
   .nx-rh i{flex:1;height:1px;background:linear-gradient(270deg,var(--gl),rgba(235,203,139,0))}
   .nx-rh span{font-size:13px;font-weight:400;color:var(--i2)}
   #nx-ah{top:var(--ah,374px)}
-  .nx-rail{position:absolute;top:196px;right:40px;display:flex;gap:12px;align-items:flex-start;
-    transition:transform 140ms cubic-bezier(.23,1,.32,1)}
-  .nx-c{position:relative;flex:none;height:164px;padding:13px 16px;border-radius:14px;background:rgba(11,10,18,.66);border:1px solid rgba(255,255,255,.1);
-    overflow:hidden;transition:transform 140ms cubic-bezier(.23,1,.32,1),background-color 140ms cubic-bezier(.23,1,.32,1)}
-  /* a card the row leaves partly off the screen is not shown (nxFocus): no card is ever seen cut */
-  #nx .nx-c.o{visibility:hidden}
+  .nx-rail{position:absolute;top:196px;right:40px;left:40px;display:flex;gap:12px;align-items:flex-start;transition:transform 140ms cubic-bezier(.23,1,.32,1)}
+  .nx-c{position:relative;flex:none;min-width:0;height:164px;padding:13px 16px;border-radius:14px;background:rgba(11,10,18,.66);border:1px solid rgba(255,255,255,.1);
+    overflow:hidden;transition:transform 140ms cubic-bezier(.23,1,.32,1),background-color 140ms cubic-bezier(.23,1,.32,1),width 140ms cubic-bezier(.23,1,.32,1),opacity 140ms cubic-bezier(.23,1,.32,1)}
+  .nx-rail.still{transition:none}
+  .nx-rail.still .nx-c{transition-property:transform,background-color}
+  @media (prefers-reduced-motion:reduce){.nx-rail{transition:none}.nx-c{transition-property:transform,background-color}}
+  .nx-c.o{opacity:.45}
   #nx .nx-c.f{background:var(--pp);color:var(--pi);border-color:transparent;transform:translateY(-4px);box-shadow:0 0 0 3px rgba(246,239,225,.24)}
-  #nx .f .k,#nx .f s,#nx .f .pt small,#nx .f .orn,#nx .nx-q.f .m{color:var(--pg)}
+  #nx .f .k,#nx .f s,#nx .f .orn,#nx .nx-q.f .m{color:var(--pg)}
   #nx .f .m{color:var(--p2)}
-  /* the row's two cards, the deen card (nx-d: the next prayer .nx-p, the verse or the hadith .nx-q) and the news card,
-     take its 880 (960 less the margins) with their gap: 434 + 12 + 434; both always wholly in view */
-  .nx-d,.nx-n{width:434px}
-  .nx-p .pm{display:flex;align-items:baseline;justify-content:space-between;margin-top:3px}
-  .nx-p .pn{font:700 31px/1.05 ThmanyahDisplay,serif}
-  .nx-p .pt{font:700 27px/1.2 ThmanyahDisplay,serif}
-  .nx-p .pt small{font-size:15px;color:var(--g);margin-inline-start:3px}
-  .nx-p .m{margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .nx-tl{list-style:none;display:flex;margin-top:9px;position:relative}   /* clear of the rotation's dots (.nx-dots) */
-  .nx-tl::before,.nx-tl::after{content:'';position:absolute;top:3.5px;right:10%;height:1.5px}
-  .nx-tl::before{left:10%;background:rgba(255,255,255,.2)}
-  .nx-tl::after{width:var(--w);background:var(--gl)}
-  .nx-tl li{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;font-size:11.5px;line-height:1.3;color:var(--i2)}
-  .nx-tl i{width:9px;height:9px;margin-bottom:5px;border-radius:50%;background:#17151f;border:1.5px solid rgba(235,203,139,.7)}
-  .nx-tl .p i{background:rgba(235,203,139,.7)}
-  .nx-tl .n{color:var(--ink);font-weight:500}
-  .nx-tl .n i{background:var(--g);border-color:var(--g);box-shadow:0 0 0 3px rgba(235,203,139,.22)}
-  .nx-tl b{font-size:12.5px;font-weight:500;direction:ltr}
-  .f .nx-tl::before{background:#D3C6B0}
-  .f .nx-tl::after{background:#8E7F69}
-  .f .nx-tl li{color:#5E5244}
-  .f .nx-tl i{background:var(--pp);border-color:#8E7F69}
-  .f .nx-tl .p i{background:#8E7F69}
-  .f .nx-tl .n{color:var(--pi)}
-  .f .nx-tl .n i{background:var(--pg);border-color:var(--pg);box-shadow:0 0 0 3px rgba(135,90,20,.2)}
-  .nx-n{padding:12px 14px 10px}
+  /* the row shows four cards at most, sharing its 880 (960 less the margins), their widths set by nxFocus (NX_W): in
+     proportion with 3 x 12 of gaps; the focused one 340 (the news 380), the others in proportion in the rest. A fifth
+     waits past the left edge, its sliver in the 40 px margin (.o: dimmed, never focused); ◀ to it slides the row (its
+     transform, eased as the widths) and the first card out past the right, its sliver there. A squeezed card (.sq)
+     shows its icon and its view's essentials */
+  #nx .nx-c.sq{padding-left:11px;padding-right:11px}
+  .sq .k span{display:none}
+  .sq.nx-n .nx-ch,.sq.nx-s .nx-ch{display:none}
+  .sq .nx-ch span:not(.on){display:none}
+  /* the prayer card: when the next prayer comes («بعد 4 س 13 د», its iqama after it when the line has room: nxFit),
+     then the day's five, a line each, the name and its time, the next one gold on a soft band, those gone dimmed */
+  .nx-p{padding:11px 12px}
+  .nx-p .m{margin-top:2px;white-space:nowrap;overflow:hidden}
+  .nx-pl{list-style:none;margin-top:4px}
+  .nx-pl li{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin:0 -6px;padding:0 6px;border-radius:6px;
+    font-size:13px;line-height:1.36;white-space:nowrap}
+  .nx-pl .p{color:var(--i2)}
+  #nx .nx-pl .n{color:var(--g);background:rgba(235,203,139,.14);font-weight:500}
+  .nx-pl b{font-weight:500;direction:ltr;unicode-bidi:isolate}
+  .f .nx-pl .p{color:var(--p2)}
+  #nx .f .nx-pl .n{color:var(--pg);background:rgba(135,90,20,.12)}
+  /* focused: the iqama's column, with the columns' names; squeezed: the next prayer's name and time alone */
+  .nx-pl .q,.nx-pl .h,.pc{display:none}
+  .f .nx-pl li{line-height:1.22}
+  .f .nx-pl li:not(.h)>span:first-child{flex:1}
+  .f .nx-pl li:not(.h)>span:not(:first-child),.f .nx-pl .h>span{min-width:64px;text-align:left}
+  .f .nx-pl .q{display:inline}
+  #nx .f .nx-pl .h{display:flex;justify-content:flex-end;font-size:11px;font-weight:500;color:var(--p2)}
+  .sq .nx-pl{display:none}
+  .sq .pc{display:block;margin-top:6px;white-space:nowrap}
+  .pc>b{display:block;font:700 22px/1.2 ThmanyahDisplay,serif}
+  .pc span{font-size:15px;font-weight:500}
+  .pc span b{direction:ltr;unicode-bidi:isolate}
+  .nx-n,.nx-s{padding:12px 14px 10px}
   .ni .k span{display:none}
-  :is(.nx-n,.nx-d) .nh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .nx-c .nh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+  .nx-c .k{white-space:nowrap}
   .nx-ch{display:flex;gap:4px;min-width:0;overflow:hidden}
+  .nx-ch[hidden]{display:none}
   .nx-ch span{height:20px;line-height:18px;padding:0 7px;border-radius:10px;border:1px solid rgba(255,255,255,.16);font-size:11.5px;
     color:var(--i2);white-space:nowrap}
   .nx-ch .on{background:var(--g);color:var(--pi);border-color:transparent;font-weight:500}
-  /* the cards' rotation (nxRotTo): the news card's tabs and its body, the deen card's header and its body fade out
-     (.tx, 150 ms), the next view's fade in (.ti) */
-  .nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sl,.nx-d>:is(.nh,.nx-db){transition:opacity .15s ease}
-  .nx-n.tx .nx-ch,.nx-n.tx .nx-nl,.nx-n.tx .nx-sl,.nx-d.tx>:is(.nh,.nx-db){opacity:0}
-  .nx-n.ti .nx-ch,.nx-n.ti .nx-nl,.nx-n.ti .nx-sl,.nx-d.ti>:is(.nh,.nx-db){animation:nxTabIn .15s ease both}
+  /* the cards' rotation (nxRotTo): the news card's tabs and its body, the other cards' header and body fade out (.tx,
+     150 ms), the next view's fade in (.ti) */
+  .nx-n :is(.nx-ch,.nx-db),.nx-c:not(.nx-n)>:is(.nh,.nx-db){transition:opacity .15s ease}
+  .nx-n.tx :is(.nx-ch,.nx-db),.nx-c.tx:not(.nx-n)>:is(.nh,.nx-db){opacity:0}
+  .nx-n.ti :is(.nx-ch,.nx-db),.nx-c.ti:not(.nx-n)>:is(.nh,.nx-db){animation:nxTabIn .15s ease both}
   @keyframes nxTabIn{from{opacity:0}}
-  @media (prefers-reduced-motion:reduce){.nx-n .nx-ch,.nx-n .nx-nl,.nx-n .nx-sl,.nx-d>:is(.nh,.nx-db){transition:none;animation:none}}
+  @media (prefers-reduced-motion:reduce){.nx-n :is(.nx-ch,.nx-db),.nx-c:not(.nx-n)>:is(.nh,.nx-db){transition:none;animation:none}}
   /* a rotating card's indicator (nxLn), the classic card's (.rot-ln, .rot-dots) on the card: a 2px line along its
      bottom edge (the card's radius clips it) filling from the right over its interval, one step a second, and one dot
      per view a little above it, the current one gold; on paper in its inks. Not faded with the switch. */
@@ -715,15 +726,25 @@
   .nx-nl b{font-size:13.5px;font-weight:500;line-height:1.38}
   .nx-nl li>span{font-size:11.5px;line-height:1.35;color:var(--i2)}
   .nx-nl em{font-style:normal;font-weight:500;color:var(--ink)}
+  /* the news card's headlines whole on up to two lines, the source and the age under each; the stories that fit (nxFit) */
+  .nx-n .nx-nl li{padding:2px 0}
+  .nx-n .nx-nl b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13px;line-height:1.35}
+  .nx-n .nx-nl li>span{font-size:11px}
+  .sq.nx-n .nx-nl li:nth-child(n+2){display:none}
+  .sq.nx-n .nx-nl b{-webkit-line-clamp:3}
+  /* focused: the first story's summary under the stories when it has room (nxFit) */
+  .nx-sm{display:none}
+  .f .nx-sm:not([hidden]){display:block;margin-top:4px;padding-top:4px;border-top:1px solid rgba(28,22,15,.12)}
+  .nx-sm p{font-size:12px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .f .nx-nl li{border-top-color:rgba(28,22,15,.12)}
   .f .nx-nl li>span{color:var(--p2)}
   .f .nx-nl em{color:var(--pi)}
-  /* its «المباريات»: the headlines' rows, the teams at the start and when at the end on the first line, the channel under */
-  .nx-ml .mt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
-  .nx-ml .mt b{min-width:0}
-  .nx-ml .w{flex:none;font-size:12px;color:var(--i2);white-space:nowrap}
-  .f .nx-ml .w{color:var(--p2)}
-  /* the news card's «الترتيب» tab: the league's table in the headlines' place (five rows), the followed team gold */
+  /* the sports card's «المباريات»: the headlines' rows, the teams on the first line, when and the channel under them */
+  .nx-ml i{font-style:normal}
+  .nx-ml b{white-space:normal}
+  .nx-ml .br i{display:block;overflow:hidden;text-overflow:ellipsis}   /* the channel on a line of its own (nxFit) */
+  .nx-ml .br .sep{display:none}
+  /* its «الترتيب»: the league's table (five rows), the followed team gold */
   .nx-sl{list-style:none;margin-top:1px}
   .nx-sl li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;font-size:13.5px;line-height:1.3;
     border-top:1px solid rgba(255,255,255,.1);white-space:nowrap}
@@ -733,7 +754,42 @@
   #nx .nx-sl .y{color:var(--g);font-weight:500}
   .f .nx-sl li{border-top-color:rgba(28,22,15,.12)}
   #nx .f .nx-sl .y{color:var(--pg)}
-  .nx-q p{margin:8px 0 4px;font-size:15px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .sq .nx-sl li:nth-child(n+4){display:none}
+  .nx-q p{margin:7px 0 3px;font-size:15px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .nx-q.h p{font-size:13.5px;line-height:1.55}
+  #nx .nx-q .m{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* the weather card: now (the degrees, the sky, the day's high and low, the humidity), then the week (a day a line) */
+  .nx-wx{padding:12px 9px}
+  .nx-wx .nb{margin-top:6px;font:700 38px/1 ThmanyahDisplay,serif}
+  .nx-wx .sb{margin:5px 0 1px;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nx-wx .m{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nx-wk{list-style:none;margin-top:4px}
+  .nx-wk li{display:flex;justify-content:space-between;gap:6px;font-size:12px;line-height:1.42;white-space:nowrap}
+  .nx-wk li:first-child{font-weight:500}
+  .nx-wk li[hidden]{display:none}
+  .nx-wk span{overflow:hidden;text-overflow:ellipsis}
+  .nx-wk bdi{flex:none;color:var(--i2)}
+  .f .nx-wk bdi{color:var(--p2)}
+  /* focused: the week's days with their sky; squeezed: three days, the degrees under the day, the weather now without its lines */
+  .nx-wk em{display:none}
+  .f .nx-wk li{line-height:1.3}
+  .f .nx-wk em{display:block;flex:1;min-width:0;font-style:normal;color:var(--p2);overflow:hidden;text-overflow:ellipsis}
+  /* both parts drawn (nxCards: .wb), the view's own shown at rest (today: .nx-td, the week: .wv's .nx-wk), its kicker
+     «الأسبوع» (.kw); focused (.f: it does not turn then, its dots and line kept frozen as the other cards'), «الطقس» (.kt)
+     and with .wb both: today's block a 110 px column at the right (RTL's start), a hairline in the paper's rule
+     colour, the week from «غداً» filling the rest (today's row is the column), as many days as fit (nxFit) */
+  .nx-wx:not(.wv):not(.f) .nx-wk,.nx-wx.wv:not(.f) .nx-td,.nx-wx .kt,.nx-wx.f .kw{display:none}
+  #nx .nx-wx.f:not(.sq) .kt{display:inline}
+  .nx-wx.wb.f .nx-db{display:flex;align-items:stretch;gap:10px}
+  .nx-wx.wb.f .nx-td{flex:none;width:110px;padding-left:10px;border-left:1px solid rgba(28,22,15,.12)}
+  .nx-wx.wb.f .nx-wk{flex:1;min-width:0;margin-top:7px}
+  .nx-wx.wb.f .nx-wk li:first-child{display:none}
+  .nx-wx.wb.f .nx-wk li>span{flex:none;width:4.4em}   /* the days' names a column: the skies start in line */
+  .sq .nx-wk li{flex-wrap:wrap;line-height:1.3}
+  .sq .nx-wk span{flex-basis:100%}
+  .sq .nx-wk li:nth-child(n+4){display:none}
+  .sq.nx-wx .m{display:none}
+  .sq.nx-q .m,.sq.nx-q .k,.sq .nx-ml i{display:none}
   #nx .nx-q .m{color:var(--g)}
   #nx :is(.orn,.saw){font-family:'NotoMarks',serif;color:var(--g)}
   .nx-q .nar{font-size:.85em;opacity:.8}
@@ -3399,7 +3455,7 @@ async function loadWeather(){
                          + (DX ? ',apparent_temperature,relative_humidity_2m,wind_speed_10m' : NXH ? ',relative_humidity_2m' : '')
                          + `&daily=temperature_2m_max,temperature_2m_min,weather_code`
                          + (DX ? ',precipitation_probability_max,sunrise,sunset&hourly=temperature_2m,precipitation_probability&forecast_days=7'
-                               : '&forecast_days=5'), 12000);
+                               : (NXH ? '&forecast_days=7' : '&forecast_days=5')), 12000);   // «الجديد»'s week
     if(!r.ok) throw 0;
     const j = await r.json();
     document.getElementById('wx-temp').textContent = ar(Math.round(j.current.temperature_2m)) + '°';
@@ -4383,15 +4439,16 @@ function bootRotatingWidget(){
 // are the classic loaders' (none is asked twice): nxBoot wraps the few that bring new data, so the layer is redrawn when
 // they answer (nxSoon), each part rewritten only when its text changes (nxSet).
 // Home (nxHome): the dateline, the clock and a standfirst from the weather and the next prayer (nxLine), the «اليوم» row
-// (the deen card and the news card, each turning through its views: NX_VIEWS), the next match beside the standfirst and
-// the ticker tape as the «الأسواق» line. The launcher keeps its pills and its apps row; its invisible
-// card view covers the row (cardRect): ◀ ▶ step through the cards (sauditvStep), OK opens the focused one
-// (sauditvCurrentPanel), the detail window's ◀ ▶ go through the row (sauditvDetailList).
+// (the pages ticked in the settings, in their order, folded into five cards at most that share the row's width: the
+// prayer, the news, the deen card, the sports card, the weather, each turning through its views: NX_VIEWS), the next
+// match beside the standfirst and the ticker tape as the «الأسواق» line. The launcher keeps its pills and its apps
+// row; its invisible card view covers the row (cardRect): ◀ ▶ step through the cards (sauditvStep), OK opens the
+// focused one on its view (sauditvCurrentPanel), the detail window's ◀ ▶ go through the row's views (sauditvDetailList).
 // Screensaver (boot, then nxBoot): the rotating card top right in a quiet style, the photo's place top left, the dates
 // and the clock bottom right, up to five facts bottom left (NX_FACTS, nxDraw); pixelShift, the hourly swap (mirrored corners), the
 // photo-only minute and the night dimming as before; no ticker tape.
 let NX_WX = null;   // the weather now (loadWeather): {t, code, hum, hi, lo, dust}
-let NX_T = 0, NX_K = '', NX_F = false, NX_Z = 1, NX_TAB = '', NX_RECT = '';   // timer, focused card, focus on, scale, news tab
+let NX_T = 0, NX_K = '', NX_F = false, NX_Z = 1, NX_RECT = '';   // timer, focused card, focus on, scale, the row's box
 let NX_PHOTO = null, NX_CW = -1;   // the photo shown (showBackground) and its credit's room on the «الأسواق» line (nxCredit)
 const NX_H = {};
 const nxEl = id => document.getElementById(id);
@@ -4410,26 +4467,35 @@ function nxDur(s){
   if(m || !h) a.push(nxCount(Math.max(1, m), 'دقيقة', 'دقيقتين', 'دقائق'));
   return a.join(' و');
 }
-// the home screen's «اليوم» row: two cards whatever the settings' «بطاقة على الشاشة الرئيسية» ticks, the deen card
-// (right: the next prayer, the verse of the day, the hadith of the day in turn) and the news card (the country's news,
-// the world's, tech, the city's, the league's table, then the followed clubs' matches, in turn); each view only with
-// its data (nxHas)
-const NX_SUBS = ['prayers', 'verse', 'hadith'], NX_TABS = ['news', 'world', 'tech', 'local', 'standings', 'matches'];
-const NX_VIEWS = {deen: NX_SUBS, news: NX_TABS};   // the row's keys (data-k), in order, and their views
-const NX_SUB_NAME = {prayers: 'الصلاة', verse: 'آية اليوم', hadith: 'حديث اليوم'};
-let NX_SUB = '';   // the deen card's view
+// the home screen's «اليوم» row in the order of the settings' «بطاقة على الشاشة الرئيسية» (the launcher's #panels, or
+// #panel alone): only the pages ticked there, folded into five cards at most (NX_FOLD), each at the place of the first
+// of its pages in the list: the next prayer; the news (the country's, the world's, tech, the city's: its tabs in the
+// list's order); the deen card (the verse, the hadith); the sports card (the league's table, the followed clubs'
+// matches); the weather (today, then the week). Nothing ticked (#panel=none, the settings' default): all five, in that
+// order. Each card turns through its views (NX_VIEWS), each only with its data (nxHas)
+const NX_FOLD = {prayers: 'prayers', news: 'news', world: 'news', tech: 'news', local: 'news', verse: 'deen', hadith: 'deen',
+  standings: 'sports', matches: 'sports', forecast: 'forecast'};
+const NX_LIST = (L => L.length ? L : Object.keys(NX_FOLD))([...new Set(CONFIG.panels.length ? CONFIG.panels : [CONFIG.panel])].filter(p => NX_FOLD[p]));
+const NX_VIEWS = {};   // the row's keys (data-k), in order, and their views (the weather's two: today, week)
+NX_LIST.forEach(p => { (NX_VIEWS[NX_FOLD[p]] = NX_VIEWS[NX_FOLD[p]] || []).push(...(p === 'forecast' ? ['today', 'week'] : [p])); });
+// the weather always last: with five cards it is the one past the left edge, reached with the arrows (nxFocus)
+const NX_ORDER = Object.keys(NX_VIEWS).sort((a, b) => (a === 'forecast') - (b === 'forecast'));
+const NX_CUR = {};   // each card's view
 const nxHas = v => v === 'prayers' ? PRAYERS.length > 0 : v === 'verse' ? VERSES.length > 0 : v === 'hadith' ? !!(HADITH_DAY && HADITH_DAY.matn)
-  : v === 'standings' ? STANDINGS.length > 0 : v === 'matches' ? nxGames(Date.now()).length > 0 : (NEWS[v] || []).length > 0;
-// the news card's «المباريات»: the followed clubs' games as the classic matches card has them (matchEvents), a game in
+  : v === 'standings' ? STANDINGS.length > 0 : v === 'matches' ? nxGames(Date.now()).length > 0
+  : v === 'today' ? !!(NX_WX && Number.isFinite(NX_WX.t)) : v === 'week' ? FORECAST.length > 0 : (NEWS[v] || []).length > 0;
+// the sports card's «المباريات»: the followed clubs' games as the classic matches card has them (matchEvents), a game in
 // progress first, then the next ones, the soonest first, then the results of the last day, the latest first; three
 const nxGames = now => { const L = matchEvents(now), live = x => !finishedRecently(x.ev, now) && now >= x.t;
   return [...L.filter(live), ...L.filter(x => !live(x) && !finishedRecently(x.ev, now)), ...L.filter(x => finishedRecently(x.ev, now)).reverse()].slice(0, 3); };
-const nxView = k => k === 'news' ? NX_TAB : NX_SUB;
+const nxView = k => NX_CUR[k];
+const nxPanel = v => v === 'today' || v === 'week' ? 'forecast' : v;   // a view's page in the detail window
 // the screensaver's facts bottom left (#facts=, the settings' «سطور شاشة التوقف»): up to five, in the order given, of
 // prayer, match, weather, ramadan and hijri (the Hijri date, the Gregorian under it); none given: the first four
 const NX_FACT_IDS = ['prayer', 'match', 'weather', 'ramadan', 'hijri'];
 const NX_FACTS = (L => L.length ? L : NX_FACT_IDS.slice(0, 4))([...new Set(_list('facts'))].filter(f => NX_FACT_IDS.includes(f)).slice(0, 5));
-const NX_TAB_NAME = {news: CONFIG.newsName, world: 'العالم', tech: 'التقنية', local: 'مدينتك', standings: 'الترتيب', matches: 'المباريات'};
+const NX_NAME = {news: CONFIG.newsName, world: 'العالم', tech: 'التقنية', local: 'مدينتك', verse: 'آية اليوم', hadith: 'حديث اليوم',
+  standings: 'الترتيب', matches: 'المباريات'};   // the chips
 // the next prayer, or the one between its adhan and its iqama (now): its index, seconds to it (to the iqama), the
 // timeline's line (w, percent: the dots are 20% apart, 10% in from the ends)
 function nxPrayer(){
@@ -4468,47 +4534,70 @@ function nxMatch(M, now){
   return {t, w: (day(d) === day(new Date(now)) ? 'اليوم' : new Intl.DateTimeFormat(GREG, {timeZone: CONFIG.timezone, weekday: 'long'}).format(d)) + ' ' + t12,
           m: 'بعد ' + shortRemaining(d - now), bc: bc ? bcLine(bc) : ''};
 }
-// the «اليوم» row: the deen card and the news card, each on its view (NX_SUB, NX_TAB: the first with data when the one
-// set has none), its chips the views with data, the one shown .on; a card with no view to show is not drawn
-function nxCards(P, now){
-  if(!nxHas(NX_TAB)) NX_TAB = NX_TABS.find(nxHas) || NX_TAB;
-  if(!nxHas(NX_SUB)) NX_SUB = NX_SUBS.find(nxHas) || NX_SUB;
+// the prayer card's countdown, short: «4 س 13 د», «4 س», «13 د»
+const nxDurS = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return h ? ar(h) + ' س' + (m ? ' ' + ar(m) + ' د' : '') : ar(Math.max(1, m)) + ' د'; };
+// the «اليوم» row: each card of NX_ORDER on its view (NX_CUR: the first with data when the one set has none), its
+// chips the views with data, the one shown .on; a view with no data is skipped, a card with no view to show not drawn
+function nxCards(P, W, now){
   const k = (i, t) => `<div class="k">${DV_ICON[i]}${t}</div>`;
-  const ch = (L, on, name) => '<div class="nx-ch">' + L.filter(nxHas).map(t => `<span${t === on ? ' class="on"' : ''}>${esc(name[t])}</span>`).join('') + '</div>';
-  const sub = {
-    prayers: () => P && ['nx-p', k('prayers', `<span>${P.now ? 'حان الآن' : 'الصلاة القادمة'}</span>`),
-      `<div class="pm"><b class="pn">${P.name}</b><span class="pt">${nxT12(P.x.h, P.x.mi)}<small>${P.x.h < 12 ? 'ص' : 'م'}</small></span></div>`
-      + `<div class="m">${P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDur(P.left)) : 'بعد ' + nxDur(P.left) + (P.iq < 0 ? '' : ' · الإقامة ' + nxT12(Math.floor(P.iq / 60) % 24, P.iq % 60))}</div>`
-      + `<ol class="nx-tl" style="--w:${P.w.toFixed(1)}%">` + PRAYERS.map((y, j) => `<li class="${j < P.i ? 'p' : j === P.i ? 'n' : ''}"><i></i>${prayerName(y)}<b>${nxT12(y.h, y.mi)}</b></li>`).join('') + '</ol>'],
+  const ch = (key, on) => '<div class="nx-ch">' + NX_VIEWS[key].filter(nxHas).map(t => `<span${t === on ? ' class="on"' : ''}>${esc(NX_NAME[t])}</span>`).join('') + '</div>';
+  const day = x => new Intl.DateTimeFormat('en-CA', {timeZone: CONFIG.timezone}).format(x), today = day(new Date(now));
+  // the news card's tab: three headlines, a line each, and their sources and ages
+  const news = t => { const b = (s, e) => `<${e}${bidiAttr(t, s)}>${esc(s)}</${e}>`;
+    return ['nx-n', k('news', '<span>الأخبار</span>') + ch('news', t), '<ol class="nx-nl">' + NEWS[t].slice(0, 3).map(y => `<li>${b(y.headline, 'b')}<span>${[y.source && '<em>'
+      + newsSource(t, y.source) + '</em>', Number.isFinite(y.t) && agoAr(now - y.t)].filter(Boolean).join(' · ')}</span></li>`).join('') + '</ol>'
+      + (NEWS[t][0].summary ? `<div class="nx-sm">${b(NEWS[t][0].summary, 'p')}</div>` : '')]; };
+  // the weather's two parts (nxCards' today, week): now (none without W) and the week's days (none without FORECAST)
+  const wxTd = W ? `<div class="nb">${nxDeg(W.t)}</div><div class="sb">${esc(W.dust || WX_CODES[W.code] || '')}</div>`
+      + `<div class="m">${nxHiLo(W)}</div>` + (Number.isFinite(W.hum) ? `<div class="m">رطوبة ${nxL(ar(Math.round(W.hum)) + PCT)}</div>` : '') : '';
+  const wxWk = FORECAST.length ? '<ol class="nx-wk">' + FORECAST.slice(0, 7).map((d, i) => `<li><span>${i === 0 ? 'اليوم' : i === 1 ? 'غداً'
+      : new Intl.DateTimeFormat(GREG, {timeZone: 'UTC', weekday: 'long'}).format(new Date(d.date + 'T12:00:00Z'))}</span><em>${esc(WX_CODES[d.code] || '')}</em>${nxL(`${ar(Math.round(d.hi))}°/${ar(Math.round(d.lo))}°`)}</li>`).join('') + '</ol>' : '';
+  const view = {   // [class, header, body] of each view
+    prayers: () => { if(!P) return null;
+      const iq = P.now || P.iq < 0 ? '' : `<span class="iq"> · الإقامة ${nxT12(Math.floor(P.iq / 60) % 24, P.iq % 60)}</span>`;
+      return ['nx-p', k('prayers', `<span>${P.now ? 'حان الآن' : 'الصلاة القادمة'}</span>`),
+        `<div class="pc"><b>${P.name}</b><span><b>${nxT12(P.x.h, P.x.mi)}</b> ${P.x.h < 12 ? 'ص' : 'م'}</span></div>`
+        + `<div class="m">${P.now ? (P.iq < 0 ? 'حان الآن' : 'الإقامة بعد ' + nxDurS(P.left)) : 'بعد ' + nxDurS(P.left) + iq}</div>`
+        + '<ol class="nx-pl"><li class="h"><span>الأذان</span><span class="q">الإقامة</span></li>' + PRAYERS.map((y, j) => {
+          const g = y.key === 'Dhuhr' && isFriday() ? 0 : CONFIG.iqama[y.key] || 0, q = y.h * 60 + y.mi + g, t = (h, m) => `<b>${nxT12(h, m)}</b> ${h < 12 ? 'ص' : 'م'}`;
+          return `<li${j < P.i ? ' class="p"' : j === P.i ? ' class="n"' : ''}><span>${prayerName(y)}</span><span>${t(y.h, y.mi)}</span>`
+            + `<span class="q">${g ? t(Math.floor(q / 60) % 24, q % 60) : ''}</span></li>`; }).join('') + '</ol>']; },
+    news: () => news('news'), world: () => news('world'), tech: () => news('tech'), local: () => news('local'),
     verse: () => { const v = VERSES[riyadhDayNumber() % VERSES.length];
-      return v && ['nx-q', k('verse', ''), `<p><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></p><div class="m">${esc(v.surah)} · ${ar(v.ayah)}</div>`]; },
+      return v && ['nx-q', k('verse', '') + ch('deen', 'verse'), `<p><span class="orn">﴿</span>${esc(v.text)}<span class="orn">﴾</span></p><div class="m">${esc(v.surah)} · ${ar(v.ayah)}</div>`]; },
     hadith: () => { const h = HADITH_DAY;
       if(h && h.day !== riyadhDayNumber()) loadHadith();
-      return h && h.matn ? ['nx-q', k('hadith', ''), `<p><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</p><div class="m">صحيح البخاري، رقم ${ar(h.n)}</div>`] : null; }
-  };
-  const out = [], d = sub[NX_SUB] && sub[NX_SUB]();
-  if(d) out.push(['deen', 'nx-d ' + d[0], `<div class="nh">${d[1]}${ch(NX_SUBS, NX_SUB, NX_SUB_NAME)}</div><div class="nx-db">${d[2]}</div>`]);
-  if(nxHas(NX_TAB)){
-    const head = `<div class="nh">${k('news', '<span>الأخبار</span>')}${ch(NX_TABS, NX_TAB, NX_TAB_NAME)}</div>`;
-    if(NX_TAB === 'standings'){   // the league's table, five rows, the followed team marked
+      return h && h.matn ? ['nx-q h', k('hadith', '') + ch('deen', 'hadith'), `<p><span class="nar">${sawHtml(esc(h.head))}</span> «${sawHtml(esc(hadithType(h.matn)))}»</p><div class="m">صحيح البخاري، رقم ${ar(h.n)}</div>`] : null; },
+    standings: () => {   // the league's table, five rows, the followed team marked
       const f = standFollowed(), n = v => ar(Number.isFinite(v) ? Math.round(v) : 0);
-      out.push(['news', 'nx-n', head + '<ol class="nx-sl">' + pickStandings(STANDINGS, f, 5).map(x =>
-        `<li${f(x) ? ' class="y"' : ''}><span>${n(x.rank)}. ${esc(standAr(x.name))}</span><b>${n(x.pts)}</b></li>`).join('') + '</ol>']);
-    } else if(NX_TAB === 'matches'){   // the games in the headlines' place: the teams (the score once on) and when, the channel under them
-      const today = new Intl.DateTimeFormat('en-CA', {timeZone: CONFIG.timezone}).format(new Date(now));
-      out.push(['news', 'nx-n', head + '<ol class="nx-nl nx-ml">' + nxGames(now).map(({ev, t}) => {
-        const d = new Date(t), on = ev.intHomeScore != null && ev.intAwayScore != null && now >= t, end = finishedRecently(ev, now), bc = bcastOf(ev, now);
-        const p = new Intl.DateTimeFormat('en-GB', {timeZone: CONFIG.timezone, hour: '2-digit', minute: '2-digit', hour12: false})
-          .formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {}), t12 = fmt12(+p.hour % 24, +p.minute);
-        const w = end ? 'انتهت' : now >= t ? '<span class="live">مباشر</span> ' + liveStatus(ev, t12)
-          : (new Intl.DateTimeFormat('en-CA', {timeZone: CONFIG.timezone}).format(d) === today ? 'اليوم' : new Intl.DateTimeFormat(GREG, {timeZone: CONFIG.timezone, weekday: 'long'}).format(d)) + ' ' + t12;
-        return `<li><div class="mt"><b>${esc(teamAr(ev.strHomeTeam))}${on ? ` <span class="sc">${ar(+ev.intHomeScore)} - ${ar(+ev.intAwayScore)}</span> ` : ' × '}${esc(teamAr(ev.strAwayTeam))}</b>`
-          + `<span class="w">${w}</span></div>${bc ? `<span>${bcLine(bc)}</span>` : ''}</li>`; }).join('') + '</ol>']);
-    } else {
-      const b = (s, t) => `<${t}${bidiAttr(NX_TAB, s)}>${esc(s)}</${t}>`;
-      out.push(['news', 'nx-n', head + '<ol class="nx-nl">' + NEWS[NX_TAB].slice(0, 3).map(y => `<li>${b(y.headline, 'b')}<span>${[y.source && '<em>' + newsSource(NX_TAB, y.source) + '</em>', Number.isFinite(y.t) && agoAr(now - y.t)].filter(Boolean).join(' · ')}</span></li>`).join('') + '</ol>']);
-    }
-  }
+      return ['nx-s', k('standings', '') + ch('sports', 'standings'), '<ol class="nx-sl">' + pickStandings(STANDINGS, f, 5).map(x =>
+        `<li${f(x) ? ' class="y"' : ''}><span>${n(x.rank)}. ${esc(standAr(x.name))}</span><b>${n(x.pts)}</b></li>`).join('') + '</ol>']; },
+    matches: () => ['nx-s', k('matches', '') + ch('sports', 'matches'), '<ol class="nx-nl nx-ml">' + nxGames(now).map(({ev, t}) => {
+      // the games, two lines each: the teams (the score once on), then when and the channel
+      const d = new Date(t), on = ev.intHomeScore != null && ev.intAwayScore != null && now >= t, end = finishedRecently(ev, now), bc = bcastOf(ev, now);
+      const p = new Intl.DateTimeFormat('en-GB', {timeZone: CONFIG.timezone, hour: '2-digit', minute: '2-digit', hour12: false})
+        .formatToParts(d).reduce((a, x) => (a[x.type] = x.value, a), {}), t12 = fmt12(+p.hour % 24, +p.minute);
+      const w = end ? 'انتهت' : now >= t ? '<span class="live">مباشر</span> ' + liveStatus(ev, t12)
+        : (day(d) === today ? 'اليوم' : new Intl.DateTimeFormat(GREG, {timeZone: CONFIG.timezone, weekday: 'long'}).format(d)) + ' ' + t12;
+      return `<li><b>${esc(teamAr(ev.strHomeTeam))}${on ? ` <span class="sc">${ar(+ev.intHomeScore)} - ${ar(+ev.intAwayScore)}</span> ` : ' × '}${esc(teamAr(ev.strAwayTeam))}</b>`
+        + `<span><span class="w">${w}</span>${bc && bc.ch.length ? '<i><span class="sep"> · </span>' + bcCh(bc.ch) + '</i>' : ''}</span></li>`; }).join('') + '</ol>'],
+    // the weather now (the degrees, the sky, the day's high and low, the humidity), then the coming days' highs and lows.
+    // Both views carry both parts when both have data (.wb): at rest the CSS shows only the view's own (today: .nx-td;
+    // the week: .nx-wk), focused (.f, set by nxFocus without a redraw) both side by side, today's block a column at the
+    // right and the week from «غداً» beside it (its «اليوم» row hidden), the kicker «الطقس» (.kt) in the week's «الأسبوع»'s
+    // (.kw) place. Without the week only today, as before; without today only the week
+    today: () => W && ['nx-wx' + (wxWk ? ' wb' : ''), k('forecast', '<span>الطقس</span>'), `<div class="nx-td">${wxTd}</div>` + wxWk],
+    week: () => ['nx-wx wv' + (wxTd ? ' wb' : ''), k('forecast', '<span class="kw">الأسبوع</span><span class="kt">الطقس</span>'),
+      (wxTd ? `<div class="nx-td">${wxTd}</div>` : '') + wxWk]
+  };
+  const out = [];
+  NX_ORDER.forEach(key => {
+    const L = NX_VIEWS[key];
+    if(!L.includes(NX_CUR[key]) || !nxHas(NX_CUR[key])) NX_CUR[key] = L.find(nxHas) || (L.includes(NX_CUR[key]) ? NX_CUR[key] : L[0]);
+    const d = nxHas(NX_CUR[key]) && view[NX_CUR[key]]();
+    if(d) out.push([key, d[0], `<div class="nh">${d[1]}</div><div class="nx-db">${d[2]}</div>`]);
+  });
   if(!out.some(c => c[0] === NX_K) && out.length) NX_K = out[0][0];
   // a card with two views or more: its rotation indicator (the line's fill set by nxLnSync), a dot per view
   const ri = key => { const v = NX_VIEWS[key].filter(nxHas), i = v.indexOf(nxView(key));
@@ -4530,7 +4619,9 @@ function nxDraw(){
     return;
   }
   const wd = nxFmt({weekday: 'long'}), ram = R ? esc(R[0] + (R[1] ? ' ' + R[1] : '')) : '';
-  nxSet('nx-dl', `<span><b>${wd}</b> ${nxFmt({day: 'numeric', month: 'long'}, HIJRI)}</span><span>${nxFmt({day: 'numeric', month: 'long'})}</span>`
+  // «الأحد 14 جمادى الأولى 1448 هـ» (one «هـ», whether the calendar gives it or not) · «25 أكتوبر 2026» · Ramadan's
+  const ymd = {day: 'numeric', month: 'long', year: 'numeric'};
+  nxSet('nx-dl', `<span><b>${wd}</b> ${nxFmt(ymd, HIJRI).replace(/\s*هـ$/, '')} هـ</span><span>${nxFmt(ymd)}</span>`
     + (R ? `<span class="r">${HI_ICON.ram}${ram}</span>` : ''));
   // the dateline keeps what fits beside the launcher's pills (the rest wraps to its hidden second line); Ramadan's
   // countdown, if it is left out there, goes to the line over the standfirst
@@ -4546,32 +4637,78 @@ function nxDraw(){
     + `<div class="wh">${x.w}</div><div class="m">${x.bc || x.m}</div>` : '');
   mx.hidden = !x;
   if(x && nxEl('nx').querySelector('.nx-hero').offsetWidth > 880) mx.hidden = true;
-  nxSet('nx-rail', nxCards(P, now)); nxLnSync();
+  nxSet('nx-rail', nxCards(P, W, now)); nxLnSync();
   nxEl('nx-mk').hidden = !TAPE_HTML;
   nxFocus(); nxRect();
 }
-// the focused card in paper, and wholly in view: the row starts at the right margin (its two cards fill it to the left
-// one, so it stays put); were it wider, it would move right just enough, a card it leaves partly off the screen not
-// shown (.o) until the focus brings it in: no card is ever seen cut
+// the widths (CSS px) of the cards in view (cs: four at most) in the row's 880 between the margins: in proportion to
+// NX_W; the focused one (c) 340 (the news 380, or its share were that more), the others in proportion in the rest;
+// none under 90
+const NX_W = {prayers: 170, news: 250, deen: 168, sports: 140, forecast: 104};
+function nxWidths(cs, c){
+  const room = 880 - 12 * Math.max(0, cs.length - 1), b = e => NX_W[e.dataset.k], sum = L => L.reduce((a, e) => a + b(e), 0), w = new Map();
+  const share = (L, r) => { let fix = [];
+    for(;;){ const free = L.filter(e => !fix.includes(e)), rr = r - 90 * fix.length, low = free.filter(e => b(e) * rr / sum(free) < 90);
+      if(!low.length){ free.forEach(e => w.set(e, b(e) * rr / sum(free))); fix.forEach(e => w.set(e, 90)); return; }
+      fix = fix.concat(low); } };
+  if(!c){ share(cs, room); return w; }
+  const wc = Math.max(b(c) * room / sum(cs), Math.min(c.dataset.k === 'news' ? 380 : 340, room - 90 * (cs.length - 1)));
+  w.set(c, wc); share(cs.filter(e => e !== c), room - wc);
+  return w;
+}
+// the focused card in paper and wider (.f: more of its views' content), the others narrower, a card left under 90% of
+// its width in a compact form (.sq: its icon and the view's essentials); the width eased (140 ms; none while the row
+// is still: nxRotStill), the cards fitted at once and again at its end. Four in view (NX_S: the first of them, kept
+// while the focus moves inside them, 0 without focus): nxWidths over those four; a card out of them (.o) at its width
+// at rest among the four nearest it (as it will slide in), the row slid right by the cards before NX_S and their gaps
+let NX_S = 0;
 function nxFocus(){
   const rail = nxEl('nx-rail');
   if(!rail) return;
-  const cs = [...rail.children], c = cs.find(e => e.dataset.k === NX_K) || cs[0];
+  const cs = [...rail.children], c = cs.find(e => e.dataset.k === NX_K) || cs[0], i = cs.indexOf(c), n = cs.length;
   NX_K = c ? c.dataset.k : '';
-  cs.forEach(e => { e.classList.toggle('f', NX_F && e === c); nxFit(e); });
-  const W = nxEl('nx').offsetWidth, base = W - 40 - rail.offsetWidth, left = c ? base + c.offsetLeft : 40, x = left < 40 ? 40 - left : 0;
-  rail.style.transform = x ? `translateX(${x}px)` : '';
-  cs.forEach(e => { const l = base + x + e.offsetLeft; e.classList.toggle('o', l < -.5 || l + e.offsetWidth > W + .5); });
+  if(!NX_F || n <= 4) NX_S = 0;
+  else if(i > NX_S + 3) NX_S = i - 3;
+  else if(i < NX_S) NX_S = i;
+  NX_S = Math.max(0, Math.min(NX_S, n - 4));
+  const win = cs.slice(NX_S, NX_S + 4), W = nxWidths(win, NX_F ? c : null), N = nxWidths(win, null);
+  cs.forEach((e, j) => { if(!W.has(e)){ const a = Math.max(0, Math.min(j - (j < NX_S ? 0 : 3), n - 4)), w = nxWidths(cs.slice(a, a + 4), null).get(e); W.set(e, w); N.set(e, w); } });
+  rail.classList.toggle('still', nxRotStill());
+  rail.style.transform = NX_S ? `translateX(${cs.slice(0, NX_S).reduce((a, e) => a + W.get(e) + 12, 0)}px)` : '';
+  cs.forEach(e => { e.classList.toggle('f', NX_F && e === c); e.classList.toggle('o', !win.includes(e)); e.classList.toggle('sq', W.get(e) < N.get(e) * .9);
+    e.style.width = W.get(e) + 'px'; nxFit(e); });
+  clearTimeout(nxFocus.t);
+  nxFocus.t = setTimeout(() => cs.forEach(e => { if(e.isConnected) nxFit(e); }), 160);
 }
-// a card's header in its width: its chips whole, else without its kicker's word («الأخبار», «الصلاة القادمة»: its icon
-// stays), then without the chips from the last one (never the one shown)
+// a card in its width (and its state: .f, .sq): a game's channel on a line of its own when it has no room after the
+// time; its list's rows (the stories, the games, the week's days) up to the first that is not wholly above its dots
+// (a day: nor whole in its width), the rest hidden, then the first story's summary if it has room; the verse's, the
+// hadith's lines that fit; the prayer's iqama only when its line has room; its header's chips whole, else without its
+// kicker's word («الأخبار»: its icon stays), then without the chips from the last one (never the one shown; squeezed,
+// that one too when it has no room)
 function nxFit(c){
-  const ch = c.querySelector('.nx-ch'), tabs = ch ? [...ch.children] : [], over = () => ch.scrollWidth > ch.clientWidth + .5;
+  const R = e => e.getBoundingClientRect(), dt = c.querySelector('.nx-dots'), end = dt ? R(dt).top - 1 : R(c).bottom - 8 * NX_Z;
+  const over = e => e.scrollWidth > e.clientWidth + .5;
+  c.querySelectorAll('.nx-ml li > span').forEach(e => { e.classList.remove('br'); if(e.querySelector('i') && over(e)) e.classList.add('br'); });
+  c.querySelectorAll('.nx-nl, .nx-wk').forEach(ol => { const L = [...ol.children], wk = ol.classList.contains('nx-wk');
+    let out = false;
+    L.forEach(li => { li.hidden = false; });
+    L.forEach(li => { out = out || R(li).bottom > end || (wk && [...li.children].some(over)); li.hidden = out; }); });
+  const sm = c.querySelector('.nx-sm');   // the first story's summary, under the stories, when it has room
+  if(sm){ sm.hidden = false; if(R(sm).bottom > end) sm.hidden = true; }
+  const q = c.querySelector('.nx-q p'), qm = c.querySelector('.nx-q .m');   // the verse, the hadith: the lines that fit over the reference
+  if(q){ const lh = parseFloat(getComputedStyle(q).lineHeight) * NX_Z, m = qm ? R(qm).height + 3 * NX_Z : 0;
+    q.style.webkitLineClamp = Math.max(1, Math.floor((end - R(q).top - m) / lh)); }
+  const iq = c.querySelector('.iq');
+  if(iq){ iq.hidden = false; if(over(iq.parentNode)) iq.hidden = true; }
+  const ch = c.querySelector('.nx-ch'), tabs = ch ? [...ch.children] : [], wide = () => ch.scrollWidth > ch.clientWidth + .5;
   c.classList.remove('ni');
+  if(ch) ch.hidden = false;
   tabs.forEach(t => { t.hidden = false; });
-  if(!ch || !over()) return;
+  if(!ch || !wide()) return;
   c.classList.add('ni');
-  for(let i = tabs.length - 1; i >= 0 && over(); i--) if(!tabs[i].classList.contains('on')) tabs[i].hidden = true;
+  for(let i = tabs.length - 1; i >= 0 && wide(); i--) if(!tabs[i].classList.contains('on')) tabs[i].hidden = true;
+  if(wide() && c.classList.contains('sq')) ch.hidden = true;   // squeezed, not even the one shown: none
 }
 // the row's box for the launcher's view over it (CSS px; 0 x 0 with no card)
 function nxRect(){
@@ -4610,27 +4747,28 @@ function nxCredit(b){
   document.documentElement.style.setProperty('--cw', w + 'px');
   if(TAPE_HTML) tapeLay();   // the run again for the tape's new width, on from where it was
 }
-// the cards' views: the panel last read in the detail window (its 'sauditv-card-pos') on its card, else the one shown,
-// else the first (nxCards then passes one with no data)
+// the cards' views: the panel last read in the detail window (its 'sauditv-card-pos') on the card that has it, else
+// the one shown, else the first (nxCards then passes one with no data)
 function nxTab(){
   let s = null;
   try{ s = JSON.parse(localStorage.getItem('sauditv-card-pos') || 'null'); }catch(e){}
   const p = s && s.panel;
-  NX_TAB = NX_TABS.includes(p) ? p : NX_TABS.includes(NX_TAB) ? NX_TAB : NX_TABS[0];
-  NX_SUB = NX_SUBS.includes(p) ? p : NX_SUBS.includes(NX_SUB) ? NX_SUB : NX_SUBS[0];
+  NX_ORDER.forEach(k => { const L = NX_VIEWS[k]; NX_CUR[k] = L.includes(p) ? p : L.includes(NX_CUR[k]) ? NX_CUR[k] : L[0]; });
 }
 // the cards' views in turn (each card's order, past a view with no data), every CONFIG.rotateMs as the classic card's
-// rotation, the deen card half an interval after the news card (never both at once): one timer (NX_ROT) at half the
-// interval, the news card on its even ticks, the deen card on its odd ones from the third; started again at every move
-// of the launcher's focus (nxRotArm), stopped while the detail window is open (sauditvHold(true)); no switch for the
-// card focused or with fewer than two views to show
+// rotation, the turning cards (NX_ROLL: two views or more) staggered, never two at once: one timer (NX_ROT) at the
+// interval over their number N, the i-th card on the ticks N + i, 2N + i, … (its first switch one interval and i/N
+// on); started again at every move of the launcher's focus (nxRotArm), stopped while the detail window is open
+// (sauditvHold(true)); no switch for the card focused or with fewer than two views to show
 let NX_ROT = 0, NX_ROT_N = 0, NX_ROT_HOLD = false, NX_ROT_FADE = 0;
+const NX_ROLL = NX_ORDER.filter(k => NX_VIEWS[k].length > 1);
 const nxRotStill = () => CARD_STILL || CONFIG.lowPower;
 function nxRotArm(){
+  const N = NX_ROLL.length;
   clearInterval(NX_ROT); NX_ROT = 0; NX_ROT_N = 0;
-  if(!NX_ROT_HOLD) NX_ROT = setInterval(() => { const n = ++NX_ROT_N; if(n % 2 === 0) nxRotStep('news'); else if(n > 1) nxRotStep('deen'); }, CONFIG.rotateMs / 2);
-  // the lines on the new schedule: the news card's first switch one interval on, the deen card's one and a half
-  Object.keys(NX_VIEWS).forEach(k => { if(NX_ROT_HOLD || (NX_F && NX_K === k)) nxLnFreeze(k); else nxLnRun(k, CONFIG.rotateMs * (k === 'news' ? 1 : 1.5)); });
+  if(!NX_ROT_HOLD && N) NX_ROT = setInterval(() => { const n = ++NX_ROT_N; if(n >= N) nxRotStep(NX_ROLL[(n - N) % N]); }, CONFIG.rotateMs / N);
+  // the lines on the new schedule: the i-th card's first switch 1 + i/N intervals on
+  NX_ROLL.forEach((k, i) => { if(NX_ROT_HOLD || (NX_F && NX_K === k)) nxLnFreeze(k); else nxLnRun(k, CONFIG.rotateMs * (1 + i / N)); });
 }
 function nxRotStep(k){
   if(NX_ROT_HOLD || (NX_F && NX_K === k)) return;
@@ -4642,7 +4780,7 @@ function nxRotStep(k){
 // card k to view t: its views and its body fade out, then the row is drawn on t (nxDraw, the headers fitted again) and
 // the card fades in
 function nxRotTo(k, t){
-  const q = () => nxEl('nx-rail') && nxEl('nx-rail').querySelector(`[data-k="${k}"]`), set = () => { if(k === 'news') NX_TAB = t; else NX_SUB = t; }, c = q();
+  const q = () => nxEl('nx-rail') && nxEl('nx-rail').querySelector(`[data-k="${k}"]`), set = () => { NX_CUR[k] = t; }, c = q();
   if(!c || nxRotStill()){ set(); nxDraw(); return; }
   c.classList.add('tx');
   NX_ROT_FADE = setTimeout(() => {
@@ -4730,14 +4868,14 @@ function nxBoot(){
 }
 // #home=1 in «الجديد»: bootHome's loaders, the «اليوم» row and its bridge for the launcher
 function nxHome(){
-  const root = document.documentElement, cards = NX_TABS.concat('verse', 'hadith');   // every view's data, whatever is ticked
+  const root = document.documentElement, cards = NX_LIST.filter(p => p !== 'prayers' && p !== 'forecast');   // the row's pages' data (the prayers, the weather and the matches always)
   root.classList.add('home');
   Object.entries(CONFIG.homeRoom).forEach(([k, v]) => { if(Number.isFinite(v) && v >= 0) root.style.setProperty(k, v + 'px'); });
   CONFIG.panel = 'none'; CONFIG.panels = [];   // the classic card is not drawn
   nxBoot(); nxTab();
-  window.sauditvCurrentPanel = () => NX_K ? nxView(NX_K) : NX_SUBS[0];   // the view shown on the card focused
-  // the detail window's list: the cards' views with data, the deen card's then the news card's
-  window.sauditvDetailList = () => [...nxEl('nx-rail').children].flatMap(e => NX_VIEWS[e.dataset.k].filter(nxHas)).join(',');
+  window.sauditvCurrentPanel = () => NX_K ? nxPanel(nxView(NX_K)) : NX_LIST[0];   // the page of the view shown on the card focused
+  // the detail window's list: the row's cards in order, each its views with data (the weather once)
+  window.sauditvDetailList = () => [...new Set([...nxEl('nx-rail').children].flatMap(e => NX_VIEWS[e.dataset.k].filter(nxHas).map(nxPanel)))].join(',');
   window.sauditvSetFocused = on => { NX_F = !!on; nxFocus(); nxRotArm(); };
   window.sauditvStep = d => {   // ◀ (+1) the next card to the left, ▶ (-1) back; no wrapping
     const cs = [...nxEl('nx-rail').children], i = cs.findIndex(e => e.dataset.k === NX_K);
