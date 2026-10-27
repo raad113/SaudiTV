@@ -436,8 +436,29 @@ check("perf: the home page's «يُتلى الآن» is told (#radiopush=1, wind
 check("perf: «معدل الإطارات» in the settings' «التطبيق» (30 by default), the page's ticker in 30 steps a second (steps())",
       'row("معدل الإطارات", fpsLabel(prefs.fps())' in settings_src
       and settings_src.index('header("التطبيق")') < settings_src.index('row("معدل الإطارات"')
-      and "const TAPE_LOW_FPS = 30;" in tmpl and "easing: CONFIG.lowPower ? `steps(${Math.max(1, Math.round(w / TAPE_SPEED * TAPE_LOW_FPS))}, end)` : 'linear'" in tmpl
+      and "const TAPE_LOW_FPS = 30;" in tmpl and "easing: tapeEase(w / TAPE_SPEED * 1000)" in tmpl
+      and "const f = (CONFIG.lowPower ? TAPE_LOW_FPS : 60) / (TAPE_IDLE ? 2 : 1);" in tmpl
+      and "return f < 60 ? `steps(${Math.max(1, Math.round(ms / 1000 * f))}, end)` : 'linear';" in tmpl
       and "lowPower: _Q.get('lowpower') === '1'" in tmpl)
+idle_src = (HOME_SRC / "IdleTape.java").read_text(encoding="utf-8")
+check("perf: at rest (no key nor mouse for a minute, HomePage.IDLE_MS) the home page's tape in half its steps a second "
+      "(window.sauditvIdle, the same animation's easing), back at the first key; MainActivity's every key and mouse event",
+      "static final long IDLE_MS = 60_000;" in hp_src and "later.postDelayed(goIdle, IDLE_MS);" in hp_src
+      and "send(rest.touched())" in hp_src and "send(rest.loaded())" in hp_src and "later.removeCallbacks(goIdle);" in hp_src
+      and '"window.sauditvIdle && window.sauditvIdle(" + on + ")"' in idle_src
+      and home_main.count("homePage.touched();") == 3
+      and re.search(r"public boolean dispatchKeyEvent\(KeyEvent e\) \{\s*homePage\.touched\(\);", home_main) is not None
+      and "window.sauditvIdle = on => {" in tmpl
+      and "if(TAPE_ANIM) TAPE_ANIM.effect.updateTiming({easing: tapeEase(TAPE_ANIM.effect.getTiming().duration)});" in tmpl)
+check("perf: at rest the launcher's own views in one layer (setOnRest), dropped at the first key and behind another app",
+      "homePage.setOnRest(rest -> scroll.setLayerType(rest ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE, null));" in home_main
+      and re.search(r"homePage\.pause\(\);\s*scroll\.setLayerType\(View\.LAYER_TYPE_NONE, null\);", home_main) is not None)
+check("perf: the home screen hidden (onPause): the WebView paused with its timers; shown again (onResume) the page brings "
+      "its clock and countdowns up to date at once (visibilitychange: SHOWN, set by bootHome and nxHome)",
+      re.search(r"void pause\(\) \{[^}]*web\.onPause\(\); web\.pauseTimers\(\);", hp_src) is not None
+      and re.search(r"void resume\(\) \{.{0,200}?web\.onResume\(\);\s*web\.resumeTimers\(\);\s*touched\(\);", hp_src, re.S) is not None
+      and "document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && SHOWN) SHOWN(); });" in tmpl
+      and tmpl.count("SHOWN = () => { tickClock(); quarter(); renderMatches();") == 2)
 
 # ---- «شكل الواجهة» (Look): the settings app, the launcher and the page agree on look=new; a new install gets «الجديد»,
 # settings saved before keep «الكلاسيكي»; the settings' row (with its pictures) and saver.sh's command

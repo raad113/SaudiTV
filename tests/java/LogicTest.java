@@ -12,7 +12,7 @@ import java.util.List;
  * stations and volume (RadioStations), where it plays (RadioWhen) and the home screen's chip (RadioChip, the launcher's),
  * the ticker's items (Tape), older builds' saved cards without the gone TV shows card (PanelMigrate) and the size the
  * photos are kept at for the screen (PhotoSize), the screensaver's facts and each card's seconds (SaverOptions, and the
- * launcher's HomeLook.rotateSec).
+ * launcher's HomeLook.rotateSec), and when the launcher tells its page the ticker tape is at rest (IdleTape).
  */
 public class LogicTest {
     static int failed = 0;
@@ -392,6 +392,18 @@ public class LogicTest {
             && com.raad.sauditv.home.HomeLook.rotateSec("city=x&panel=prayers") == 30
             && com.raad.sauditv.home.HomeLook.rotateSec("xrotate=15") == 30 && com.raad.sauditv.home.HomeLook.rotateSec(null) == 30
             && com.raad.sauditv.home.HomeLook.rotateSec("rotate=1") == 30, "");
+        // ---- «الأسواق» at rest (the launcher's IdleTape, HomePage.IDLE_MS): the page told only when that changes
+        com.raad.sauditv.home.IdleTape idle = new com.raad.sauditv.home.IdleTape();
+        check("at rest: a fresh page at its full rate; keys while it is (held down, a moving mouse) send nothing",
+            !idle.idle() && idle.touched() == null && idle.touched() == null && idle.loaded() == null, "");
+        String r1 = idle.rest(), r2 = idle.rest();
+        check("at rest: a minute without a key rests the tape once (window.sauditvIdle(true)), not again while it rests",
+            "window.sauditvIdle && window.sauditvIdle(true)".equals(r1) && r2 == null && idle.idle(), r1 + " / " + r2);
+        check("at rest: a page loaded anew meanwhile (a changed setting) is told to rest too",
+            "window.sauditvIdle && window.sauditvIdle(true)".equals(idle.loaded()) && idle.idle(), "");
+        String k1 = idle.touched(), k2 = idle.touched();
+        check("at rest: the first key brings the full rate back (window.sauditvIdle(false)), the next ones send nothing",
+            "window.sauditvIdle && window.sauditvIdle(false)".equals(k1) && k2 == null && !idle.idle() && idle.loaded() == null, k1 + " / " + k2);
 
         System.out.println(failed == 0 ? "\nall logic tests passed" : "\n" + failed + " failed");
         System.exit(failed == 0 ? 0 : 1);

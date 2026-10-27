@@ -267,6 +267,7 @@ public class MainActivity extends Activity {
         pillRow.removeCallbacks(vpnTick);
         if (inputsPopup != null) inputsPopup.dismiss();
         homePage.pause();
+        scroll.setLayerType(View.LAYER_TYPE_NONE, null);   // at rest's layer (setOnRest) not kept behind another app
         quick.pause();
     }
 
@@ -327,6 +328,13 @@ public class MainActivity extends Activity {
         scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
         scroll.setFillViewport(true);
         root.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+        // at rest (HomePage.IDLE_MS without a key: the ticker tape at half its steps) the launcher's own views, which
+        // nothing moves then, are kept in one layer: every frame the page's WebView draws, Android draws all that lies
+        // over it again; from the layer that is one picture instead of every tile with its rounded clip, the names and
+        // the pills (TV 1, the home screen at rest, «الجديد»: the home app 22% of one core instead of 25%). Dropped at
+        // the first key, before it is handled (the focus moves on the views themselves), and while another app is in
+        // front (onPause: its memory, a screen's worth)
+        homePage.setOnRest(rest -> scroll.setLayerType(rest ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE, null));
 
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -1315,18 +1323,23 @@ public class MainActivity extends Activity {
         return Color.rgb((int) (Color.red(c) * f), (int) (Color.green(c) * f), (int) (Color.blue(c) * f));
     }
 
+    // every key and every move of a mouse counts as someone at the TV: the ticker tape at its full rate, at rest a
+    // minute after the last one (HomePage.touched, IDLE_MS)
     @Override
     public boolean dispatchGenericMotionEvent(android.view.MotionEvent e) {
+        homePage.touched();
         return (mouse != null && mouse.generic(e)) || super.dispatchGenericMotionEvent(e);
     }
 
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent e) {
+        homePage.touched();
         return (mouse != null && mouse.touch(e)) || super.dispatchTouchEvent(e);
     }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
+        homePage.touched();
         // the remote's gear key opens or closes the quick-settings panel. Only where the TV lets the key
         // through: Hisense (MediaTek) sets hand it to their global-key receiver (TV settings), the Google TV Streamer takes it itself.
         if (e.getKeyCode() == KeyEvent.KEYCODE_SETTINGS) {

@@ -86,6 +86,16 @@ final class HomePage {
     private volatile boolean newLook;   // «شكل الواجهة» «الجديد» (HomeLook.isNew of the settings fragment)
     private float cardL, cardT, cardK = 1;   // where the card view is (CSS px) and the page's px per CSS px (place)
     private int pillsEnd = -1;   // the pills' right edge in px (setPillsEnd), sent again to a (re)loaded page
+    /** «الأسواق» at rest: the remote untouched this long (no key, no mouse: touched), the page's ticker tape moves in
+     *  half its steps a second (15 instead of 30 at «معدل الإطارات» 30; window.sauditvIdle), the first key brings them
+     *  all back. Measured on TV 1 (the home screen, 20 s; the home app, its WebView's renderer and surfaceflinger
+     *  together, % of one core): «الجديد» 69% in use, 37% at rest (with MainActivity's layer), «الكلاسيكي» 85% and 50%.
+     *  A minute: never while someone is using the remote, soon once nobody is. */
+    static final long IDLE_MS = 60_000;
+    private final IdleTape rest = new IdleTape();   // what the page was last told
+    private final android.os.Handler later = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Consumer<Boolean> onRest;   // MainActivity: its own views held in one layer while at rest
+    private final Runnable goIdle = () -> { if (send(rest.rest()) && onRest != null) onRest.accept(true); };
     private Runnable onFocus;
     private Consumer<Boolean> onCardChanged;
 
@@ -178,12 +188,15 @@ final class HomePage {
         if (web != null && pillsEnd >= 0) web.evaluateJavascript("window.sauditvPillsEnd && window.sauditvPillsEnd(" + pillsEnd + ")", null);
     }
 
-    /** onResume: follow the current settings (a changed choice gets a fresh page), run again, release the card. */
+    /** onResume: follow the current settings (a changed choice gets a fresh page), run again, release the card; the
+     *  tape at its full rate (someone pressed a key to get here), at rest again IDLE_MS on. The page brings its clock,
+     *  dates and countdowns up to date as it is shown (its visibilitychange: SHOWN). */
     void resume() {
         String want = readUrl();
         if (!want.equals(url)) { destroyWeb(); create(want); }
         web.onResume();
         web.resumeTimers();
+        touched();
         // release a rotation held by open(): continue from the same panel (or the detail page's last) with a fresh rotateMs
         web.evaluateJavascript("window.sauditvHold && window.sauditvHold(false)", null);
         radioChanged();   // «يُتلى الآن» as the radio is now: it may have changed while another app was in front
@@ -204,12 +217,35 @@ final class HomePage {
         create(want);
     }
 
-    /** onPause: no timers, drawing or network while an app is in front. */
+    /** onPause: no timers, drawing or network while an app is in front, the screensaver runs or the screen is off
+     *  (Android pauses the activity for each: the page is hidden, its compositor draws nothing, its timers are held;
+     *  on TV 1, its settings in front: the home app 0.2% of one core, its renderer 0.1%, no frame drawn). No rest due
+     *  meanwhile. */
     void pause() {
+        later.removeCallbacks(goIdle);
         if (web != null) { web.onPause(); web.pauseTimers(); }
     }
 
+    /** a key or the mouse on the home screen (MainActivity's dispatch*Event): the tape at its full rate now if it was at
+     *  rest, and at rest IDLE_MS after the last one */
+    void touched() {
+        later.removeCallbacks(goIdle);
+        later.postDelayed(goIdle, IDLE_MS);
+        if (send(rest.touched()) && onRest != null) onRest.accept(false);
+    }
+
+    /** told when the tape goes to rest (true) and when it is back at its full rate (false), before the key is handled */
+    void setOnRest(Consumer<Boolean> r) { onRest = r; }
+
+    /** the call to the page, when there is one: true */
+    private boolean send(String js) {
+        if (js == null) return false;
+        if (web != null) web.evaluateJavascript(js, null);
+        return true;
+    }
+
     void destroy() {
+        later.removeCallbacks(goIdle);
         destroyWeb();
     }
 
@@ -479,6 +515,7 @@ final class HomePage {
                 if (v == web && card.isFocused()) setPageFocused(true);
                 if (v == web && qr.isFocused()) setQrFocused(true);
                 if (v == web && appsOpen) v.evaluateJavascript("window.sauditvAppsOpen && window.sauditvAppsOpen(true)", null);
+                if (v == web) send(rest.loaded());   // a page loaded anew while the tape was at rest: at rest too
                 if (v == web) sendPillsEnd();
             }
         });

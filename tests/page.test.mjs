@@ -779,6 +779,61 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
     JSON.stringify({ r, held, after }));
   check('low power: no script errors', !errors.length, errors.join('; '));
   await ctx.close();
+  // at rest (window.sauditvIdle(true): the launcher's remote untouched for a minute, HomePage.IDLE_MS): the same
+  // animation, in half its steps a second (15 at «معدل الإطارات» 30), at the same speed, from where it was (no jump past
+  // a step); the first key (false) brings all of them back. At 60 (no #lowpower) the linear move rests in 30 steps
+  const rest = on => p.evaluate(on => { const run = document.getElementById('tape-run'), x = () => new DOMMatrix(getComputedStyle(run).transform).m41;
+    const a = TAPE_ANIM, x0 = x(); window.sauditvIdle(on);
+    return { same: a === TAPE_ANIM && run.getAnimations().length === 1, easing: TAPE_ANIM.effect.getTiming().easing, jump: Math.abs(x() - x0), idle: TAPE_IDLE }; }, on);
+  const steps = e => +(/^steps\((\d+)/.exec(e) || [0, 0])[1];
+  ({ p, ctx, errors, sample } = await tapeRun('city=جدة&lat=21.5433&lon=39.1728&home=1&lowpower=1'));
+  const full = await p.evaluate(() => TAPE_ANIM.effect.getTiming().easing);
+  let st = await rest(true);
+  r = await sample();
+  check('at rest, home: the tape\'s same animation in half its steps (about 15 places a second), no jump, nothing set by the page',
+    !errors.length && st.same && st.idle && Math.abs(steps(st.easing) * 2 - steps(full)) <= 1 && st.jump < 4
+    && r.anims === 1 && r.styleSets === 0 && r.places / r.s >= 10 && r.places / r.s <= 19, JSON.stringify({ full, st, r }));
+  check('at rest, home: the same speed (55 px a second, to the right)', Math.abs(r.moved / r.s - 55) < 8, JSON.stringify(r));
+  const first = st.easing;
+  st = await rest(true);   // told again: nothing changes
+  const again = st.easing;
+  st = await rest(false);
+  r = await sample();
+  check('at rest, home: a key brings its 30 steps a second back at once, from where it was (told twice, the same rest)',
+    again === first && st.same && !st.idle && st.easing === full && st.jump < 4
+    && r.places / r.s >= 22 && r.places / r.s <= 34 && Math.abs(r.moved / r.s - 55) < 8, JSON.stringify({ st, r }));
+  await p.evaluate(() => window.sauditvIdle(true));
+  await p.evaluate(() => { tapeLay(); });   // laid out again at rest (a new list, a new size): at rest still
+  await p.waitForTimeout(300);
+  st = await p.evaluate(() => TAPE_ANIM.effect.getTiming().easing);
+  check('at rest, home: laid out anew (new markets, a new size), the run stays at rest', steps(st) * 2 - steps(full) <= 1 && steps(st) > 0, st);
+  await ctx.close();
+  ({ p, ctx, errors, sample } = await tapeRun('city=جدة&lat=21.5433&lon=39.1728&home=1'));
+  st = await rest(true);
+  r = await sample();
+  const back = await rest(false);
+  check('at rest, home, 60 frames a second: the linear move rests in 30 steps a second, linear again at the first key',
+    !errors.length && st.same && /^steps\(\d+/.test(st.easing) && r.places / r.s >= 22 && r.places / r.s <= 34 && back.easing === 'linear' && back.same,
+    JSON.stringify({ st, r, back }));
+  await ctx.close();
+}
+
+// ---- shown again (the launcher's WebView resumed: HomePage.resume after another app, its settings, the screensaver):
+// its timers were held all the while (pauseTimers), so the clock and the countdowns are brought up to date as the page
+// becomes visible (SHOWN), not on their next tick. Time is held here (no timer runs) and moved 7 minutes on
+for (const [look, hash] of [['classic', 'city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&home=1&panel=prayers'],
+                            ['new', 'city=الرياض&lat=24.7136&lon=46.6753&tz=Asia%2FRiyadh&home=1&look=new&panel=prayers']]) {
+  const { p, ctx, errors } = await open('tv.html', hash, { timers: true });
+  await p.clock.pauseAt(new Date(FIXED.getTime() + 20000));
+  const clock = () => p.evaluate(() => document.getElementById(document.getElementById('nx-ck') ? 'nx-ck' : 'ck-m').textContent);
+  const before = await clock();
+  await p.clock.setSystemTime(new Date(FIXED.getTime() + 7 * 60000));
+  const held = await clock();
+  await p.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  const shown = await clock();
+  check(`shown again, ${look} home: the clock up to date at once (08:20 -> 08:27), not on its next tick`,
+    !errors.length && before === held && /20/.test(before) && /27/.test(shown) && shown !== held, JSON.stringify({ before, held, shown }) + errors.join('; '));
+  await ctx.close();
 }
 
 // ---- «يُتلى الآن» told, not asked (#radiopush=1): the home screen's page asks SaudiTVRadio.state() once at load and
@@ -1145,7 +1200,7 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
              chips: [...document.querySelectorAll('.nx-ch span')].map(x => x.textContent + (x.className ? '*' : '')).join() };
   };
   const apart = (a, b) => a.r <= b.l + 1 || b.r <= a.l + 1 || a.b <= b.t + 1 || b.b <= a.t + 1;
-  const ROW = 'prayers,news,deen,sports,forecast', WIDE = { prayers: 170, news: 250, deen: 168, sports: 140, forecast: 104 };
+  const ROW = 'prayers,news,deen,sports,forecast', WIDE = { prayers: 150, news: 250, deen: 188, sports: 140, forecast: 104 };
   // 960 x 540 too: the TV's own CSS px (1280 x 720 at 1.33 dp a px), the launcher's apps row exactly HomeLook's 100 / 44
   for (const [w, h] of [[1920, 1080], [1280, 720], [960, 540]]) {
     const { dockh, dockb } = room(w, h), z = Math.min(w / 960, h / 540);
@@ -1164,8 +1219,19 @@ for (const [w, h] of [[1280, 720], [1920, 1080]]) {
           return { shown: !e.hidden && getComputedStyle(e).display !== 'none', box: R(e), dl: R(document.getElementById('nx-dl')), dk: R(document.querySelector('.nx-dk')),
                    wh: wh && wh.textContent, whole: !!wh && wh.scrollWidth <= wh.clientWidth + 1, k: (e.querySelector('.k') || {}).textContent,
                    rail: document.getElementById('nx-rail').style.transform }; });
-        check(`new look home ${w}x${h} at rest: the five cards (prayer, news, deen, sports, weather), the first four wholly between the margins in proportion to 170/250/168/140 filling the 880, the weather past the left edge, dimmed, the row unmoved`,
+        check(`new look home ${w}x${h} at rest: the five cards (prayer, news, deen, sports, weather), the first four wholly between the margins in proportion to 150/250/188/140 filling the 880, the weather past the left edge, dimmed, the row unmoved`,
           s.map(c => c.k).join() === ROW && whole(s.slice(0, 4)) && s.slice(0, 4).every(c => Math.abs(c.w - WIDE[c.k] * 844 / 728 * z) < 1) && offL(s[4]) && !mx.rail, JSON.stringify({ s, mx }));
+        // the prayer card at rest, the narrowest of the four (150): its five rows whole (each name and time inside the
+        // card, nothing cut), its countdown line fitted (nxFit: the iqama left off when the line has no room for it)
+        const pr = await p.evaluate(() => { const c = document.querySelector('#nx-rail > [data-k="prayers"]'), C = c.getBoundingClientRect();
+          const on = x => getComputedStyle(x).display !== 'none', over = x => x.scrollWidth > x.clientWidth + 1;
+          const rows = [...c.querySelectorAll('.nx-pl li')].filter(on), m = c.querySelector('.m');
+          return { w: Math.round(C.width), rows: rows.length, m: m && m.textContent, mOver: !!m && over(m),
+                   bad: rows.filter(li => over(li) || [...li.children].filter(on).some(x => { const b = x.getBoundingClientRect();
+                     return b.left < C.left + 1 || b.right > C.right - 1 || over(x); })).map(li => li.textContent) }; });
+        check(`new look home ${w}x${h} at rest: the prayer card's five rows whole (each name and its time), its countdown line fitted`,
+          pr.rows === 5 && !pr.bad.length && !pr.mOver && !!pr.m, JSON.stringify(pr));
+        if (process.env.SHOTS && w === 1920) await p.screenshot({ path: path.join(ROOT, 'optimize/run/shots/nx-row-rest.png') });
         check(`new look home ${w}x${h}: the next match beside the standfirst («المباراة القادمة», «الأربعاء 4:24 م» whole), inside the 40 px margins, clear of the dateline and the standfirst`,
           mx.shown && mx.k === 'المباراة القادمة' && mx.whole && mx.wh.startsWith('الأربعاء') && mx.box.l >= 40 * z - 1 && mx.box.r <= w - 40 * z + 1
           && apart(mx.box, mx.dl) && apart(mx.box, mx.dk), JSON.stringify(mx));

@@ -23,7 +23,7 @@ CLASSES = ["CountryChange.java", "Leagues.java", "PanelMigrate.java", "PhotoSize
            "RadioWhen.java", "SetupState.java", "Tape.java", "Look.java", "SaverOptions.java",
            "PrayerTimes.java", "AthanPlan.java", "AthanVoices.java", "AladhanTimes.java"]   # plain Java only (no android.*)
 HOME = ROOT / "android/launcher/src/main/java/com/raad/sauditv/home"
-HOME_CLASSES = ["RadioChip.java", "HomeLook.java"]   # the launcher's, plain Java too
+HOME_CLASSES = ["RadioChip.java", "HomeLook.java", "IdleTape.java"]   # the launcher's, plain Java too
 
 
 def jdk():

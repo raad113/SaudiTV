@@ -2299,10 +2299,22 @@ function tapeRender(){
 // Lays the run out and (re)starts it: the list repeated until one copy is at least as wide as the strip, that copy
 // twice, and an endless linear move to the right by exactly one copy's width (whole px), TAPE_SPEED px a second.
 // Only when the list or the page's size changes; a restart carries on from where the run was. Reduced motion: one
-// copy, still. «توفير الطاقة» (#lowpower=1): the same move in TAPE_LOW_FPS steps a second.
+// copy, still. «توفير الطاقة» (#lowpower=1): the same move in TAPE_LOW_FPS steps a second. At rest (TAPE_IDLE)
+// half as many (tapeEase).
 const TAPE_SPEED = 55;   // CSS px per second
 const TAPE_LOW_FPS = 30;
 let TAPE_ANIM = null;
+// The move's easing for a run of ms: TAPE_LOW_FPS steps a second at «معدل الإطارات» 30 (#lowpower=1), a linear move
+// (a place every frame) at 60; at rest (TAPE_IDLE: the remote untouched for a minute, the launcher's sauditvIdle)
+// half of either, 15 or 30 steps. What costs is the number of frames Android draws, not what is in them: on TV 1 (the
+// home screen, «الجديد», 20 s; the home app, its WebView's renderer and surfaceflinger together, % of one core) the
+// linear move 98% (60 frames a second), 30 steps 68% (40 frames: the WebView draws one step in three twice), 15
+// steps 41% (21 frames), 10 steps 32% (15 frames), the run held 13%; the frost, the strip's shadow, the grain and the
+// veils made no difference at all
+const tapeEase = ms => {
+  const f = (CONFIG.lowPower ? TAPE_LOW_FPS : 60) / (TAPE_IDLE ? 2 : 1);
+  return f < 60 ? `steps(${Math.max(1, Math.round(ms / 1000 * f))}, end)` : 'linear';
+};
 
 function tapeLay(){
   const tape = document.getElementById('tape'), run = document.getElementById('tape-run');
@@ -2325,8 +2337,7 @@ function tapeLay(){
     // compositor's own animation. Measured on TV 1 (the screensaver's page, 30 s): 54% of one core instead of 76%. A
     // move set by the page itself 30 times a second cost more there (86%; on every other requestAnimationFrame 90%)
     TAPE_ANIM = run.animate([{transform:'translate3d(0,0,0)'}, {transform:`translate3d(${w}px,0,0)`}],
-      {duration: w / TAPE_SPEED * 1000, iterations: Infinity,
-       easing: CONFIG.lowPower ? `steps(${Math.max(1, Math.round(w / TAPE_SPEED * TAPE_LOW_FPS))}, end)` : 'linear'});
+      {duration: w / TAPE_SPEED * 1000, iterations: Infinity, easing: tapeEase(w / TAPE_SPEED * 1000)});
     TAPE_ANIM.currentTime = (at % w) / TAPE_SPEED * 1000;
     if(APPS_OPEN || SS_BREAK) TAPE_ANIM.pause();   // held where it is while the launcher's apps grid is open (or the screensaver's photo-only minute runs)
   });
@@ -2337,6 +2348,16 @@ function tapeLay(){
 let APPS_OPEN = false;
 // true during the screensaver's photo-only minute (ssTick): the tape is hidden and held there too
 let SS_BREAK = false;
+// the launcher's remote untouched for a minute (sauditvIdle(true): HomePage.IDLE_MS, nothing pressed nor the mouse
+// moved) or used again (false, on the first key): the run takes half its steps a second (tapeEase), or all of them
+// again, from where it is: the same animation, only its easing changed (no restart, no jump)
+let TAPE_IDLE = false;
+window.sauditvIdle = on => {
+  on = !!on;
+  if(on === TAPE_IDLE) return;
+  TAPE_IDLE = on;
+  if(TAPE_ANIM) TAPE_ANIM.effect.updateTiming({easing: tapeEase(TAPE_ANIM.effect.getTiming().duration)});
+};
 
 // a first load retried until it answers (firstLoad), then every 15 minutes; laid out again when the size changes
 function tapeStart(){
@@ -4156,6 +4177,15 @@ function homeQrRect(){
   QR_SEND();
 }
 
+// the home screen's page shown again: the launcher in front once more after another app, its settings, the
+// screensaver or the screen off (HomePage.resume: the WebView's onResume, then resumeTimers). Hidden meanwhile
+// (HomePage.pause: onPause, pauseTimers) nothing was drawn and no timer ran, so what they keep current is brought up
+// to date at once instead of on their next tick: the clock (its second), the dates and the prayer's countdown (15 s),
+// the next match (its minute); the tape and the rotation lines run on the compositor's clock, already where they
+// belong. Set by bootHome and nxHome.
+let SHOWN = null;
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && SHOWN) SHOWN(); });
+
 function boot(){
   if(CONFIG.home || CONFIG.detail || CONFIG.ticker || CONFIG.widget) bootMouse();
   if(CONFIG.feedTest) setTimeout(feedTest, 3000);   // tests only (#feedtest=1)
@@ -4268,8 +4298,10 @@ function bootHome(){
   } else cardStart();
   homeCardRect();
   homeQrRect();
+  const quarter = () => { tickDates(); tickPrayer(); tickRamadan(); if(CONFIG.panel === 'prayers') renderPanel(false); };
   setInterval(tickClock, 1000);
-  setInterval(() => { tickDates(); tickPrayer(); tickRamadan(); if(CONFIG.panel === 'prayers') renderPanel(false); }, 15000);
+  setInterval(quarter, 15000);
+  SHOWN = () => { tickClock(); quarter(); renderMatches(); };
   setInterval(loadPrayers, 6*3600*1000);
   setInterval(loadWeather, 30*60*1000);
   let lastDay = riyadhDayNumber();
@@ -4643,8 +4675,9 @@ function nxDraw(){
 }
 // the widths (CSS px) of the cards in view (cs: four at most) in the row's 880 between the margins: in proportion to
 // NX_W; the focused one (c) 340 (the news 380, or its share were that more), the others in proportion in the rest;
-// none under 90
-const NX_W = {prayers: 170, news: 250, deen: 168, sports: 140, forecast: 104};
+// none under 90. The prayer card 150 (was 170: its five rows still whole at rest at every size, nxFit leaving the
+// iqama off its countdown line when that has no room), the deen card 188 (was 168: more of the verse a line)
+const NX_W = {prayers: 150, news: 250, deen: 188, sports: 140, forecast: 104};
 function nxWidths(cs, c){
   const room = 880 - 12 * Math.max(0, cs.length - 1), b = e => NX_W[e.dataset.k], sum = L => L.reduce((a, e) => a + b(e), 0), w = new Map();
   const share = (L, r) => { let fix = [];
@@ -4902,9 +4935,11 @@ function nxHome(){
   firstLoad(loadPrayers, 'prayers'); firstLoad(loadWeather, 'weather'); firstLoad(loadMatches, 'matches');
   startPanelData(cards, true);
   homeQrRect();
+  const quarter = () => { tickDates(); tickPrayer(); tickRamadan(); };
   setInterval(tickClock, 1000);
-  setInterval(() => { tickDates(); tickPrayer(); tickRamadan(); }, 15000);
+  setInterval(quarter, 15000);
   setInterval(renderMatches, 60000);
+  SHOWN = () => { tickClock(); quarter(); renderMatches(); nxSoon(); };
   setInterval(loadLive, 2*60000);
   setInterval(loadMatches, 30*60*1000);
   setInterval(loadPrayers, 6*3600*1000);

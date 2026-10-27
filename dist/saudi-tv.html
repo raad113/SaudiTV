@@ -1937,6 +1937,10 @@ function tapeRender(){
 const TAPE_SPEED = 55;   // CSS px per second
 const TAPE_LOW_FPS = 30;
 let TAPE_ANIM = null;
+const tapeEase = ms => {
+  const f = (CONFIG.lowPower ? TAPE_LOW_FPS : 60) / (TAPE_IDLE ? 2 : 1);
+  return f < 60 ? `steps(${Math.max(1, Math.round(ms / 1000 * f))}, end)` : 'linear';
+};
 
 function tapeLay(){
   const tape = document.getElementById('tape'), run = document.getElementById('tape-run');
@@ -1956,8 +1960,7 @@ function tapeLay(){
     if(TAPE_ANIM){ TAPE_ANIM.cancel(); TAPE_ANIM = null; }
     if(CARD_STILL || !run.animate) return;
     TAPE_ANIM = run.animate([{transform:'translate3d(0,0,0)'}, {transform:`translate3d(${w}px,0,0)`}],
-      {duration: w / TAPE_SPEED * 1000, iterations: Infinity,
-       easing: CONFIG.lowPower ? `steps(${Math.max(1, Math.round(w / TAPE_SPEED * TAPE_LOW_FPS))}, end)` : 'linear'});
+      {duration: w / TAPE_SPEED * 1000, iterations: Infinity, easing: tapeEase(w / TAPE_SPEED * 1000)});
     TAPE_ANIM.currentTime = (at % w) / TAPE_SPEED * 1000;
     if(APPS_OPEN || SS_BREAK) TAPE_ANIM.pause();   // held where it is while the launcher's apps grid is open (or the screensaver's photo-only minute runs)
   });
@@ -1965,6 +1968,13 @@ function tapeLay(){
 
 let APPS_OPEN = false;
 let SS_BREAK = false;
+let TAPE_IDLE = false;
+window.sauditvIdle = on => {
+  on = !!on;
+  if(on === TAPE_IDLE) return;
+  TAPE_IDLE = on;
+  if(TAPE_ANIM) TAPE_ANIM.effect.updateTiming({easing: tapeEase(TAPE_ANIM.effect.getTiming().duration)});
+};
 
 function tapeStart(){
   firstLoad(loadTape, 'markets');
@@ -3528,6 +3538,9 @@ function homeQrRect(){
   QR_SEND();
 }
 
+let SHOWN = null;
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && SHOWN) SHOWN(); });
+
 function boot(){
   if(CONFIG.home || CONFIG.detail || CONFIG.ticker || CONFIG.widget) bootMouse();
   if(CONFIG.feedTest) setTimeout(feedTest, 3000);   // tests only (#feedtest=1)
@@ -3628,8 +3641,10 @@ function bootHome(){
   } else cardStart();
   homeCardRect();
   homeQrRect();
+  const quarter = () => { tickDates(); tickPrayer(); tickRamadan(); if(CONFIG.panel === 'prayers') renderPanel(false); };
   setInterval(tickClock, 1000);
-  setInterval(() => { tickDates(); tickPrayer(); tickRamadan(); if(CONFIG.panel === 'prayers') renderPanel(false); }, 15000);
+  setInterval(quarter, 15000);
+  SHOWN = () => { tickClock(); quarter(); renderMatches(); };
   setInterval(loadPrayers, 6*3600*1000);
   setInterval(loadWeather, 30*60*1000);
   let lastDay = riyadhDayNumber();
@@ -3931,7 +3946,7 @@ function nxDraw(){
   nxEl('nx-mk').hidden = !TAPE_HTML;
   nxFocus(); nxRect();
 }
-const NX_W = {prayers: 170, news: 250, deen: 168, sports: 140, forecast: 104};
+const NX_W = {prayers: 150, news: 250, deen: 188, sports: 140, forecast: 104};
 function nxWidths(cs, c){
   const room = 880 - 12 * Math.max(0, cs.length - 1), b = e => NX_W[e.dataset.k], sum = L => L.reduce((a, e) => a + b(e), 0), w = new Map();
   const share = (L, r) => { let fix = [];
@@ -4149,9 +4164,11 @@ function nxHome(){
   firstLoad(loadPrayers, 'prayers'); firstLoad(loadWeather, 'weather'); firstLoad(loadMatches, 'matches');
   startPanelData(cards, true);
   homeQrRect();
+  const quarter = () => { tickDates(); tickPrayer(); tickRamadan(); };
   setInterval(tickClock, 1000);
-  setInterval(() => { tickDates(); tickPrayer(); tickRamadan(); }, 15000);
+  setInterval(quarter, 15000);
   setInterval(renderMatches, 60000);
+  SHOWN = () => { tickClock(); quarter(); renderMatches(); nxSoon(); };
   setInterval(loadLive, 2*60000);
   setInterval(loadMatches, 30*60*1000);
   setInterval(loadPrayers, 6*3600*1000);
