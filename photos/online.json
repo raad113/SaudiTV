@@ -181,6 +181,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.PondCypress_EN-US0123444779_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=pond+cypress&form=hpcapt&filters=HpDate%3a%2220261027_0700%22",
+"a": "Chris Moore/Getty Images",
+"l": "Bing",
+"p": "A grove of pond cypress trees with fall foliage, Georgia, US",
+"b": 0.39
+},
+{
 "u": "https://www.bing.com/th?id=OHR.HangingBat_EN-US7714746725_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Bat+Week&form=hpcapt&filters=HpDate%3a%2220261026_0700%22",
 "a": "Doug Gimesy/Nature Picture Library",
@@ -235,14 +243,6 @@
 "l": "Bing",
 "p": "Brown-throated sloth, Puerto Viejo de Talamanca, Costa Rica",
 "b": 0.59
-},
-{
-"u": "https://www.bing.com/th?id=OHR.VeniceSunrise_EN-US6714393168_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Grand+Canal+Venice&form=hpcapt&filters=HpDate%3a%2220261019_0700%22",
-"a": "Juan Romero/Cavan Images",
-"l": "Bing",
-"p": "Grand Canal in Venice, Italy",
-"b": 0.38
 }
 ]
 }
