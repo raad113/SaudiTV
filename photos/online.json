@@ -177,17 +177,17 @@
 "l": "CC BY-SA 4.0",
 "p": "",
 "b": 0.54
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Devonshire_Lodge_%28Low-Martin_House%29%2C_Windsor%2C_Ontario%2C_2025-08-31_01.jpg/1920px-Devonshire_Lodge_%28Low-Martin_House%29%2C_Windsor%2C_Ontario%2C_2025-08-31_01.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:Devonshire_Lodge_(Low-Martin_House),_Windsor,_Ontario,_2025-08-31_01.jpg",
-"a": "Chris Woodrich",
-"l": "CC BY-SA 4.0",
-"p": "",
-"b": 0.44
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.AutumnCranes_EN-US9795571462_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Sandhill+Cranes&form=hpcapt&filters=HpDate%3a%2220261030_0700%22",
+"a": "Terry St.Louis/Getty Images",
+"l": "Bing",
+"p": "Sandhill cranes, Bosque del Apache National Wildlife Refuge,",
+"b": 0.44
+},
 {
 "u": "https://www.bing.com/th?id=OHR.AveburyStones_EN-US9568662876_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Avebury+henge+Wiltshire&form=hpcapt&filters=HpDate%3a%2220261029_0700%22",
@@ -243,14 +243,6 @@
 "l": "Bing",
 "p": "Two gray wolves, Yellowstone National Park, Wyoming",
 "b": 0.64
-},
-{
-"u": "https://www.bing.com/th?id=OHR.NaejangsanNP_EN-US7010419904_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Naejangsan+National+Park&form=hpcapt&filters=HpDate%3a%2220261022_0700%22",
-"a": "Twenty47studio/Getty Images",
-"l": "Bing",
-"p": "Autumn in Naejangsan National Park, South Korea",
-"b": 0.45
 }
 ]
 }
