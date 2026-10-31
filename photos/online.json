@@ -169,17 +169,17 @@
 "l": "CC BY-SA 4.0",
 "p": "",
 "b": 0.14
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Wreck_of_Cabo_de_Santa_Maria%2C_2010_December_-_4.jpg/1920px-Wreck_of_Cabo_de_Santa_Maria%2C_2010_December_-_4.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:Wreck_of_Cabo_de_Santa_Maria,_2010_December_-_4.jpg",
-"a": "Ximonic (Simo Räsänen)",
-"l": "CC BY-SA 4.0",
-"p": "",
-"b": 0.54
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.FrankfurtHalloween_EN-US0115213682_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Halloween&form=hpcapt&filters=HpDate%3a%2220261031_0700%22",
+"a": "AlxeyPnferov/Getty Images",
+"l": "Bing",
+"p": "St. Bartholomew's Cathedral in Frankfurt, Germany",
+"b": 0.46
+},
 {
 "u": "https://www.bing.com/th?id=OHR.AutumnCranes_EN-US9795571462_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Sandhill+Cranes&form=hpcapt&filters=HpDate%3a%2220261030_0700%22",
@@ -235,14 +235,6 @@
 "l": "Bing",
 "p": "Royal Portuguese Cabinet of Reading, Rio de Janeiro, Brazil",
 "b": 0.21
-},
-{
-"u": "https://www.bing.com/th?id=OHR.YellowstoneWolves_EN-US7105521535_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Wolf+Awareness+Week&form=hpcapt&filters=HpDate%3a%2220261023_0700%22",
-"a": "John Morrison/Getty Images",
-"l": "Bing",
-"p": "Two gray wolves, Yellowstone National Park, Wyoming",
-"b": 0.64
 }
 ]
 }
