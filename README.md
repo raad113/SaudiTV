@@ -58,7 +58,13 @@ uninstalls both apps.
 - Photos: Unsplash photographers, listed in [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md).
 - Countries and cities: [GeoNames](https://www.geonames.org) (CC BY 4.0); the Arabic country names: Unicode CLDR (Unicode
   license). Made by `.github/tools/gen_geo.py`.
-- Fonts: Thmanyah (by Thmanyah), and Noto Naskh Arabic for ﷺ ﴿﴾ (SIL Open Font License,
+- Quran text: [Tanzil Project](https://tanzil.net), Uthmani, verbatim in `assets/quran/quran-uthmani.txt` with its notice
+  (Creative Commons Attribution 3.0; changing the text is not allowed). التفسير الميسر: King Fahad Quran Complex, from
+  Tanzil's [translations](https://tanzil.net/trans/), for non-commercial use. The Madani mushaf's page table: Tanzil's
+  [Quran metadata](https://tanzil.net/docs/quran_metadata) (CC BY 3.0). Made by `.github/tools/fetch_quran.py`.
+- Recitations and verse timings: [mp3quran.net](https://mp3quran.net), streamed, nothing bundled.
+- Fonts: Amiri Quran for the Quran's text (SIL Open Font License, [assets/fonts/AmiriQuran-OFL.txt](assets/fonts/AmiriQuran-OFL.txt)),
+  Thmanyah (by Thmanyah), and Noto Naskh Arabic for ﷺ ﴿﴾ (SIL Open Font License,
   `assets/fonts/NotoNaskhArabic-OFL.txt`).
 - Athan recordings: three from [islamweb.net](https://audio.islamweb.net) (© islamweb.net, used with credit; منصور
   الزهراني is the default athan) and the others CC0, CC BY 3.0 and CC BY 4.0, each with its author, licence and source in
