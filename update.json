@@ -1,0 +1,24 @@
+{
+  "versionCode": 9150,
+  "versionName": "9.150",
+  "tag": "v9150",
+  "notes": "سعودي TV 9.150: الصفحة صارت داخل التطبيق فقط، والتحديثات كلها توصل من «تحديث التطبيق».",
+  "apks": [
+    {
+      "package": "com.raad.sauditv.screensaver",
+      "file": "saudi-tv-installer.apk",
+      "versionCode": 9150,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9150/saudi-tv-installer.apk",
+      "sha256": "e1ecd3079372564b6aa7bde39cbb39d0c69b0b0b8786fde755738e77448260ae",
+      "size": 24611798
+    },
+    {
+      "package": "com.raad.sauditv.home",
+      "file": "saudi-tv-home.apk",
+      "versionCode": 9150,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9150/saudi-tv-home.apk",
+      "sha256": "a9c32cd216fc93d69f570a9f956009c9f031f8ff6bbd4bd141f2cc6a843cb2db",
+      "size": 2753181
+    }
+  ]
+}
