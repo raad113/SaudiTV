@@ -1,24 +1,24 @@
 {
-  "versionCode": 9150,
-  "versionName": "9.150",
-  "tag": "v9150",
-  "notes": "سعودي TV 9.150: الصفحة صارت داخل التطبيق فقط، والتحديثات كلها توصل من «تحديث التطبيق».",
+  "versionCode": 9180,
+  "versionName": "9.180",
+  "tag": "v9180",
+  "notes": "سعودي TV 9.180: «المصحف» بصفحات مثل المصحف مع التفسير الميسر والتلاوة وتظليل الآية، و«الأحاديث» مع الشرح والبحث والمفضلة، ووضع خفيف تلقائي للتلفزيونات ضعيفة الذاكرة، وإصلاحات في الإعداد والأخبار.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9150,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9150/saudi-tv-installer.apk",
-      "sha256": "e1ecd3079372564b6aa7bde39cbb39d0c69b0b0b8786fde755738e77448260ae",
-      "size": 24611798
+      "versionCode": 9180,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9180/saudi-tv-installer.apk",
+      "sha256": "e4f02e8c2d745d4fb164a52b112a68d0bac0328580ea7eb6e9c4a2cc15752944",
+      "size": 27030901
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9150,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9150/saudi-tv-home.apk",
-      "sha256": "a9c32cd216fc93d69f570a9f956009c9f031f8ff6bbd4bd141f2cc6a843cb2db",
-      "size": 2753181
+      "versionCode": 9180,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9180/saudi-tv-home.apk",
+      "sha256": "5a1d716b3a8e9f70b614fc85eb226ecc88cc2715a7b71987a688c472c9480204",
+      "size": 2764837
     }
   ]
 }
