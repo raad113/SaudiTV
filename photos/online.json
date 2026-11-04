@@ -157,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.AutumnChina_EN-US0467722422_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=bald+cypress&form=hpcapt&filters=HpDate%3a%2220261104_0800%22",
+"a": "Jackal Pan/Getty Images",
+"l": "Bing",
+"p": "People rowing among colorful bald cypress, Xuancheng, Anhui,",
+"b": 0.42
+},
+{
 "u": "https://www.bing.com/th?id=OHR.AlpineBraies_EN-US6636326357_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Lake+Braies+Dolomites&form=hpcapt&filters=HpDate%3a%2220261103_0800%22",
 "a": "leonid_tit/Getty Images",
@@ -211,14 +219,6 @@
 "l": "Bing",
 "p": "Kunětická hora Castle, Bohemia, Czechia",
 "b": 0.43
-},
-{
-"u": "https://www.bing.com/th?id=OHR.PondCypress_EN-US0123444779_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=pond+cypress&form=hpcapt&filters=HpDate%3a%2220261027_0700%22",
-"a": "Chris Moore/Getty Images",
-"l": "Bing",
-"p": "A grove of pond cypress trees with fall foliage, Georgia, US",
-"b": 0.39
 }
 ]
 }
