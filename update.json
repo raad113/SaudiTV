@@ -1,24 +1,24 @@
 {
-  "versionCode": 9190,
-  "versionName": "9.190",
-  "tag": "v9190",
-  "notes": "المصحف: زر OK يفتح قائمة سريعة للتفسير والبحث والتشغيل من الآية. التلاوة تعود تلقائيًا إذا تعثرت، وزر التشغيل يعمل من أول ضغطة.",
+  "versionCode": 9210,
+  "versionName": "9.210",
+  "tag": "v9210",
+  "notes": "لون «متكيف» يتغير مع الخلفية، لوحات فنية وصورك من مجلداتك، خيارات للشريط والخط والخلفية، حتى ٢٠ تطبيقًا في المفضلة، أندية بلا حد، وحد لصوت القرآن عند البدء، وشريط أنعم ونصوص أوضح.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9190,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9190/saudi-tv-installer.apk",
-      "sha256": "6fc1c5f64b79b6420e0ae67461edbc69922753e19ceed24d43474458780e44b6",
-      "size": 27033724
+      "versionCode": 9210,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9210/saudi-tv-installer.apk",
+      "sha256": "8b9f74c9253edf2916bc4de908f509bc5d9cc370450e28d12dd0971652f92286",
+      "size": 27078533
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9190,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9190/saudi-tv-home.apk",
-      "sha256": "c00740cf84c4dc00c1e5843ebf4949365389fed4b6babca01446b3e2858bfbb2",
-      "size": 2764837
+      "versionCode": 9210,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9210/saudi-tv-home.apk",
+      "sha256": "f72f7f03dc28b88ec780f5435788fbc44f43a61dd72f97315e454d64dce93374",
+      "size": 2783201
     }
   ]
 }
