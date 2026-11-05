@@ -157,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.StileCrossing_EN-US9052435517_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Lake+District&form=hpcapt&filters=HpDate%3a%2220261105_0800%22",
+"a": "Alex Treadway/Getty Images",
+"l": "Bing",
+"p": "Wooden stile at a stone wall, Black Crag, Lake District, Eng",
+"b": 0.5
+},
+{
 "u": "https://www.bing.com/th?id=OHR.AutumnChina_EN-US0467722422_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=bald+cypress&form=hpcapt&filters=HpDate%3a%2220261104_0800%22",
 "a": "Jackal Pan/Getty Images",
@@ -211,14 +219,1646 @@
 "l": "Bing",
 "p": "Standing stones at Avebury in Wiltshire, England",
 "b": 0.46
+}
+],
+"art": [
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Eight-Pointed_Star-Shaped_Tile_MET_DP231256.jpg/1920px-Eight-Pointed_Star-Shaped_Tile_MET_DP231256.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Eight-Pointed_Star-Shaped_Tile_MET_DP231256.jpg",
+"a": "",
+"l": "CC0",
+"p": "Eight-Pointed Star-Shaped Tile",
+"m": "متحف المتروبوليتان",
+"b": 0.59
 },
 {
-"u": "https://www.bing.com/th?id=OHR.KuneticeCastle_EN-US9492527404_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Kun%C4%9Btick%C3%A1+hora+Castle&form=hpcapt&filters=HpDate%3a%2220261028_0700%22",
-"a": "Marek Saroch/Alamy",
-"l": "Bing",
-"p": "Kunětická hora Castle, Bohemia, Czechia",
+"u": "https://www.artic.edu/iiif/2/12086520-2e48-cc75-df86-916bb801e61f/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/60755",
+"a": "Jacob van Ruisdael",
+"l": "PD",
+"p": "Landscape with the Ruins of the Castle of Egmond",
+"m": "معهد شيكاغو للفنون",
+"b": 0.26
+},
+{
+"u": "https://www.artic.edu/iiif/2/50034c7f-ce51-00f1-430e-a6f7efc233fc/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/56905",
+"a": "James McNeill Whistler",
+"l": "PD",
+"p": "Nocturne: Blue and Gold—Southampton Water",
+"m": "معهد شيكاغو للفنون",
+"b": 0.36
+},
+{
+"u": "https://www.artic.edu/iiif/2/a38e2828-ec6f-ece1-a30f-70243449197b/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/64818",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Stacks of Wheat (End of Summer)",
+"m": "معهد شيكاغو للفنون",
+"b": 0.54
+},
+{
+"u": "https://www.artic.edu/iiif/2/1cddae1c-99d5-462f-4aa6-128c0732ac11/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/120154",
+"a": "Raphaelle Peale",
+"l": "PD",
+"p": "Still Life—Strawberries, Nuts, &c.",
+"m": "معهد شيكاغو للفنون",
+"b": 0.22
+},
+{
+"u": "https://www.artic.edu/iiif/2/d4ca6321-8656-3d3f-a362-2ee297b2b813/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/16487",
+"a": "Paul Cezanne",
+"l": "PD",
+"p": "The Bay of Marseille, Seen from L'Estaque",
+"m": "معهد شيكاغو للفنون",
+"b": 0.5
+},
+{
+"u": "https://www.artic.edu/iiif/2/0f2d999d-0173-2935-a6d0-0175bb97b2a9/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/64724",
+"a": "George Inness",
+"l": "PD",
+"p": "The Home of the Heron",
+"m": "معهد شيكاغو للفنون",
+"b": 0.26
+},
+{
+"u": "https://www.artic.edu/iiif/2/3d2d0842-312e-8d48-708b-d6adde0777bf/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/68792",
+"a": "George Inness",
+"l": "PD",
+"p": "A Marine",
+"m": "معهد شيكاغو للفنون",
+"b": 0.22
+},
+{
+"u": "https://www.artic.edu/iiif/2/50c2eac7-be49-7daa-294d-068b9e8f2a9d/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/77328",
+"a": "Katsushika Hokusai",
+"l": "PD",
+"p": "A Mild Breeze on a Fine Day (Gaifu kaisei), from the series…",
+"m": "معهد شيكاغو للفنون",
+"b": 0.49
+},
+{
+"u": "https://www.artic.edu/iiif/2/9a51d50a-ce5f-2cc8-add8-91d24feb90f1/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/23773",
+"a": "Totoya Hokkei",
+"l": "PD",
+"p": "A Mountainous Landscape with a Stream",
+"m": "معهد شيكاغو للفنون",
+"b": 0.66
+},
+{
+"u": "https://www.artic.edu/iiif/2/a9546ba5-6191-4e04-e209-d22a10e7d0d7/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/64715",
+"a": "George Inness",
+"l": "PD",
+"p": "After a Summer Shower",
+"m": "معهد شيكاغو للفنون",
+"b": 0.48
+},
+{
+"u": "https://www.artic.edu/iiif/2/c12058f4-188f-c6ed-f0fe-52b32acfb296/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/16549",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Apples and Grapes",
+"m": "معهد شيكاغو للفنون",
+"b": 0.47
+},
+{
+"u": "https://www.artic.edu/iiif/2/90bc0cec-0d4e-9af5-3912-52a082a428e5/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/14556",
+"a": "Paul Cezanne",
+"l": "PD",
+"p": "Auvers, Panoramic View",
+"m": "معهد شيكاغو للفنون",
+"b": 0.48
+},
+{
+"u": "https://www.artic.edu/iiif/2/56a4af78-1d23-3e2a-6119-8aa47e0cf285/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/121377",
+"a": "Arthur Wesley Dow",
+"l": "PD",
+"p": "Boats at Rest",
+"m": "معهد شيكاغو للفنون",
+"b": 0.32
+},
+{
+"u": "https://www.artic.edu/iiif/2/4d1b3ad0-14db-0d21-ad9f-17abb8bdfbb5/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/81537",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Bordighera",
+"m": "معهد شيكاغو للفنون",
+"b": 0.36
+},
+{
+"u": "https://www.artic.edu/iiif/2/6794f986-98db-4e2e-9b38-8d13b7201d10/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/16779",
+"a": "Winslow Homer",
+"l": "PD",
+"p": "Breaking Storm, Coast of Maine",
+"m": "معهد شيكاغو للفنون",
+"b": 0.64
+},
+{
+"u": "https://www.artic.edu/iiif/2/a4717de1-d95c-fd87-a9c7-688da84abcf9/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/16545",
+"a": "Henry Ward Ranger",
+"l": "PD",
+"p": "Brooklyn Bridge",
+"m": "معهد شيكاغو للفنون",
+"b": 0.52
+},
+{
+"u": "https://www.artic.edu/iiif/2/842d212c-c755-f372-d73f-7d0581051c46/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/68388",
+"a": "George Inness",
+"l": "PD",
+"p": "Catskill Mountains",
+"m": "معهد شيكاغو للفنون",
+"b": 0.44
+},
+{
+"u": "https://www.artic.edu/iiif/2/28a7765b-fc38-1a56-87dd-cbcdb647fcdb/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/185185",
+"a": "Thomas Doughty",
+"l": "PD",
+"p": "Coming Squall (Nahant Beach with a Summer Shower)",
+"m": "معهد شيكاغو للفنون",
+"b": 0.55
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/%22Bellini%22_carpet_MET_AD-22.100.114d.jpeg/1920px-%22Bellini%22_carpet_MET_AD-22.100.114d.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:%22Bellini%22_carpet_MET_AD-22.100.114d.jpeg",
+"a": "",
+"l": "CC0",
+"p": "\"Bellini\" carpet",
+"m": "متحف المتروبوليتان",
+"b": 0.54
+},
+{
+"u": "https://www.artic.edu/iiif/2/5d1261c0-11bd-eb2c-91c5-653aa98c2b5a/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/111632",
+"a": "Maxime Maufra",
+"l": "PD",
+"p": "Douarnenez in Sunshine",
+"m": "معهد شيكاغو للفنون",
+"b": 0.46
+},
+{
+"u": "https://www.artic.edu/iiif/2/9e4bfbcc-176f-3dac-4529-f67c9a98065c/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/111059",
+"a": "Juan de Zurbarán",
+"l": "PD",
+"p": "Flowers and Fruit in a Porcelain Bowl",
+"m": "معهد شيكاغو للفنون",
+"b": 0.17
+},
+{
+"u": "https://www.artic.edu/iiif/2/d424c734-f5c1-5f89-3bb8-d83e4e0287e3/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/94240",
+"a": "Odilon Redon",
+"l": "PD",
+"p": "Flowers: Poppies and Daisies",
+"m": "معهد شيكاغو للفنون",
+"b": 0.13
+},
+{
+"u": "https://www.artic.edu/iiif/2/bfc9b17a-cc18-7bd3-4d78-e925bb1a8b27/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/53058",
+"a": "Berthe Morisot",
+"l": "PD",
+"p": "Forêt de Compiègne",
+"m": "معهد شيكاغو للفنون",
+"b": 0.55
+},
+{
+"u": "https://www.artic.edu/iiif/2/3e005f8a-d37f-871b-15bb-89756f1ed2e9/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/16629",
+"a": "Pierre-Auguste Renoir",
+"l": "PD",
+"p": "Fruits of the Midi",
+"m": "معهد شيكاغو للفنون",
+"b": 0.57
+},
+{
+"u": "https://www.artic.edu/iiif/2/f11bd233-6cc3-4221-59eb-f7363be4119e/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/64957",
+"a": "Vincent van Gogh",
+"l": "PD",
+"p": "Grapes, Lemons, Pears, and Apples",
+"m": "معهد شيكاغو للفنون",
+"b": 0.57
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/%22Senneh%22_Prayer_Rug_MET_wb-1970.302.8b.jpeg/1920px-%22Senneh%22_Prayer_Rug_MET_wb-1970.302.8b.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:%22Senneh%22_Prayer_Rug_MET_wb-1970.302.8b.jpeg",
+"a": "",
+"l": "CC0",
+"p": "\"Senneh\" Prayer Rug",
+"m": "متحف المتروبوليتان",
+"b": 0.45
+},
+{
+"u": "https://www.artic.edu/iiif/2/3527f037-a9b2-9253-1a92-dcd281b54340/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/893",
+"a": "Théodore Rousseau",
+"l": "PD",
+"p": "Landscape",
+"m": "معهد شيكاغو للفنون",
+"b": 0.38
+},
+{
+"u": "https://www.artic.edu/iiif/2/74efa2c3-93f5-c91f-618a-5eae9b782d5c/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/24905",
+"a": "Utagawa Sadahide",
+"l": "PD",
+"p": "Landscape (Sansui)",
+"m": "معهد شيكاغو للفنون",
+"b": 0.41
+},
+{
+"u": "https://www.artic.edu/iiif/2/9b6f838e-5424-d030-2d2f-c9380830d631/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/65937",
+"a": "Marsden Hartley",
+"l": "PD",
+"p": "Landscape No. 3, Cash Entry Mines, New Mexico",
+"m": "معهد شيكاغو للفنون",
+"b": 0.54
+},
+{
+"u": "https://www.artic.edu/iiif/2/c4648834-49dd-3589-6ac3-66d41fd574ef/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/44017",
+"a": "Frédéric Bazille",
+"l": "PD",
+"p": "Landscape at Chailly",
+"m": "معهد شيكاغو للفنون",
+"b": 0.39
+},
+{
+"u": "https://www.artic.edu/iiif/2/d3cf298a-1868-3274-1b50-a484ce1462c9/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/250451",
+"a": "Alexandre Desgoffe",
+"l": "PD",
+"p": "Landscape near Chiusi, Tuscany",
+"m": "معهد شيكاغو للفنون",
+"b": 0.39
+},
+{
+"u": "https://www.artic.edu/iiif/2/43fcfad0-8256-4923-9f9c-03ca90417907/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/122130",
+"a": "Paul Signac",
+"l": "PD",
+"p": "Les Andelys, Côte d'Aval",
+"m": "معهد شيكاغو للفنون",
+"b": 0.68
+},
+{
+"u": "https://www.artic.edu/iiif/2/438fbefa-e576-bd5f-983f-1c9626cd4a60/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/2156",
+"a": "John Frederick Peto",
+"l": "PD",
+"p": "Lights of Other Days",
+"m": "معهد شيكاغو للفنون",
+"b": 0.12
+},
+{
+"u": "https://www.artic.edu/iiif/2/b5762d27-498b-88f4-94dc-ca769e9fe66f/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/21628",
+"a": "Utagawa Hiroshige",
+"l": "PD",
+"p": "Mountains and Rivers on the Kiso Road (Kisoji no yamakawa)…",
+"m": "معهد شيكاغو للفنون",
+"b": 0.68
+},
+{
+"u": "https://www.artic.edu/iiif/2/42924282-d483-cd95-e676-52aee4bc4164/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/27163",
+"a": "Jasper Francis Cropsey",
+"l": "PD",
+"p": "Niagara Falls in Winter",
+"m": "معهد شيكاغو للفنون",
+"b": 0.71
+},
+{
+"u": "https://www.artic.edu/iiif/2/75d767b8-38ca-42af-ef70-f5960a7e86e7/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/46321",
+"a": "Homer Dodge Martin",
+"l": "PD",
+"p": "On the Seine",
+"m": "معهد شيكاغو للفنون",
+"b": 0.56
+},
+{
+"u": "https://www.artic.edu/iiif/2/db94c894-a24c-c2e0-9db9-0506567a0152/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/4783",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Poppy Field (Giverny)",
+"m": "معهد شيكاغو للفنون",
+"b": 0.52
+},
+{
+"u": "https://www.artic.edu/iiif/2/2765aee9-3d78-ec6c-5c66-a1d9dc8173f6/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/20545",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Rocks at Port-Goulphar, Belle-Île",
+"m": "معهد شيكاغو للفنون",
+"b": 0.39
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Floral_Tent_Panel_MET_DP210624.jpg/1920px-Floral_Tent_Panel_MET_DP210624.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Floral_Tent_Panel_MET_DP210624.jpg",
+"a": "",
+"l": "CC0",
+"p": "Floral Tent Panel",
+"m": "متحف المتروبوليتان",
+"b": 0.41
+},
+{
+"u": "https://www.artic.edu/iiif/2/8be90e71-83c3-3f98-a972-4acb9ce0e773/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/81535",
+"a": "Édouard Manet",
+"l": "PD",
+"p": "Sea View, Calm Weather (Vue de mer, temps calme)",
+"m": "معهد شيكاغو للفنون",
+"b": 0.48
+},
+{
+"u": "https://www.artic.edu/iiif/2/caf4fa39-e2e8-344a-542c-2d9a03ec9d4b/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/81557",
+"a": "Pierre-Auguste Renoir",
+"l": "PD",
+"p": "Seascape",
+"m": "معهد شيكاغو للفنون",
+"b": 0.57
+},
+{
+"u": "https://www.artic.edu/iiif/2/bbb6d024-f931-2e2f-eb95-750991834b1c/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/87008",
+"a": "Katsushika Hokusai",
+"l": "PD",
+"p": "Shower Below the Summit (Sanka hakuu), from the series \"Thi…",
+"m": "معهد شيكاغو للفنون",
 "b": 0.43
+},
+{
+"u": "https://www.artic.edu/iiif/2/0787ea3c-9c03-65a2-adeb-5f5343794324/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/97292",
+"a": "Robert William Vonnoh",
+"l": "PD",
+"p": "Spring in France",
+"m": "معهد شيكاغو للفنون",
+"b": 0.64
+},
+{
+"u": "https://www.artic.edu/iiif/2/27c1d720-8ca5-79a4-5e51-530bf75c1591/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/111318",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Stack of Wheat",
+"m": "معهد شيكاغو للفنون",
+"b": 0.53
+},
+{
+"u": "https://www.artic.edu/iiif/2/db36f74f-47d9-ad08-cdf9-b4b436e6d18c/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/16560",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Stack of Wheat (Snow Effect, Overcast Day)",
+"m": "معهد شيكاغو للفنون",
+"b": 0.55
+},
+{
+"u": "https://www.artic.edu/iiif/2/8bd40b36-43ea-8b02-d76a-b325962b86db/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/100191",
+"a": "Claude Monet",
+"l": "PD",
+"p": "Stack of Wheat (Thaw, Sunset)",
+"m": "معهد شيكاغو للفنون",
+"b": 0.47
+},
+{
+"u": "https://www.artic.edu/iiif/2/19967481-f358-3d6d-781e-9aa9187d6007/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/27170",
+"a": "Eugène Carrière",
+"l": "PD",
+"p": "Still Life",
+"m": "معهد شيكاغو للفنون",
+"b": 0.38
+},
+{
+"u": "https://www.artic.edu/iiif/2/77b96ea2-dbe8-49a1-6a50-507c477fa456/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/65940",
+"a": "Marsden Hartley",
+"l": "PD",
+"p": "Still Life No. 3",
+"m": "معهد شيكاغو للفنون",
+"b": 0.26
+},
+{
+"u": "https://www.artic.edu/iiif/2/94245750-c169-eb03-673e-cd03f718f885/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/72180",
+"a": "Henri Fantin-Latour",
+"l": "PD",
+"p": "Still Life with Flowers",
+"m": "معهد شيكاغو للفنون",
+"b": 0.44
+},
+{
+"u": "https://www.artic.edu/iiif/2/8c63372e-dfd6-ab25-cfc8-a6569f25f0c8/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/68784",
+"a": "George Inness",
+"l": "PD",
+"p": "Summer in the Catskills",
+"m": "معهد شيكاغو للفنون",
+"b": 0.4
+},
+{
+"u": "https://www.artic.edu/iiif/2/4c5abec2-d94f-9afa-b689-de4dc93791f2/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/100489",
+"a": "William Bradford",
+"l": "PD",
+"p": "The Coast of Labrador",
+"m": "معهد شيكاغو للفنون",
+"b": 0.76
+},
+{
+"u": "https://www.artic.edu/iiif/2/67b46720-1589-0d13-3597-f03c7b618094/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/180711",
+"a": "Joseph Wright of Derby",
+"l": "PD",
+"p": "The Gulf of Salerno",
+"m": "معهد شيكاغو للفنون",
+"b": 0.52
+},
+{
+"u": "https://www.artic.edu/iiif/2/75fc3e47-9b94-5838-25ea-6c24620765d0/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/65925",
+"a": "Marsden Hartley",
+"l": "PD",
+"p": "The Last of New England—The Beginning of New Mexico",
+"m": "معهد شيكاغو للفنون",
+"b": 0.48
+},
+{
+"u": "https://www.artic.edu/iiif/2/b4ee4891-5d7b-11ad-93df-2b64e34de991/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/105462",
+"a": "Childe Hassam",
+"l": "PD",
+"p": "The Little Pond, Appledore",
+"m": "معهد شيكاغو للفنون",
+"b": 0.76
+},
+{
+"u": "https://www.artic.edu/iiif/2/2e6d6a89-61bd-5098-59d3-b41d14bf7973/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/65811",
+"a": "Paul Cezanne",
+"l": "PD",
+"p": "The Plate of Apples",
+"m": "معهد شيكاغو للفنون",
+"b": 0.46
+},
+{
+"u": "https://www.artic.edu/iiif/2/2a2163db-9351-018a-0d65-47be9c84dce8/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/3546",
+"a": "Gustave Courbet",
+"l": "PD",
+"p": "The Valley of Les Puits-Noir",
+"m": "معهد شيكاغو للفنون",
+"b": 0.16
+},
+{
+"u": "https://www.artic.edu/iiif/2/d1cda60c-c21d-9fbc-8195-4e7c3d6e9650/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/64476",
+"a": "George Gardner Symons",
+"l": "PD",
+"p": "The Winter Sun",
+"m": "معهد شيكاغو للفنون",
+"b": 0.47
+},
+{
+"u": "https://www.artic.edu/iiif/2/79b94ddd-e208-1993-01ab-98f75174fe88/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/145807",
+"a": "John Singer Sargent",
+"l": "PD",
+"p": "Thistles",
+"m": "معهد شيكاغو للفنون",
+"b": 0.39
+},
+{
+"u": "https://www.artic.edu/iiif/2/4a04138f-43d8-cd9f-5ac4-478cd8828210/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/66042",
+"a": "Adriaen van der Spelt",
+"l": "PD",
+"p": "Trompe-l'Oeil Still Life with a Flower Garland and a Curtain",
+"m": "معهد شيكاغو للفنون",
+"b": 0.23
+},
+{
+"u": "https://www.artic.edu/iiif/2/59031f75-1a96-8f05-cbbb-2074ac9aa099/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/24601",
+"a": "Katsushika Hokusai",
+"l": "PD",
+"p": "Umezawa Marsh in Sagami Province (Soshu Umezawa hidari), fr…",
+"m": "معهد شيكاغو للفنون",
+"b": 0.62
+},
+{
+"u": "https://www.artic.edu/iiif/2/bd8432e6-65f7-a32a-4e1a-85593633fa8f/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/25806",
+"a": "Jean Baptiste Camille Corot",
+"l": "PD",
+"p": "View of Genoa",
+"m": "معهد شيكاغو للفنون",
+"b": 0.52
+},
+{
+"u": "https://www.artic.edu/iiif/2/b7e9650f-fe31-1206-ec54-8b2f019b8621/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/193926",
+"a": "Théodore Rousseau",
+"l": "PD",
+"p": "View of Saleve, near Geneva",
+"m": "معهد شيكاغو للفنون",
+"b": 0.47
+},
+{
+"u": "https://www.artic.edu/iiif/2/5f663d6c-0121-a8ca-e875-896d9857a3f3/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/84088",
+"a": "James McNeill Whistler",
+"l": "PD",
+"p": "Violet and Silver—The Deep Sea",
+"m": "معهد شيكاغو للفنون",
+"b": 0.37
+},
+{
+"u": "https://www.artic.edu/iiif/2/3192ae4d-ffca-fe91-af12-2ca681f43e13/full/1686,/0/default.jpg",
+"page": "https://www.artic.edu/artworks/152747",
+"a": "Martin Johnson Heade",
+"l": "PD",
+"p": "York Harbor, Coast of Maine",
+"m": "معهد شيكاغو للفنون",
+"b": 0.54
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Albert_Bierstadt_-_The_Rocky_Mountains%2C_Lander%27s_Peak.jpg/1920px-Albert_Bierstadt_-_The_Rocky_Mountains%2C_Lander%27s_Peak.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Albert_Bierstadt_-_The_Rocky_Mountains,_Lander%27s_Peak.jpg",
+"a": "Albert Bierstadt",
+"l": "PD",
+"p": "The Rocky Mountains, Lander's Peak",
+"m": "متحف المتروبوليتان",
+"b": 0.5
+},
+{
+"u": "https://upload.wikimedia.org/wikipedia/commons/5/51/Amanecer%2C_1646%E2%80%9347%2C_Claude_Lorrain.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Amanecer,_1646%E2%80%9347,_Claude_Lorrain.jpg",
+"a": "Claude Lorrain",
+"l": "PD",
+"p": "Amanecer",
+"m": "متحف المتروبوليتان",
+"b": 0.39
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/Landscape%2C_Binghamton%2C_New_York_MET_DT11539.jpg/1920px-Landscape%2C_Binghamton%2C_New_York_MET_DT11539.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape,_Binghamton,_New_York_MET_DT11539.jpg",
+"a": "Louis Eilshemius",
+"l": "CC0",
+"p": "Landscape, Binghamton, New York",
+"m": "متحف المتروبوليتان",
+"b": 0.48
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/George_Bellows_-_The_Red_Vine%2C_Matinicus_Island%2C_Maine_%281916%29.jpg/1920px-George_Bellows_-_The_Red_Vine%2C_Matinicus_Island%2C_Maine_%281916%29.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:George_Bellows_-_The_Red_Vine,_Matinicus_Island,_Maine_(1916).jpg",
+"a": "George Bellows",
+"l": "PD",
+"p": "The Red Vine, Matinicus Island, Maine",
+"m": "متحف المتروبوليتان",
+"b": 0.48
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Wide_River_Landscape_MET_DP146493.jpg/1920px-Wide_River_Landscape_MET_DP146493.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Wide_River_Landscape_MET_DP146493.jpg",
+"a": "Philips Koninck",
+"l": "CC0",
+"p": "Wide River Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.37
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Newburyport_Meadows_MET_DT2050.jpg/1920px-Newburyport_Meadows_MET_DT2050.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Newburyport_Meadows_MET_DT2050.jpg",
+"a": "Martin Johnson Heade",
+"l": "CC0",
+"p": "Newburyport Meadows",
+"m": "متحف المتروبوليتان",
+"b": 0.45
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Capriccio_with_a_Square_Tower_and_Two_Houses_MET_DP328379.jpg/1920px-Capriccio_with_a_Square_Tower_and_Two_Houses_MET_DP328379.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Capriccio_with_a_Square_Tower_and_Two_Houses_MET_DP328379.jpg",
+"a": "Follower of Francesco Guardi",
+"l": "CC0",
+"p": "Capriccio with a Square Tower and Two Houses",
+"m": "متحف المتروبوليتان",
+"b": 0.58
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Maine_Coast_MET_ap11.116.1.jpg/1920px-Maine_Coast_MET_ap11.116.1.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Maine_Coast_MET_ap11.116.1.jpg",
+"a": "Winslow Homer",
+"l": "CC0",
+"p": "Maine Coast",
+"m": "متحف المتروبوليتان",
+"b": 0.46
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/A_Country_Road_MET_DP143152.jpg/1920px-A_Country_Road_MET_DP143152.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:A_Country_Road_MET_DP143152.jpg",
+"a": "Salomon van Ruysdael",
+"l": "CC0",
+"p": "A Country Road",
+"m": "متحف المتروبوليتان",
+"b": 0.41
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/George_Sand%27s_Garden_at_Nohant_MET_DP-14092-001.jpg/1920px-George_Sand%27s_Garden_at_Nohant_MET_DP-14092-001.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:George_Sand%27s_Garden_at_Nohant_MET_DP-14092-001.jpg",
+"a": "Eugène Delacroix",
+"l": "CC0",
+"p": "George Sand's Garden at Nohant",
+"m": "متحف المتروبوليتان",
+"b": 0.16
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/Sunrise_MET_DP-14936-013.jpg/1920px-Sunrise_MET_DP-14936-013.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Sunrise_MET_DP-14936-013.jpg",
+"a": "Claude Lorrain",
+"l": "CC0",
+"p": "Sunrise",
+"m": "متحف المتروبوليتان",
+"b": 0.24
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/%22Floral_and_Cloudband%22_Carpet_MET_wb-53.214c.jpeg/1920px-%22Floral_and_Cloudband%22_Carpet_MET_wb-53.214c.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:%22Floral_and_Cloudband%22_Carpet_MET_wb-53.214c.jpeg",
+"a": "",
+"l": "CC0",
+"p": "\"Floral and Cloudband\" Carpet",
+"m": "متحف المتروبوليتان",
+"b": 0.45
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/An_Extensive_Wooded_Landscape_MET_DP146508.jpg/1920px-An_Extensive_Wooded_Landscape_MET_DP146508.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:An_Extensive_Wooded_Landscape_MET_DP146508.jpg",
+"a": "Philips Koninck",
+"l": "CC0",
+"p": "An Extensive Wooded Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.43
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/Sloop%2C_Nassau_MET_DP119112.jpg/1920px-Sloop%2C_Nassau_MET_DP119112.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Sloop,_Nassau_MET_DP119112.jpg",
+"a": "Winslow Homer",
+"l": "CC0",
+"p": "Sloop, Nassau",
+"m": "متحف المتروبوليتان",
+"b": 0.63
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/William_Lamb_Picknel_-_Banks_of_the_Loing.jpg/1920px-William_Lamb_Picknel_-_Banks_of_the_Loing.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:William_Lamb_Picknel_-_Banks_of_the_Loing.jpg",
+"a": "William Lamb Picknell",
+"l": "PD",
+"p": "Banks of the Loing",
+"m": "متحف المتروبوليتان",
+"b": 0.51
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/MET_DP-12232-041.jpg/1920px-MET_DP-12232-041.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:MET_DP-12232-041.jpg",
+"a": "Sesson Shukei",
+"l": "CC0",
+"p": "Landscape with Rocky Precipice",
+"m": "متحف المتروبوليتان",
+"b": 0.53
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Hautbois_Common%2C_Norfolk_MET_DP167135.jpg/1920px-Hautbois_Common%2C_Norfolk_MET_DP167135.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Hautbois_Common,_Norfolk_MET_DP167135.jpg",
+"a": "John Crome",
+"l": "CC0",
+"p": "Hautbois Common, Norfolk",
+"m": "متحف المتروبوليتان",
+"b": 0.32
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Shore_and_Surf%2C_Nassau_MET_ap10.228.5.jpg/1920px-Shore_and_Surf%2C_Nassau_MET_ap10.228.5.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Shore_and_Surf,_Nassau_MET_ap10.228.5.jpg",
+"a": "Winslow Homer",
+"l": "CC0",
+"p": "Shore and Surf, Nassau",
+"m": "متحف المتروبوليتان",
+"b": 0.51
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Hanging_or_Prayer_Rug_MET_wb-24.178.2b.jpeg/1920px-Hanging_or_Prayer_Rug_MET_wb-24.178.2b.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:Hanging_or_Prayer_Rug_MET_wb-24.178.2b.jpeg",
+"a": "",
+"l": "CC0",
+"p": "Hanging or Prayer Rug",
+"m": "متحف المتروبوليتان",
+"b": 0.43
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/Sand_Bank_with_Willows%2C_Magnolia_MET_ap38.153.jpg/1920px-Sand_Bank_with_Willows%2C_Magnolia_MET_ap38.153.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Sand_Bank_with_Willows,_Magnolia_MET_ap38.153.jpg",
+"a": "William Morris Hunt",
+"l": "CC0",
+"p": "Sand Bank with Willows, Magnolia",
+"m": "متحف المتروبوليتان",
+"b": 0.42
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/The_Bouchardon_Mill%2C_Crozant_MET_0181.jpg/1920px-The_Bouchardon_Mill%2C_Crozant_MET_0181.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Bouchardon_Mill,_Crozant_MET_0181.jpg",
+"a": "Armand Guillaumin",
+"l": "CC0",
+"p": "The Bouchardon Mill, Crozant",
+"m": "متحف المتروبوليتان",
+"b": 0.39
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Heart_of_the_Andes_MET_DT282444.jpg/1920px-Heart_of_the_Andes_MET_DT282444.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Heart_of_the_Andes_MET_DT282444.jpg",
+"a": "Frederic Edwin Church",
+"l": "CC0",
+"p": "Heart of the Andes",
+"m": "متحف المتروبوليتان",
+"b": 0.37
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Landscape_MET_DP276951.jpg/1920px-Landscape_MET_DP276951.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape_MET_DP276951.jpg",
+"a": "George Inness",
+"l": "CC0",
+"p": "Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.29
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Landscape_with_Cows_Watering_in_a_Stream_MET_DT10837.jpg/1920px-Landscape_with_Cows_Watering_in_a_Stream_MET_DT10837.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape_with_Cows_Watering_in_a_Stream_MET_DT10837.jpg",
+"a": "Robert Seldon Duncanson",
+"l": "CC0",
+"p": "Landscape with Cows Watering in a Stream",
+"m": "متحف المتروبوليتان",
+"b": 0.36
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Luster_Star-Shaped_Tile_MET_DT11958.jpg/1920px-Luster_Star-Shaped_Tile_MET_DT11958.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Luster_Star-Shaped_Tile_MET_DT11958.jpg",
+"a": "",
+"l": "CC0",
+"p": "Luster Star-Shaped Tile",
+"m": "متحف المتروبوليتان",
+"b": 0.69
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Fishing_Boats%2C_Key_West_MET_DP119111.jpg/1920px-Fishing_Boats%2C_Key_West_MET_DP119111.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Fishing_Boats,_Key_West_MET_DP119111.jpg",
+"a": "Winslow Homer",
+"l": "CC0",
+"p": "Fishing Boats, Key West",
+"m": "متحف المتروبوليتان",
+"b": 0.66
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/Autumn_Meadows_MET_DT10714.jpg/1920px-Autumn_Meadows_MET_DT10714.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Autumn_Meadows_MET_DT10714.jpg",
+"a": "George Inness",
+"l": "CC0",
+"p": "Autumn Meadows",
+"m": "متحف المتروبوليتان",
+"b": 0.33
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/MET_36_100_79_108899.jpg/1920px-MET_36_100_79_108899.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:MET_36_100_79_108899.jpg",
+"a": "Kano School",
+"l": "CC0",
+"p": "Misty Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.55
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Simon_Denis_-_Mountainous_Landscape_at_Vicovaro_-_2003.42.22_-_Metropolitan_Museum_of_Art.jpg/1920px-Simon_Denis_-_Mountainous_Landscape_at_Vicovaro_-_2003.42.22_-_Metropolitan_Museum_of_Art.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Simon_Denis_-_Mountainous_Landscape_at_Vicovaro_-_2003.42.22_-_Metropolitan_Museum_of_Art.jpg",
+"a": "Simon Denis",
+"l": "PD",
+"p": "Mountainous Landscape at Vicovaro",
+"m": "متحف المتروبوليتان",
+"b": 0.59
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Sun_Shower_MET_ap20.26.jpg/1920px-Sun_Shower_MET_ap20.26.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Sun_Shower_MET_ap20.26.jpg",
+"a": "Charles Melville Dewey",
+"l": "CC0",
+"p": "Sun Shower",
+"m": "متحف المتروبوليتان",
+"b": 0.6
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Jean-Joseph-Xavier_Bidauld_-_Lac_Fucino_et_les_montagnes_des_Abruzzes.jpg/1920px-Jean-Joseph-Xavier_Bidauld_-_Lac_Fucino_et_les_montagnes_des_Abruzzes.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Jean-Joseph-Xavier_Bidauld_-_Lac_Fucino_et_les_montagnes_des_Abruzzes.jpg",
+"a": "Jean-Joseph-Xavier Bidauld",
+"l": "PD",
+"p": "Jean-Joseph-Xavier Bidauld - Lac Fucino et les montagnes de…",
+"m": "متحف المتروبوليتان",
+"b": 0.52
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Panel_%28Lid_from_a_Chest%3F%29_MET_wb-37.103b.jpeg/1920px-Panel_%28Lid_from_a_Chest%3F%29_MET_wb-37.103b.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:Panel_(Lid_from_a_Chest%3F)_MET_wb-37.103b.jpeg",
+"a": "",
+"l": "CC0",
+"p": "Panel (Lid from a Chest?)",
+"m": "متحف المتروبوليتان",
+"b": 0.42
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Yun_Xiang_-_Landscapes_after_old_masters_-_1977.171a%E2%80%93j_-_Metropolitan_Museum_of_Art.jpg/1920px-Yun_Xiang_-_Landscapes_after_old_masters_-_1977.171a%E2%80%93j_-_Metropolitan_Museum_of_Art.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Yun_Xiang_-_Landscapes_after_old_masters_-_1977.171a%E2%80%93j_-_Metropolitan_Museum_of_Art.jpg",
+"a": "Yun Xiang",
+"l": "PD",
+"p": "Landscapes after old masters",
+"m": "متحف المتروبوليتان",
+"b": 0.73
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Twilight_in_the_Cedars_at_Darien%2C_Connecticut_MET_ap74.4.jpg/1920px-Twilight_in_the_Cedars_at_Darien%2C_Connecticut_MET_ap74.4.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Twilight_in_the_Cedars_at_Darien,_Connecticut_MET_ap74.4.jpg",
+"a": "John Frederick Kensett",
+"l": "CC0",
+"p": "Twilight in the Cedars at Darien, Connecticut",
+"m": "متحف المتروبوليتان",
+"b": 0.43
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Francesco_Guardi_-_The_Villa_Loredan%2C_Paese_-_2019.141.14_-_Metropolitan_Museum_of_Art.jpg/1920px-Francesco_Guardi_-_The_Villa_Loredan%2C_Paese_-_2019.141.14_-_Metropolitan_Museum_of_Art.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Francesco_Guardi_-_The_Villa_Loredan,_Paese_-_2019.141.14_-_Metropolitan_Museum_of_Art.jpg",
+"a": "Francesco Guardi",
+"l": "PD",
+"p": "The Villa Loredan, Paese",
+"m": "متحف المتروبوليتان",
+"b": 0.52
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/George_Bellows_-_Up_the_Hudson_%281908%29.jpg/1920px-George_Bellows_-_Up_the_Hudson_%281908%29.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:George_Bellows_-_Up_the_Hudson_(1908).jpg",
+"a": "George Bellows",
+"l": "PD",
+"p": "Up the Hudson",
+"m": "متحف المتروبوليتان",
+"b": 0.39
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Landscape%2C_Krager%C3%B8_MET_DP322382.jpg/1920px-Landscape%2C_Krager%C3%B8_MET_DP322382.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape,_Krager%C3%B8_MET_DP322382.jpg",
+"a": "Edvard Munch",
+"l": "CC0",
+"p": "Landscape, Kragerø",
+"m": "متحف المتروبوليتان",
+"b": 0.51
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/A_River_Landscape_with_Storks_MET_EP1038.jpg/1920px-A_River_Landscape_with_Storks_MET_EP1038.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:A_River_Landscape_with_Storks_MET_EP1038.jpg",
+"a": "Charles-François Daubigny",
+"l": "CC0",
+"p": "A River Landscape with Storks",
+"m": "متحف المتروبوليتان",
+"b": 0.47
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Return_of_the_Redwing_MET_DP159184.jpg/1920px-Return_of_the_Redwing_MET_DP159184.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Return_of_the_Redwing_MET_DP159184.jpg",
+"a": "Allen Butler Talcott",
+"l": "CC0",
+"p": "Return of the Redwing",
+"m": "متحف المتروبوليتان",
+"b": 0.46
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/Isola_Bella_in_Lago_Maggiore_MET_DT1550.jpg/1920px-Isola_Bella_in_Lago_Maggiore_MET_DT1550.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Isola_Bella_in_Lago_Maggiore_MET_DT1550.jpg",
+"a": "Sanford Robinson Gifford",
+"l": "CC0",
+"p": "Isola Bella in Lago Maggiore",
+"m": "متحف المتروبوليتان",
+"b": 0.48
+},
+{
+"u": "https://upload.wikimedia.org/wikipedia/commons/3/30/Albert_Bierstadt00.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Albert_Bierstadt00.jpg",
+"a": "James Smillie / After Albert Bierstadt",
+"l": "PD",
+"p": "The Rocky Mountains",
+"m": "متحف المتروبوليتان",
+"b": 0.45
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Kuindzhi_-_Red_Sunset_on_the_Dnieper_-_with_frame.jpg/1920px-Kuindzhi_-_Red_Sunset_on_the_Dnieper_-_with_frame.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Kuindzhi_-_Red_Sunset_on_the_Dnieper_-_with_frame.jpg",
+"a": "Arkhip Kuindzhi",
+"l": "PD",
+"p": "Red Sunset on the Dnieper",
+"m": "متحف المتروبوليتان",
+"b": 0.34
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/The_Grand_Canal_above_the_Rialto_MET_DP124053.jpg/1920px-The_Grand_Canal_above_the_Rialto_MET_DP124053.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Grand_Canal_above_the_Rialto_MET_DP124053.jpg",
+"a": "Francesco Guardi",
+"l": "CC0",
+"p": "The Grand Canal above the Rialto",
+"m": "متحف المتروبوليتان",
+"b": 0.46
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/Camille_Pissarro_Jalais_Hill%2C_Pontoise_The_Metropolitan_Museum_of_Art.jpg/1920px-Camille_Pissarro_Jalais_Hill%2C_Pontoise_The_Metropolitan_Museum_of_Art.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Camille_Pissarro_Jalais_Hill,_Pontoise_The_Metropolitan_Museum_of_Art.jpg",
+"a": "Camille Pissarro",
+"l": "PD",
+"p": "Jalais Hill, Pontoise",
+"m": "متحف المتروبوليتان",
+"b": 0.46
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/Flower_Garden_and_Bungalow%2C_Bermuda_MET_APS1026.jpg/1920px-Flower_Garden_and_Bungalow%2C_Bermuda_MET_APS1026.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Flower_Garden_and_Bungalow,_Bermuda_MET_APS1026.jpg",
+"a": "Winslow Homer",
+"l": "CC0",
+"p": "Flower Garden and Bungalow, Bermuda",
+"m": "متحف المتروبوليتان",
+"b": 0.44
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/View_of_Haarlem_and_the_Haarlemmer_Meer_MET_DP146495.jpg/1920px-View_of_Haarlem_and_the_Haarlemmer_Meer_MET_DP146495.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:View_of_Haarlem_and_the_Haarlemmer_Meer_MET_DP146495.jpg",
+"a": "Jan van Goyen",
+"l": "CC0",
+"p": "View of Haarlem and the Haarlemmer Meer",
+"m": "متحف المتروبوليتان",
+"b": 0.44
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Pine_Grove_of_the_Barberini_Villa_MET_ap98.16.jpg/1920px-Pine_Grove_of_the_Barberini_Villa_MET_ap98.16.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Pine_Grove_of_the_Barberini_Villa_MET_ap98.16.jpg",
+"a": "George Inness",
+"l": "CC0",
+"p": "Pine Grove of the Barberini Villa",
+"m": "متحف المتروبوليتان",
+"b": 0.39
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/The_Rocky_Path_in_the_Morvan_%28Chemin_des_roches_dans_le_Morvan%29_MET_DT3120.jpg/1920px-The_Rocky_Path_in_the_Morvan_%28Chemin_des_roches_dans_le_Morvan%29_MET_DT3120.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Rocky_Path_in_the_Morvan_(Chemin_des_roches_dans_le_Morvan)_MET_DT3120.jpg",
+"a": "Henri Harpignies",
+"l": "CC0",
+"p": "The Rocky Path in the Morvan (Chemin des roches dans le Mor…",
+"m": "متحف المتروبوليتان",
+"b": 0.19
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Cliffs_at_Deir_el_Bahri%2C_Egypt_MET_DT212014.jpg/1920px-Cliffs_at_Deir_el_Bahri%2C_Egypt_MET_DT212014.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Cliffs_at_Deir_el_Bahri,_Egypt_MET_DT212014.jpg",
+"a": "John Singer Sargent",
+"l": "CC0",
+"p": "Cliffs at Deir el Bahri, Egypt",
+"m": "متحف المتروبوليتان",
+"b": 0.53
+},
+{
+"u": "https://upload.wikimedia.org/wikipedia/commons/3/39/View_from_Mount_Holyoke%2C_Northampton%2C_Massachusetts%2C_after_a_Thunderstorm%E2%80%94The_Oxbow_MET_DT71.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:View_from_Mount_Holyoke,_Northampton,_Massachusetts,_after_a_Thunderstorm%E2%80%94The_Oxbow_MET_DT71.jpg",
+"a": "Thomas Cole",
+"l": "CC0",
+"p": "View from Mount Holyoke, Northampton, Massachusetts, after…",
+"m": "متحف المتروبوليتان",
+"b": 0.5
+},
+{
+"u": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Wisconsin_Landscape_MET_ma42.154.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Wisconsin_Landscape_MET_ma42.154.jpg",
+"a": "John Steuart Curry",
+"l": "CC0",
+"p": "Wisconsin Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.33
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Winter_Landscape%2C_Holland_MET_DP143197.jpg/1920px-Winter_Landscape%2C_Holland_MET_DP143197.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Winter_Landscape,_Holland_MET_DP143197.jpg",
+"a": "Barend Cornelis Koekkoek",
+"l": "CC0",
+"p": "Winter Landscape, Holland",
+"m": "متحف المتروبوليتان",
+"b": 0.47
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/Village_by_a_River_MET_ep59.140.R.jpg/1920px-Village_by_a_River_MET_ep59.140.R.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Village_by_a_River_MET_ep59.140.R.jpg",
+"a": "Eugène Louis Boudin",
+"l": "CC0",
+"p": "Village by a River",
+"m": "متحف المتروبوليتان",
+"b": 0.53
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Camille_Pissarro_-_La_C%C3%B4te_du_Jallais%2C_Pontoise_-_1867.jpg/1920px-Camille_Pissarro_-_La_C%C3%B4te_du_Jallais%2C_Pontoise_-_1867.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Camille_Pissarro_-_La_C%C3%B4te_du_Jallais,_Pontoise_-_1867.jpg",
+"a": "Camille Pissarro",
+"l": "PD",
+"p": "La Côte du Jallais Pontoise",
+"m": "متحف المتروبوليتان",
+"b": 0.46
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/77/A_Pond_in_Picardy_MET_ep14.40.813.bw.R.jpg/1920px-A_Pond_in_Picardy_MET_ep14.40.813.bw.R.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:A_Pond_in_Picardy_MET_ep14.40.813.bw.R.jpg",
+"a": "Jean-Baptiste Camille Corot",
+"l": "CC0",
+"p": "A Pond in Picardy",
+"m": "متحف المتروبوليتان",
+"b": 0.52
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/James_McDougal_Hart_-_Mountain_Range_%281850s%29.jpg/1920px-James_McDougal_Hart_-_Mountain_Range_%281850s%29.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:James_McDougal_Hart_-_Mountain_Range_(1850s).jpg",
+"a": "James McDougal Hart",
+"l": "PD",
+"p": "Mountain Range",
+"m": "متحف المتروبوليتان",
+"b": 0.23
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Approaching_Storm_MET_ap51.144.jpg/1920px-Approaching_Storm_MET_ap51.144.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Approaching_Storm_MET_ap51.144.jpg",
+"a": "William Keith",
+"l": "CC0",
+"p": "Approaching Storm",
+"m": "متحف المتروبوليتان",
+"b": 0.28
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Lake_George_MET_ap15.30.64.jpg/1920px-Lake_George_MET_ap15.30.64.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Lake_George_MET_ap15.30.64.jpg",
+"a": "John William Casilear",
+"l": "CC0",
+"p": "Lake George",
+"m": "متحف المتروبوليتان",
+"b": 0.57
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/72/Pompton_Plains%2C_New_Jersey_MET_DT214222.jpg/1920px-Pompton_Plains%2C_New_Jersey_MET_DT214222.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Pompton_Plains,_New_Jersey_MET_DT214222.jpg",
+"a": "Jasper Francis Cropsey",
+"l": "CC0",
+"p": "Pompton Plains, New Jersey",
+"m": "متحف المتروبوليتان",
+"b": 0.54
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/Childe_Hassam_The_Water_Garden_1909.jpg/1920px-Childe_Hassam_The_Water_Garden_1909.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Childe_Hassam_The_Water_Garden_1909.jpg",
+"a": "Childe Hassam",
+"l": "PD",
+"p": "The Water Garden",
+"m": "متحف المتروبوليتان",
+"b": 0.5
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Johann_Jakob_Frey_-_Rocky_Outcrop_by_a_Stream_in_the_Roman_Campagna_-_2018.830.3_-_Metropolitan_Museum_of_Art.jpg/1920px-Johann_Jakob_Frey_-_Rocky_Outcrop_by_a_Stream_in_the_Roman_Campagna_-_2018.830.3_-_Metropolitan_Museum_of_Art.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Johann_Jakob_Frey_-_Rocky_Outcrop_by_a_Stream_in_the_Roman_Campagna_-_2018.830.3_-_Metropolitan_Museum_of_Art.jpg",
+"a": "Johann Jakob Frey the Elder",
+"l": "PD",
+"p": "Rocky Outcrop by a Stream in the Roman Campagna",
+"m": "متحف المتروبوليتان",
+"b": 0.28
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/An_Arctic_Summer-_Boring_Through_the_Pack_in_Melville_Bay_MET_DT2101.jpg/1920px-An_Arctic_Summer-_Boring_Through_the_Pack_in_Melville_Bay_MET_DT2101.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:An_Arctic_Summer-_Boring_Through_the_Pack_in_Melville_Bay_MET_DT2101.jpg",
+"a": "William Bradford",
+"l": "CC0",
+"p": "An Arctic Summer: Boring Through the Pack in Melville Bay",
+"m": "متحف المتروبوليتان",
+"b": 0.48
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/%22Medallion_Ushak%22_Carpet_MET_08.173.13a.jpeg/1920px-%22Medallion_Ushak%22_Carpet_MET_08.173.13a.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:%22Medallion_Ushak%22_Carpet_MET_08.173.13a.jpeg",
+"a": "",
+"l": "CC0",
+"p": "\"Medallion Ushak\" Carpet",
+"m": "متحف المتروبوليتان",
+"b": 0.54
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/View_on_the_Seine-_Harp_of_the_Winds_MET_DT1510.jpg/1920px-View_on_the_Seine-_Harp_of_the_Winds_MET_DT1510.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:View_on_the_Seine-_Harp_of_the_Winds_MET_DT1510.jpg",
+"a": "Homer Dodge Martin",
+"l": "CC0",
+"p": "View on the Seine: Harp of the Winds",
+"m": "متحف المتروبوليتان",
+"b": 0.64
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/Harlem_River_by_Ernest_Lawson%2C_c._1913%2C_Metropolitan_Museum_of_Art.JPG/1920px-Harlem_River_by_Ernest_Lawson%2C_c._1913%2C_Metropolitan_Museum_of_Art.JPG",
+"page": "https://commons.wikimedia.org/wiki/File:Harlem_River_by_Ernest_Lawson,_c._1913,_Metropolitan_Museum_of_Art.JPG",
+"a": "Ernest Lawson",
+"l": "PD",
+"p": "Harlem River",
+"m": "متحف المتروبوليتان",
+"b": 0.56
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Landscape_MET_ap67.55.165.jpg/1920px-Landscape_MET_ap67.55.165.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape_MET_ap67.55.165.jpg",
+"a": "John Francis Murphy",
+"l": "CC0",
+"p": "Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.45
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Roman_Landscape_MET_ep26.100.bw.R.jpg/1920px-Roman_Landscape_MET_ep26.100.bw.R.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Roman_Landscape_MET_ep26.100.bw.R.jpg",
+"a": "Arnold Böcklin",
+"l": "CC0",
+"p": "Roman Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.51
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/%E6%B8%85_%E5%80%A3%E9%BE%94%E8%B3%A2_%E5%8D%81%E4%BA%8C%E6%9C%88%E4%BB%A4%E5%B1%B1%E6%B0%B4%E5%9C%96_%E5%86%8A-Landscapes_of_the_Twelve_Months_MET_DP161082.jpg/1920px-%E6%B8%85_%E5%80%A3%E9%BE%94%E8%B3%A2_%E5%8D%81%E4%BA%8C%E6%9C%88%E4%BB%A4%E5%B1%B1%E6%B0%B4%E5%9C%96_%E5%86%8A-Landscapes_of_the_Twelve_Months_MET_DP161082.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:%E6%B8%85_%E5%80%A3%E9%BE%94%E8%B3%A2_%E5%8D%81%E4%BA%8C%E6%9C%88%E4%BB%A4%E5%B1%B1%E6%B0%B4%E5%9C%96_%E5%86%8A-Landscapes_of_the_Twelve_Months_MET_DP161082.jpg",
+"a": "Gong Xian",
+"l": "CC0",
+"p": "Landscapes of the Twelve Months",
+"m": "متحف المتروبوليتان",
+"b": 0.73
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/The_Trees%2C_Early_Afternoon%2C_France_MET_DP701344.jpg/1920px-The_Trees%2C_Early_Afternoon%2C_France_MET_DP701344.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Trees,_Early_Afternoon,_France_MET_DP701344.jpg",
+"a": "William A. Harper",
+"l": "CC0",
+"p": "The Trees, Early Afternoon, France",
+"m": "متحف المتروبوليتان",
+"b": 0.41
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Prayer_Rug_MET_wb-1974.149.1cc.jpeg/1920px-Prayer_Rug_MET_wb-1974.149.1cc.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:Prayer_Rug_MET_wb-1974.149.1cc.jpeg",
+"a": "",
+"l": "CC0",
+"p": "Prayer Rug",
+"m": "متحف المتروبوليتان",
+"b": 0.44
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Tennessee_MET_APS2219.jpg/1920px-Tennessee_MET_APS2219.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Tennessee_MET_APS2219.jpg",
+"a": "Alexander Helwig Wyant",
+"l": "CC0",
+"p": "Tennessee",
+"m": "متحف المتروبوليتان",
+"b": 0.47
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/The_Edge_of_the_Woods_at_Monts-Girard%2C_Fontainebleau_Forest_MET_DT4574.jpg/1920px-The_Edge_of_the_Woods_at_Monts-Girard%2C_Fontainebleau_Forest_MET_DT4574.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Edge_of_the_Woods_at_Monts-Girard,_Fontainebleau_Forest_MET_DT4574.jpg",
+"a": "Théodore Rousseau",
+"l": "CC0",
+"p": "The Edge of the Woods at Monts-Girard, Fontainebleau Forest",
+"m": "متحف المتروبوليتان",
+"b": 0.34
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ad/Stoke-by-Nayland_MET_DP164805.jpg/1920px-Stoke-by-Nayland_MET_DP164805.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Stoke-by-Nayland_MET_DP164805.jpg",
+"a": "John Constable",
+"l": "CC0",
+"p": "Stoke-by-Nayland",
+"m": "متحف المتروبوليتان",
+"b": 0.28
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Olive_Trees_MET_DT1946.jpg/1920px-Olive_Trees_MET_DT1946.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Olive_Trees_MET_DT1946.jpg",
+"a": "Vincent van Gogh",
+"l": "CC0",
+"p": "Olive Trees",
+"m": "متحف المتروبوليتان",
+"b": 0.44
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/A_Vista_through_Trees-_Fontainebleau_MET_DP366369.jpg/1920px-A_Vista_through_Trees-_Fontainebleau_MET_DP366369.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:A_Vista_through_Trees-_Fontainebleau_MET_DP366369.jpg",
+"a": "Narcisse Virgilio Díaz",
+"l": "CC0",
+"p": "A Vista through Trees: Fontainebleau",
+"m": "متحف المتروبوليتان",
+"b": 0.2
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0d/Long_Island_Farmhouses_MET_DT228021.jpg/1920px-Long_Island_Farmhouses_MET_DT228021.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Long_Island_Farmhouses_MET_DT228021.jpg",
+"a": "William Sidney Mount",
+"l": "CC0",
+"p": "Long Island Farmhouses",
+"m": "متحف المتروبوليتان",
+"b": 0.42
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Lake_Albano_and_Castel_Gandolfo_MET_DP332564.jpg/1920px-Lake_Albano_and_Castel_Gandolfo_MET_DP332564.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Lake_Albano_and_Castel_Gandolfo_MET_DP332564.jpg",
+"a": "Jean-Baptiste Camille Corot",
+"l": "CC0",
+"p": "Lake Albano and Castel Gandolfo",
+"m": "متحف المتروبوليتان",
+"b": 0.46
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Landscape_with_a_Cottage_MET_DP146459.jpg/1920px-Landscape_with_a_Cottage_MET_DP146459.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape_with_a_Cottage_MET_DP146459.jpg",
+"a": "Pieter de Molijn",
+"l": "CC0",
+"p": "Landscape with a Cottage",
+"m": "متحف المتروبوليتان",
+"b": 0.39
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/The_Edge_of_the_Woods_MET_ep14.40.819.bw.R.jpg/1920px-The_Edge_of_the_Woods_MET_ep14.40.819.bw.R.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Edge_of_the_Woods_MET_ep14.40.819.bw.R.jpg",
+"a": "Narcisse Virgilio Díaz",
+"l": "CC0",
+"p": "The Edge of the Woods",
+"m": "متحف المتروبوليتان",
+"b": 0.37
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Cypress_and_Poppies_MET_DT7413.jpg/1920px-Cypress_and_Poppies_MET_DT7413.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Cypress_and_Poppies_MET_DT7413.jpg",
+"a": "Elihu Vedder",
+"l": "CC0",
+"p": "Cypress and Poppies",
+"m": "متحف المتروبوليتان",
+"b": 0.32
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/34/Landscape_with_Ducks_MET_SLP0165.jpg/1920px-Landscape_with_Ducks_MET_SLP0165.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape_with_Ducks_MET_SLP0165.jpg",
+"a": "Charles-François Daubigny",
+"l": "CC0",
+"p": "Landscape with Ducks",
+"m": "متحف المتروبوليتان",
+"b": 0.22
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/River_Scene_MET_ap1970.58.jpg/1920px-River_Scene_MET_ap1970.58.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:River_Scene_MET_ap1970.58.jpg",
+"a": "Asher Brown Durand",
+"l": "CC0",
+"p": "River Scene",
+"m": "متحف المتروبوليتان",
+"b": 0.56
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Panel_with_Cusped_Arches_MET_DP236757.jpg/1920px-Panel_with_Cusped_Arches_MET_DP236757.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Panel_with_Cusped_Arches_MET_DP236757.jpg",
+"a": "",
+"l": "CC0",
+"p": "Panel with Cusped Arches",
+"m": "متحف المتروبوليتان",
+"b": 0.44
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Valley_of_Wyoming_MET_DT4598.jpg/1920px-The_Valley_of_Wyoming_MET_DT4598.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Valley_of_Wyoming_MET_DT4598.jpg",
+"a": "Jasper Francis Cropsey",
+"l": "CC0",
+"p": "The Valley of Wyoming",
+"m": "متحف المتروبوليتان",
+"b": 0.57
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/Lake_George%2C_New_York_MET_ap74.7.jpg/1920px-Lake_George%2C_New_York_MET_ap74.7.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Lake_George,_New_York_MET_ap74.7.jpg",
+"a": "John Frederick Kensett",
+"l": "CC0",
+"p": "Lake George, New York",
+"m": "متحف المتروبوليتان",
+"b": 0.56
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/View_of_the_Bay_and_City_of_New_York_from_Weehawken_MET_ap54.90.32.jpg/1920px-View_of_the_Bay_and_City_of_New_York_from_Weehawken_MET_ap54.90.32.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:View_of_the_Bay_and_City_of_New_York_from_Weehawken_MET_ap54.90.32.jpg",
+"a": "Robert Havell",
+"l": "CC0",
+"p": "View of the Bay and City of New York from Weehawken",
+"m": "متحف المتروبوليتان",
+"b": 0.54
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Clearing_Off_MET_ap12.47.jpg/1920px-Clearing_Off_MET_ap12.47.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Clearing_Off_MET_ap12.47.jpg",
+"a": "Charlotte B. Coman",
+"l": "CC0",
+"p": "Clearing Off",
+"m": "متحف المتروبوليتان",
+"b": 0.36
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/Michael_Neher_-_The_Basilica_of_Constantine%2C_Rome_-_2018.830.6_-_Metropolitan_Museum_of_Art.jpg/1920px-Michael_Neher_-_The_Basilica_of_Constantine%2C_Rome_-_2018.830.6_-_Metropolitan_Museum_of_Art.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Michael_Neher_-_The_Basilica_of_Constantine,_Rome_-_2018.830.6_-_Metropolitan_Museum_of_Art.jpg",
+"a": "Michael Neher",
+"l": "PD",
+"p": "The Basilica of Constantine, Rome",
+"m": "متحف المتروبوليتان",
+"b": 0.34
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Woodland_Vista_MET_ap49.116.jpg/1920px-Woodland_Vista_MET_ap49.116.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Woodland_Vista_MET_ap49.116.jpg",
+"a": "Ralph Albert Blakelock",
+"l": "CC0",
+"p": "Woodland Vista",
+"m": "متحف المتروبوليتان",
+"b": 0.22
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/A_Beach_with_Fishing_Boats_MET_DP120413.jpg/1920px-A_Beach_with_Fishing_Boats_MET_DP120413.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:A_Beach_with_Fishing_Boats_MET_DP120413.jpg",
+"a": "Jan van Goyen",
+"l": "CC0",
+"p": "A Beach with Fishing Boats",
+"m": "متحف المتروبوليتان",
+"b": 0.37
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Anonymous%2C_after_Albert_Bierstadt_-_The_Rocky_Mountains%2C_Lander%27s_Peak.jpg/1920px-Anonymous%2C_after_Albert_Bierstadt_-_The_Rocky_Mountains%2C_Lander%27s_Peak.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Anonymous,_after_Albert_Bierstadt_-_The_Rocky_Mountains,_Lander%27s_Peak.jpg",
+"a": "After Albert Bierstadt",
+"l": "PD",
+"p": "The Rocky Mountains, Lander's Peak",
+"m": "متحف المتروبوليتان",
+"b": 0.34
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Italian_Hill_Town_MET_ap31.67.3.jpg/1920px-Italian_Hill_Town_MET_ap31.67.3.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Italian_Hill_Town_MET_ap31.67.3.jpg",
+"a": "Arthur Bowen Davies",
+"l": "CC0",
+"p": "Italian Hill Town",
+"m": "متحف المتروبوليتان",
+"b": 0.5
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/On_the_Hudson_MET_ap91.27.1.jpg/1920px-On_the_Hudson_MET_ap91.27.1.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:On_the_Hudson_MET_ap91.27.1.jpg",
+"a": "Thomas Doughty",
+"l": "CC0",
+"p": "On the Hudson",
+"m": "متحف المتروبوليتان",
+"b": 0.5
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Fantastic_Landscape_MET_DT9351.jpg/1920px-Fantastic_Landscape_MET_DT9351.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Fantastic_Landscape_MET_DT9351.jpg",
+"a": "Francesco Guardi",
+"l": "CC0",
+"p": "Fantastic Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.44
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Apple_Blossoms_MET_DT2145.jpg/1920px-Apple_Blossoms_MET_DT2145.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Apple_Blossoms_MET_DT2145.jpg",
+"a": "Charles-François Daubigny",
+"l": "CC0",
+"p": "Apple Blossoms",
+"m": "متحف المتروبوليتان",
+"b": 0.4
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/The_Mill_of_Montmartre_MET_DT279386.jpg/1920px-The_Mill_of_Montmartre_MET_DT279386.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Mill_of_Montmartre_MET_DT279386.jpg",
+"a": "Georges Michel",
+"l": "CC0",
+"p": "The Mill of Montmartre",
+"m": "متحف المتروبوليتان",
+"b": 0.4
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/After_the_Storm_MET_ap66.214.jpg/1920px-After_the_Storm_MET_ap66.214.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:After_the_Storm_MET_ap66.214.jpg",
+"a": "Albert Bierstadt",
+"l": "CC0",
+"p": "After the Storm",
+"m": "متحف المتروبوليتان",
+"b": 0.39
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c0/The_Pool_%28Memory_of_the_Forest_of_Chambord%29_MET_DT3133.jpg/1920px-The_Pool_%28Memory_of_the_Forest_of_Chambord%29_MET_DT3133.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:The_Pool_(Memory_of_the_Forest_of_Chambord)_MET_DT3133.jpg",
+"a": "Théodore Rousseau",
+"l": "CC0",
+"p": "The Pool (Memory of the Forest of Chambord)",
+"m": "متحف المتروبوليتان",
+"b": 0.38
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Haystacks-_Autumn_MET_DP124093.jpg/1920px-Haystacks-_Autumn_MET_DP124093.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Haystacks-_Autumn_MET_DP124093.jpg",
+"a": "Jean-François Millet",
+"l": "CC0",
+"p": "Haystacks- Autumn",
+"m": "متحف المتروبوليتان",
+"b": 0.46
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/Landscape_MET_ap52.199.jpg/1920px-Landscape_MET_ap52.199.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape_MET_ap52.199.jpg",
+"a": "Albert Pinkham Ryder",
+"l": "CC0",
+"p": "Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.4
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Study_of_Water_and_Plants_-_MET_DP-19486-001.jpg/1920px-Study_of_Water_and_Plants_-_MET_DP-19486-001.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Study_of_Water_and_Plants_-_MET_DP-19486-001.jpg",
+"a": "Thomas Fearnley",
+"l": "CC0",
+"p": "Study of Water and Plants",
+"m": "متحف المتروبوليتان",
+"b": 0.18
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/View_of_Poestenkill%2C_New_York_by_Joseph_Henry_Hidley%2C_ca_1870.JPG/1920px-View_of_Poestenkill%2C_New_York_by_Joseph_Henry_Hidley%2C_ca_1870.JPG",
+"page": "https://commons.wikimedia.org/wiki/File:View_of_Poestenkill,_New_York_by_Joseph_Henry_Hidley,_ca_1870.JPG",
+"a": "Joseph Henry Hidley",
+"l": "PD",
+"p": "View of Poestenkill, New York by Joseph Henry Hidley, ca 18…",
+"m": "متحف المتروبوليتان",
+"b": 0.52
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/Coast_Scene%2C_Isles_of_Shoals_MET_DT5583.jpg/1920px-Coast_Scene%2C_Isles_of_Shoals_MET_DT5583.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Coast_Scene,_Isles_of_Shoals_MET_DT5583.jpg",
+"a": "Childe Hassam",
+"l": "CC0",
+"p": "Coast Scene, Isles of Shoals",
+"m": "متحف المتروبوليتان",
+"b": 0.61
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Nassau_MET_APS1033.jpg/1920px-Nassau_MET_APS1033.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Nassau_MET_APS1033.jpg",
+"a": "Winslow Homer",
+"l": "CC0",
+"p": "Nassau",
+"m": "متحف المتروبوليتان",
+"b": 0.48
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dd/A_Foggy_Sky_MET_CT_600.jpg/1920px-A_Foggy_Sky_MET_CT_600.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:A_Foggy_Sky_MET_CT_600.jpg",
+"a": "John Frederick Kensett",
+"l": "CC0",
+"p": "A Foggy Sky",
+"m": "متحف المتروبوليتان",
+"b": 0.47
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/View_of_New_York_from_New_Jersey_MET_ap1977.258.3.jpg/1920px-View_of_New_York_from_New_Jersey_MET_ap1977.258.3.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:View_of_New_York_from_New_Jersey_MET_ap1977.258.3.jpg",
+"a": "Asher Brown Durand",
+"l": "CC0",
+"p": "View of New York from New Jersey",
+"m": "متحف المتروبوليتان",
+"b": 0.65
+},
+{
+"u": "https://upload.wikimedia.org/wikipedia/commons/7/75/January-_Cernay%2C_near_Rambouillet_MET_ep87.24.R.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:January-_Cernay,_near_Rambouillet_MET_ep87.24.R.jpg",
+"a": "Léon Germain Pelouse",
+"l": "CC0",
+"p": "January- Cernay, near Rambouillet",
+"m": "متحف المتروبوليتان",
+"b": 0.55
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/%22Millefleur%22_Carpet_MET_wb-14.40.714b.jpeg/1920px-%22Millefleur%22_Carpet_MET_wb-14.40.714b.jpeg",
+"page": "https://commons.wikimedia.org/wiki/File:%22Millefleur%22_Carpet_MET_wb-14.40.714b.jpeg",
+"a": "",
+"l": "CC0",
+"p": "\"Millefleur\" Carpet",
+"m": "متحف المتروبوليتان",
+"b": 0.47
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Sketch_for_View_from_Mount_Holyoke%2C_Northampton%2C_Massachusetts%2C_after_a_Thunderstorm_%28The_Oxbow%29_MET_DP328398.jpg/1920px-Sketch_for_View_from_Mount_Holyoke%2C_Northampton%2C_Massachusetts%2C_after_a_Thunderstorm_%28The_Oxbow%29_MET_DP328398.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Sketch_for_View_from_Mount_Holyoke,_Northampton,_Massachusetts,_after_a_Thunderstorm_(The_Oxbow)_MET_DP328398.jpg",
+"a": "Thomas Cole",
+"l": "CC0",
+"p": "Sketch for View from Mount Holyoke, Northampton, Massachuse…",
+"m": "متحف المتروبوليتان",
+"b": 0.66
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Landscape_Study_with_Clouds_MET_DP281416.jpg/1920px-Landscape_Study_with_Clouds_MET_DP281416.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Landscape_Study_with_Clouds_MET_DP281416.jpg",
+"a": "Emile Loubon",
+"l": "CC0",
+"p": "Landscape Study with Clouds",
+"m": "متحف المتروبوليتان",
+"b": 0.55
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Autumn_MET_ap07.119.8.jpg/1920px-Autumn_MET_ap07.119.8.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Autumn_MET_ap07.119.8.jpg",
+"a": "Hugh Bolton Jones",
+"l": "CC0",
+"p": "Autumn",
+"m": "متحف المتروبوليتان",
+"b": 0.54
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Capriccio_with_a_Circular_Tower%2C_Two_Houses%2C_and_a_Bridge_MET_DP328378.jpg/1920px-Capriccio_with_a_Circular_Tower%2C_Two_Houses%2C_and_a_Bridge_MET_DP328378.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Capriccio_with_a_Circular_Tower,_Two_Houses,_and_a_Bridge_MET_DP328378.jpg",
+"a": "Follower of Francesco Guardi",
+"l": "CC0",
+"p": "Capriccio with a Circular Tower, Two Houses, and a Bridge",
+"m": "متحف المتروبوليتان",
+"b": 0.57
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/MET_DP165694.jpg/1920px-MET_DP165694.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:MET_DP165694.jpg",
+"a": "Dong Yuan",
+"l": "CC0",
+"p": "Landscape",
+"m": "متحف المتروبوليتان",
+"b": 0.68
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Canadian_Rockies_%28Lake_Louise%29_MET_DT7282.jpg/1920px-Canadian_Rockies_%28Lake_Louise%29_MET_DT7282.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Canadian_Rockies_(Lake_Louise)_MET_DT7282.jpg",
+"a": "Albert Bierstadt",
+"l": "CC0",
+"p": "Canadian Rockies (Lake Louise)",
+"m": "متحف المتروبوليتان",
+"b": 0.37
+},
+{
+"u": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Mountains_of_Calatayud_MET_168274.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Mountains_of_Calatayud_MET_168274.jpg",
+"a": "Ignacio Zuloaga",
+"l": "CC0",
+"p": "Mountains of Calatayud",
+"m": "متحف المتروبوليتان",
+"b": 0.56
+},
+{
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/Simon_Denis_-_Fortified_Wall%2C_Italy_-_2003.42.21_-_Metropolitan_Museum_of_Art.jpg/1920px-Simon_Denis_-_Fortified_Wall%2C_Italy_-_2003.42.21_-_Metropolitan_Museum_of_Art.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Simon_Denis_-_Fortified_Wall,_Italy_-_2003.42.21_-_Metropolitan_Museum_of_Art.jpg",
+"a": "Simon Denis",
+"l": "PD",
+"p": "Fortified Wall, Italy",
+"m": "متحف المتروبوليتان",
+"b": 0.42
+},
+{
+"u": "https://upload.wikimedia.org/wikipedia/commons/7/73/Maine_Seascape_MET_SF-1975-1-238.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Maine_Seascape_MET_SF-1975-1-238.jpg",
+"a": "Constantin Westchiloff",
+"l": "CC0",
+"p": "Maine Seascape",
+"m": "متحف المتروبوليتان",
+"b": 0.7
 }
 ]
 }
