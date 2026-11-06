@@ -25,7 +25,7 @@
 - اللي ما يسمح فيه التلفزيون من داخله (جعلها **الشاشة الرئيسية الافتراضية**، وشاشة التوقف على Google TV) يسويه
   **«الإعداد الكامل»**: الإعدادات ← «التطبيق» ← «الإعداد الكامل». تفعّل «خيارات المطوّر» و«تصحيح أخطاء USB» مرة وحدة
   ويشرح لك كيف، ومعه «تراجع» يرجّع كل شي.
-- بعدها يكمل معك «معالج الإعداد»: الشكل والمدينة والبطاقات والإذاعة والفريق. والتحديثات توصل من الإعدادات ← «تحديث التطبيق».
+- بعدها يكمل معك «معالج الإعداد»: الشكل والمدينة والبطاقات والإذاعة والفريق، ثم جولة قصيرة في التطبيق. والتحديثات توصل من الإعدادات ← «تحديث التطبيق».
 
 ## الإزالة
 
@@ -63,12 +63,14 @@ uninstalls both apps.
   Tanzil's [translations](https://tanzil.net/trans/), for non-commercial use. The Madani mushaf's page table: Tanzil's
   [Quran metadata](https://tanzil.net/docs/quran_metadata) (CC BY 3.0). Made by `.github/tools/fetch_quran.py`.
 - Recitations and verse timings: [mp3quran.net](https://mp3quran.net), streamed, nothing bundled.
+- أذكار الصباح والمساء: [Seen-Arabic/Morning-And-Evening-Adhkar-DB](https://github.com/Seen-Arabic/Morning-And-Evening-Adhkar-DB)
+  (MIT, [assets/adhkar/LICENSE.txt](assets/adhkar/LICENSE.txt)), in `assets/adhkar/adhkar.txt` with one fatha added.
 - Fonts: Amiri Quran for the Quran's text (SIL Open Font License, [assets/fonts/AmiriQuran-OFL.txt](assets/fonts/AmiriQuran-OFL.txt)),
   Thmanyah (by Thmanyah), and Noto Naskh Arabic for ﷺ ﴿﴾ (SIL Open Font License,
   `assets/fonts/NotoNaskhArabic-OFL.txt`).
-- Athan recordings: three from [islamweb.net](https://audio.islamweb.net) (© islamweb.net, used with credit; منصور
-  الزهراني is the default athan) and the others CC0, CC BY 3.0 and CC BY 4.0, each with its author, licence and source in
-  [assets/athan/CREDITS.txt](assets/athan/CREDITS.txt) (and in the settings' «الأذان» › «حقوق التسجيلات»).
+- Athan recordings: «حي على الصلاة», the default athan, a private recording supplied by the project's owner; three from
+  [islamweb.net](https://audio.islamweb.net) (© islamweb.net, used with credit); and the others CC0 and CC BY 3.0, each
+  credited in [assets/athan/CREDITS.txt](assets/athan/CREDITS.txt) (and in the settings' «الأذان» › «حقوق التسجيلات»).
 - Package safety ratings from [UAD-ng](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation).
 
 Photo credits: [docs/PHOTO-CREDITS.md](docs/PHOTO-CREDITS.md).
