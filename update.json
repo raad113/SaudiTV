@@ -1,24 +1,24 @@
 {
-  "versionCode": 9223,
-  "versionName": "9.223",
-  "tag": "v9223",
-  "notes": "إصلاحات: كل تبويبات البطاقات تظهر دائمًا، وبطاقة المباريات لا تختفي في فترات التوقف بل تعرض المباراة القادمة مع تاريخها.",
+  "versionCode": 9229,
+  "versionName": "9.229",
+  "tag": "v9229",
+  "notes": "جديد: اختر ما يفعله زر النجمة في ريموت Google TV Streamer، في كل مكان وحتى داخل التطبيقات، وشعار جديد بنقش إسلامي.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9223,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9223/saudi-tv-installer.apk",
-      "sha256": "7c3d719d875bd340a50641c42e261b58ff927d014e0d411e298cb3643c2a202e",
-      "size": 19854548
+      "versionCode": 9229,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9229/saudi-tv-installer.apk",
+      "sha256": "928c8487ce0627f7038b72d13515da6f284ee235b194f0832668883ef290178a",
+      "size": 19840538
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9223,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9223/saudi-tv-home.apk",
-      "sha256": "ee627ce1f493c5a98421a4c59bc574521147a8332646ef8d95cf0d863a37ebf3",
-      "size": 2787881
+      "versionCode": 9229,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9229/saudi-tv-home.apk",
+      "sha256": "ce59eeba3de571720693699b92f5ba8600136a482d5f102aab6c5c7fba453ada",
+      "size": 2765961
     }
   ]
 }
