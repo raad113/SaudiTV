@@ -1,24 +1,24 @@
 {
-  "versionCode": 9221,
-  "versionName": "9.221",
-  "tag": "v9221",
-  "notes": "جديد: أذكار الصباح والمساء تظهر في وقتها مع قارئ يعدّ لك، و«تابع من حيث توقفت» في المصحف، وخطة الختمة، وجولة قصيرة في التطبيق، وأذان «حي على الصلاة» الذي أصبح الافتراضي مع الأذان كاملًا.",
+  "versionCode": 9223,
+  "versionName": "9.223",
+  "tag": "v9223",
+  "notes": "إصلاحات: كل تبويبات البطاقات تظهر دائمًا، وبطاقة المباريات لا تختفي في فترات التوقف بل تعرض المباراة القادمة مع تاريخها.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9221,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9221/saudi-tv-installer.apk",
-      "sha256": "7b2d9d14c7c568d38bd3a9701c3c78242c0266675a51fc9d9ef7eef391e65c7a",
-      "size": 19853994
+      "versionCode": 9223,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9223/saudi-tv-installer.apk",
+      "sha256": "7c3d719d875bd340a50641c42e261b58ff927d014e0d411e298cb3643c2a202e",
+      "size": 19854548
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9221,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9221/saudi-tv-home.apk",
-      "sha256": "368b5a1751be7e068fdd6cdc10c95912a4e916dca55bc7165b4a8b259bc95e08",
-      "size": 2787589
+      "versionCode": 9223,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9223/saudi-tv-home.apk",
+      "sha256": "ee627ce1f493c5a98421a4c59bc574521147a8332646ef8d95cf0d863a37ebf3",
+      "size": 2787881
     }
   ]
 }
