@@ -1,23 +1,23 @@
 {
-  "versionCode": 9229,
-  "versionName": "9.229",
-  "tag": "v9229",
-  "notes": "جديد: اختر ما يفعله زر النجمة في ريموت Google TV Streamer، في كل مكان وحتى داخل التطبيقات، وشعار جديد بنقش إسلامي.",
+  "versionCode": 9234,
+  "versionName": "9.234",
+  "tag": "v9234",
+  "notes": "إصلاح توقف «الإعداد الكامل»، واختيار ما يفعله زر النجمة من خطوته، وترتيب جديد للأندية يبدأ بالسعودية.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9229,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9229/saudi-tv-installer.apk",
-      "sha256": "928c8487ce0627f7038b72d13515da6f284ee235b194f0832668883ef290178a",
-      "size": 19840538
+      "versionCode": 9234,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9234/saudi-tv-installer.apk",
+      "sha256": "1211f3268da5b8ea00361b24d6687daeb3e971b01dbfcf8972d2603fb4421573",
+      "size": 19841247
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9229,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9229/saudi-tv-home.apk",
-      "sha256": "ce59eeba3de571720693699b92f5ba8600136a482d5f102aab6c5c7fba453ada",
+      "versionCode": 9234,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9234/saudi-tv-home.apk",
+      "sha256": "bd1153919481f2f709251f77529376869162ea8b12390a8f9ca555291b013b35",
       "size": 2765961
     }
   ]
