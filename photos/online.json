@@ -157,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.PipiwaiTrail_EN-US0631882545_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Haleakala+National+Park&form=hpcapt&filters=HpDate%3a%2220261106_0800%22",
+"a": "MNStudio/Getty Images",
+"l": "Bing",
+"p": "Bamboo forest, Pīpīwai Trail, Haleakalā National Park, Maui,",
+"b": 0.26
+},
+{
 "u": "https://www.bing.com/th?id=OHR.StileCrossing_EN-US9052435517_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Lake+District&form=hpcapt&filters=HpDate%3a%2220261105_0800%22",
 "a": "Alex Treadway/Getty Images",
@@ -211,14 +219,6 @@
 "l": "Bing",
 "p": "Sandhill cranes, Bosque del Apache National Wildlife Refuge,",
 "b": 0.44
-},
-{
-"u": "https://www.bing.com/th?id=OHR.AveburyStones_EN-US9568662876_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Avebury+henge+Wiltshire&form=hpcapt&filters=HpDate%3a%2220261029_0700%22",
-"a": "George W Johnson/Getty Images",
-"l": "Bing",
-"p": "Standing stones at Avebury in Wiltshire, England",
-"b": 0.46
 }
 ],
 "art": [
