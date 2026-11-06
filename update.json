@@ -1,24 +1,24 @@
 {
-  "versionCode": 9210,
-  "versionName": "9.210",
-  "tag": "v9210",
-  "notes": "لون «متكيف» يتغير مع الخلفية، لوحات فنية وصورك من مجلداتك، خيارات للشريط والخط والخلفية، حتى ٢٠ تطبيقًا في المفضلة، أندية بلا حد، وحد لصوت القرآن عند البدء، وشريط أنعم ونصوص أوضح.",
+  "versionCode": 9221,
+  "versionName": "9.221",
+  "tag": "v9221",
+  "notes": "جديد: أذكار الصباح والمساء تظهر في وقتها مع قارئ يعدّ لك، و«تابع من حيث توقفت» في المصحف، وخطة الختمة، وجولة قصيرة في التطبيق، وأذان «حي على الصلاة» الذي أصبح الافتراضي مع الأذان كاملًا.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9210,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9210/saudi-tv-installer.apk",
-      "sha256": "8b9f74c9253edf2916bc4de908f509bc5d9cc370450e28d12dd0971652f92286",
-      "size": 27078533
+      "versionCode": 9221,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9221/saudi-tv-installer.apk",
+      "sha256": "7b2d9d14c7c568d38bd3a9701c3c78242c0266675a51fc9d9ef7eef391e65c7a",
+      "size": 19853994
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9210,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9210/saudi-tv-home.apk",
-      "sha256": "f72f7f03dc28b88ec780f5435788fbc44f43a61dd72f97315e454d64dce93374",
-      "size": 2783201
+      "versionCode": 9221,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9221/saudi-tv-home.apk",
+      "sha256": "368b5a1751be7e068fdd6cdc10c95912a4e916dca55bc7165b4a8b259bc95e08",
+      "size": 2787589
     }
   ]
 }
