@@ -1,23 +1,23 @@
 {
-  "versionCode": 9236,
-  "versionName": "9.236",
-  "tag": "v9236",
-  "notes": "القرآن في شاشة التوقف أصبح بصوت فارس عباد، ويتابع من حيث توقف.",
+  "versionCode": 9238,
+  "versionName": "9.238",
+  "tag": "v9238",
+  "notes": "البطاقات التي تختارها في الإعداد تظهر الآن على الشاشة الرئيسية وشاشة التوقف معًا، مع تصحيح ما تعرضه الإعدادات عنها.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9236,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9236/saudi-tv-installer.apk",
-      "sha256": "914c8af6080500e27a3de10480c312eb77382e1c43dc9ae47df707553c2fe151",
-      "size": 19842452
+      "versionCode": 9238,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9238/saudi-tv-installer.apk",
+      "sha256": "55cf7594a450b2e6a232c8d917b805f360193e00768b960da496ffb855fc0649",
+      "size": 19842628
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9236,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9236/saudi-tv-home.apk",
-      "sha256": "92a9a9e26aadd80ce8622662991e1a6c8defe9272af173a41a3d60a6948ec8ad",
+      "versionCode": 9238,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9238/saudi-tv-home.apk",
+      "sha256": "0ce010238bf4da0511689f60a9efac8d9296d672667ea812ef99cc084edca3bb",
       "size": 2765961
     }
   ]
