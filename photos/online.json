@@ -157,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.DiwaliLamps_EN-US0788074051_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Diwali&form=hpcapt&filters=HpDate%3a%2220261108_0800%22",
+"a": "Dinodia Photo/Getty Images",
+"l": "Bing",
+"p": "Lanterns for Diwali, Mumbai, Maharashtra, India",
+"b": 0.31
+},
+{
 "u": "https://www.bing.com/th?id=OHR.DakotaBison_EN-US0710175615_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=National+Bison+Day&form=hpcapt&filters=HpDate%3a%2220261107_0800%22",
 "a": "Tandem Stock/Adobe Stock",
@@ -211,14 +219,6 @@
 "l": "Bing",
 "p": "Handmade baskets, Santa Fe, New Mexico",
 "b": 0.41
-},
-{
-"u": "https://www.bing.com/th?id=OHR.FrankfurtHalloween_EN-US0115213682_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Halloween&form=hpcapt&filters=HpDate%3a%2220261031_0700%22",
-"a": "AlxeyPnferov/Getty Images",
-"l": "Bing",
-"p": "St. Bartholomew's Cathedral in Frankfurt, Germany",
-"b": 0.46
 }
 ],
 "art": [
