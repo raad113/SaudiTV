@@ -145,17 +145,17 @@
 "l": "CC BY 4.0",
 "p": "",
 "b": 0.56
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Barred_Buttonquail_in_Bhigwan_August_2025_by_Tisha_Mukherjee_17.jpg/1920px-Barred_Buttonquail_in_Bhigwan_August_2025_by_Tisha_Mukherjee_17.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:Barred_Buttonquail_in_Bhigwan_August_2025_by_Tisha_Mukherjee_17.jpg",
-"a": "Tisha Mukherjee",
-"l": "CC BY-SA 4.0",
-"p": "",
-"b": 0.69
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.TrianaSpain_EN-US0872031458_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Seville+Spain&form=hpcapt&filters=HpDate%3a%2220261109_0800%22",
+"a": "Andrzej Rostek/Getty Images",
+"l": "Bing",
+"p": "Historic district of Triana, Seville, Spain",
+"b": 0.39
+},
 {
 "u": "https://www.bing.com/th?id=OHR.DiwaliLamps_EN-US0788074051_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Diwali&form=hpcapt&filters=HpDate%3a%2220261108_0800%22",
@@ -211,14 +211,6 @@
 "l": "Bing",
 "p": "Polar bear and cubs by Hudson Bay, Manitoba, Canada",
 "b": 0.54
-},
-{
-"u": "https://www.bing.com/th?id=OHR.NativeBaskets_EN-US0205712064_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Native+American+Heritage+Month&form=hpcapt&filters=HpDate%3a%2220261101_0700%22",
-"a": "Patrick Lane/Getty Images",
-"l": "Bing",
-"p": "Handmade baskets, Santa Fe, New Mexico",
-"b": 0.41
 }
 ],
 "art": [
