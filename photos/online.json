@@ -3,6 +3,14 @@
 "saudi": [],
 "world": [
 {
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Verdun_%E2%80%93_Cath%C3%A9drale_Notre-Dame_%E2%80%93_Crypte_2025_08_16.jpg/1920px-Verdun_%E2%80%93_Cath%C3%A9drale_Notre-Dame_%E2%80%93_Crypte_2025_08_16.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Verdun_%E2%80%93_Cath%C3%A9drale_Notre-Dame_%E2%80%93_Crypte_2025_08_16.jpg",
+"a": "Andreas F. Borchert",
+"l": "CC BY-SA 4.0",
+"p": "",
+"b": 0.28
+},
+{
 "u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/Aekingerzand_Nationaal_Park_Drents-Friese_Wold._11-08-2025._%28actm.%29_10.jpg/1920px-Aekingerzand_Nationaal_Park_Drents-Friese_Wold._11-08-2025._%28actm.%29_10.jpg",
 "page": "https://commons.wikimedia.org/wiki/File:Aekingerzand_Nationaal_Park_Drents-Friese_Wold._11-08-2025._(actm.)_10.jpg",
 "a": "Agnes Monkelbaan",
@@ -137,17 +145,17 @@
 "l": "CC BY-SA 4.0",
 "p": "",
 "b": 0.59
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Baikal%2C_Cape_Burhan%2C_Olkhon_Island%2C_Lake_Baikal%2C_Russia.jpg/1920px-Baikal%2C_Cape_Burhan%2C_Olkhon_Island%2C_Lake_Baikal%2C_Russia.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:Baikal,_Cape_Burhan,_Olkhon_Island,_Lake_Baikal,_Russia.jpg",
-"a": "Vyacheslav Argenberg",
-"l": "CC BY 4.0",
-"p": "",
-"b": 0.56
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.RoseIsland_EN-US0952497192_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Rose+Island+Bahamas&form=hpcapt&filters=HpDate%3a%2220261110_0800%22",
+"a": "Abstract Aerial Art/Getty Images",
+"l": "Bing",
+"p": "Aerial view of Rose Island, The Bahamas",
+"b": 0.45
+},
 {
 "u": "https://www.bing.com/th?id=OHR.TrianaSpain_EN-US0872031458_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Seville+Spain&form=hpcapt&filters=HpDate%3a%2220261109_0800%22",
@@ -203,14 +211,6 @@
 "l": "Bing",
 "p": "Lake Braies, Fanes‑Sennes‑Braies Nature Park, Dolomites, Ita",
 "b": 0.59
-},
-{
-"u": "https://www.bing.com/th?id=OHR.HudsonBear_EN-US0297833232_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Polar+Bear+Week&form=hpcapt&filters=HpDate%3a%2220261102_0800%22",
-"a": "Danita Delimont/Adobe Stock",
-"l": "Bing",
-"p": "Polar bear and cubs by Hudson Bay, Manitoba, Canada",
-"b": 0.54
 }
 ],
 "art": [
