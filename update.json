@@ -1,24 +1,24 @@
 {
-  "versionCode": 9242,
-  "versionName": "9.242",
-  "tag": "v9242",
-  "notes": "أخبار فرقك الرياضية في بطاقة الأخبار، وبطاقة أخبار أعرض تظهر أقسامها كلها، ونافذة بطاقة زجاجية فوق صورة الشاشة الرئيسية، وإعادة محاولة تلقائية عند تحديث التطبيق.",
+  "versionCode": 9244,
+  "versionName": "9.244",
+  "tag": "v9244",
+  "notes": "عدّل أوقات الصلاة بالدقائق لتطابق مسجدك، وطريقة الحساب الأردنية، وأيقونة التطبيق تفتح الشاشة الرئيسية مباشرة.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9242,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9242/saudi-tv-installer.apk",
-      "sha256": "0226a987d81857e67e98afca5c9e55c4c8e86c13fd9abba4e84e8a9185344fce",
-      "size": 20035114
+      "versionCode": 9244,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9244/saudi-tv-installer.apk",
+      "sha256": "89af140c84ca922e97294c98c2b0a6c0c392c038d6a462987144075ae8dd307c",
+      "size": 20037329
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9242,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9242/saudi-tv-home.apk",
-      "sha256": "5efa975f107393be2f658113c3f815c4ca1fe8b29183b0c41edb2fe0164d781e",
-      "size": 2774697
+      "versionCode": 9244,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9244/saudi-tv-home.apk",
+      "sha256": "03e6e59c615a9667d4aa38f174cb4d34c8e2836d9eb5fcbc8372cb20094dbad0",
+      "size": 2774481
     }
   ]
 }
