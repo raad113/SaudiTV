@@ -3,6 +3,14 @@
 "saudi": [],
 "world": [
 {
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Ko%C5%9Bcielec_view_2.jpg/1920px-Ko%C5%9Bcielec_view_2.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Ko%C5%9Bcielec_view_2.jpg",
+"a": "kallerna",
+"l": "CC BY-SA 4.0",
+"p": "",
+"b": 0.7
+},
+{
 "u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Verdun_%E2%80%93_Cath%C3%A9drale_Notre-Dame_%E2%80%93_Crypte_2025_08_16.jpg/1920px-Verdun_%E2%80%93_Cath%C3%A9drale_Notre-Dame_%E2%80%93_Crypte_2025_08_16.jpg",
 "page": "https://commons.wikimedia.org/wiki/File:Verdun_%E2%80%93_Cath%C3%A9drale_Notre-Dame_%E2%80%93_Crypte_2025_08_16.jpg",
 "a": "Andreas F. Borchert",
@@ -149,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.SunsetFlags_EN-US1046151448_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Veterans+Day&form=hpcapt&filters=HpDate%3a%2220261111_0800%22",
+"a": "Matt Champlin/Getty Images",
+"l": "Bing",
+"p": "American flags in a public park in upstate New York",
+"b": 0.31
+},
+{
 "u": "https://www.bing.com/th?id=OHR.RoseIsland_EN-US0952497192_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Rose+Island+Bahamas&form=hpcapt&filters=HpDate%3a%2220261110_0800%22",
 "a": "Abstract Aerial Art/Getty Images",
@@ -203,14 +219,6 @@
 "l": "Bing",
 "p": "People rowing among colorful bald cypress, Xuancheng, Anhui,",
 "b": 0.42
-},
-{
-"u": "https://www.bing.com/th?id=OHR.AlpineBraies_EN-US6636326357_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Lake+Braies+Dolomites&form=hpcapt&filters=HpDate%3a%2220261103_0800%22",
-"a": "leonid_tit/Getty Images",
-"l": "Bing",
-"p": "Lake Braies, Fanes‑Sennes‑Braies Nature Park, Dolomites, Ita",
-"b": 0.59
 }
 ],
 "art": [
