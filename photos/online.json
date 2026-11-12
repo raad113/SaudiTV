@@ -145,17 +145,17 @@
 "l": "CC BY-SA 4.0",
 "p": "",
 "b": 0.18
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Breil-Brigels._%28actm%29_02.jpg/1920px-Breil-Brigels._%28actm%29_02.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:Breil-Brigels._(actm)_02.jpg",
-"a": "Agnes Monkelbaan",
-"l": "CC BY-SA 4.0",
-"p": "",
-"b": 0.59
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.NorthWindow_EN-US1170338293_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Arches+National+Park&form=hpcapt&filters=HpDate%3a%2220261112_0800%22",
+"a": "lightphoto/Getty Images",
+"l": "Bing",
+"p": "North Window, Arches National Park, Moab, Utah",
+"b": 0.41
+},
 {
 "u": "https://www.bing.com/th?id=OHR.SunsetFlags_EN-US1046151448_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Veterans+Day&form=hpcapt&filters=HpDate%3a%2220261111_0800%22",
@@ -211,14 +211,6 @@
 "l": "Bing",
 "p": "Wooden stile at a stone wall, Black Crag, Lake District, Eng",
 "b": 0.5
-},
-{
-"u": "https://www.bing.com/th?id=OHR.AutumnChina_EN-US0467722422_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=bald+cypress&form=hpcapt&filters=HpDate%3a%2220261104_0800%22",
-"a": "Jackal Pan/Getty Images",
-"l": "Bing",
-"p": "People rowing among colorful bald cypress, Xuancheng, Anhui,",
-"b": 0.42
 }
 ],
 "art": [
