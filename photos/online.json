@@ -157,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.BlueHK_EN-US7870996687_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Victoria+Harbour+Hong+Kong&form=hpcapt&filters=HpDate%3a%2220261114_0800%22",
+"a": "Juan Romero/Cavan Images",
+"l": "Bing",
+"p": "Victoria Harbour, Hong Kong, China",
+"b": 0.29
+},
+{
 "u": "https://www.bing.com/th?id=OHR.AbrahamCanada_EN-US3455540217_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Abraham+Lake+Alberta&form=hpcapt&filters=HpDate%3a%2220261113_0800%22",
 "a": "Guang Cao/Getty Images",
@@ -211,14 +219,6 @@
 "l": "Bing",
 "p": "A bison in the grasslands of Theodore Roosevelt National Par",
 "b": 0.48
-},
-{
-"u": "https://www.bing.com/th?id=OHR.PipiwaiTrail_EN-US0631882545_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Haleakala+National+Park&form=hpcapt&filters=HpDate%3a%2220261106_0800%22",
-"a": "MNStudio/Getty Images",
-"l": "Bing",
-"p": "Bamboo forest, Pīpīwai Trail, Haleakalā National Park, Maui,",
-"b": 0.26
 }
 ],
 "art": [
