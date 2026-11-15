@@ -157,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.FirstFrost_EN-US8881008245_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=azaleas&form=hpcapt&filters=HpDate%3a%2220261115_0800%22",
+"a": "avoferten/Shutterstock",
+"l": "Bing",
+"p": "Frozen azalea with red leaves",
+"b": 0.42
+},
+{
 "u": "https://www.bing.com/th?id=OHR.BlueHK_EN-US7870996687_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Victoria+Harbour+Hong+Kong&form=hpcapt&filters=HpDate%3a%2220261114_0800%22",
 "a": "Juan Romero/Cavan Images",
@@ -211,14 +219,6 @@
 "l": "Bing",
 "p": "Lanterns for Diwali, Mumbai, Maharashtra, India",
 "b": 0.31
-},
-{
-"u": "https://www.bing.com/th?id=OHR.DakotaBison_EN-US0710175615_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=National+Bison+Day&form=hpcapt&filters=HpDate%3a%2220261107_0800%22",
-"a": "Tandem Stock/Adobe Stock",
-"l": "Bing",
-"p": "A bison in the grasslands of Theodore Roosevelt National Par",
-"b": 0.48
 }
 ],
 "art": [
