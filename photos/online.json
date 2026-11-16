@@ -145,17 +145,17 @@
 "l": "CC BY-SA 4.0",
 "p": "",
 "b": 0.47
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/%E0%A6%AA%E0%A7%8D%E0%A6%B0%E0%A6%AC%E0%A6%BE%E0%A6%B0%E0%A6%A3%E0%A6%BE_%E0%A6%AA%E0%A7%82%E0%A6%B0%E0%A7%8D%E0%A6%A3%E0%A6%BF%E0%A6%AE%E0%A6%BE%E0%A6%AF%E0%A6%BC_%E0%A6%86%E0%A6%B2%E0%A7%8B%E0%A6%95%E0%A6%B0%E0%A6%B6%E0%A7%8D%E0%A6%AE%E0%A6%BF_%E0%A6%B6%E0%A6%BE%E0%A6%A8%E0%A7%8D%E0%A6%A4%E0%A6%BF%E0%A6%B0_%E0%A6%AA%E0%A7%8D%E0%A6%B0%E0%A6%BE%E0%A6%B0%E0%A7%8D%E0%A6%A5%E0%A6%A8%E0%A6%BE%E0%A6%AF%E0%A6%BC_%E0%A6%AE%E0%A6%97%E0%A7%8D%E0%A6%A8_%E0%A6%B6%E0%A7%8D%E0%A6%B0%E0%A6%AE%E0%A6%A3%E0%A6%97%E0%A6%A3_%2800001957%29.jpg/1920px-thumbnail.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:%E0%A6%AA%E0%A7%8D%E0%A6%B0%E0%A6%AC%E0%A6%BE%E0%A6%B0%E0%A6%A3%E0%A6%BE_%E0%A6%AA%E0%A7%82%E0%A6%B0%E0%A7%8D%E0%A6%A3%E0%A6%BF%E0%A6%AE%E0%A6%BE%E0%A6%AF%E0%A6%BC_%E0%A6%86%E0%A6%B2%E0%A7%8B%E0%A6%95%E0%A6%B0%E0%A6%B6%E0%A7%8D%E0%A6%AE%E0%A6%BF_%E0%A6%B6%E0%A6%BE%E0%A6%A8%E0%A7%8D%E0%A6%A4%E0%A6%BF%E0%A6%B0_%E0%A6%AA%E0%A7%8D%E0%A6%B0%E0%A6%BE%E0%A6%B0%E0%A7%8D%E0%A6%A5%E0%A6%A8%E0%A6%BE%E0%A6%AF%E0%A6%BC_%E0%A6%AE%E0%A6%97%E0%A7%8D%E0%A6%A8_%E0%A6%B6%E0%A7%8D%E0%A6%B0%E0%A6%AE%E0%A6%A3%E0%A6%97%E0%A6%A3_(00001957).jpg",
-"a": "Photorubel",
-"l": "CC BY-SA 4.0",
-"p": "",
-"b": 0.18
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.GilaCliff_EN-US2139490645_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Gila+Cliff+Dwellings+National+Monument&form=hpcapt&filters=HpDate%3a%2220261116_0800%22",
+"a": "Chiara Salvadori/Getty Images",
+"l": "Bing",
+"p": "Gila Cliff Dwellings National Monument, New Mexico",
+"b": 0.45
+},
 {
 "u": "https://www.bing.com/th?id=OHR.FirstFrost_EN-US8881008245_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=azaleas&form=hpcapt&filters=HpDate%3a%2220261115_0800%22",
@@ -211,14 +211,6 @@
 "l": "Bing",
 "p": "Historic district of Triana, Seville, Spain",
 "b": 0.39
-},
-{
-"u": "https://www.bing.com/th?id=OHR.DiwaliLamps_EN-US0788074051_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Diwali&form=hpcapt&filters=HpDate%3a%2220261108_0800%22",
-"a": "Dinodia Photo/Getty Images",
-"l": "Bing",
-"p": "Lanterns for Diwali, Mumbai, Maharashtra, India",
-"b": 0.31
 }
 ],
 "art": [
