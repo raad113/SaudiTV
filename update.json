@@ -1,24 +1,24 @@
 {
-  "versionCode": 9244,
-  "versionName": "9.244",
-  "tag": "v9244",
-  "notes": "عدّل أوقات الصلاة بالدقائق لتطابق مسجدك، وطريقة الحساب الأردنية، وأيقونة التطبيق تفتح الشاشة الرئيسية مباشرة.",
+  "versionCode": 9246,
+  "versionName": "9.246",
+  "tag": "v9246",
+  "notes": "شريط الأذان بتصميم زجاجي جديد يأخذ لونه من الخلفية، وصوت التلفاز يعود فور انتهاء الأذان.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9244,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9244/saudi-tv-installer.apk",
-      "sha256": "89af140c84ca922e97294c98c2b0a6c0c392c038d6a462987144075ae8dd307c",
-      "size": 20037329
+      "versionCode": 9246,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9246/saudi-tv-installer.apk",
+      "sha256": "0956052d3def89f867f9f8f5382fb30adb268972150e2d06b284a0e5aa0f59c2",
+      "size": 20039726
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9244,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9244/saudi-tv-home.apk",
-      "sha256": "03e6e59c615a9667d4aa38f174cb4d34c8e2836d9eb5fcbc8372cb20094dbad0",
-      "size": 2774481
+      "versionCode": 9246,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9246/saudi-tv-home.apk",
+      "sha256": "5042ca29b5132acd1439b0b081af49ecb07858c370a295a16d0e9e8583e5aa76",
+      "size": 2774477
     }
   ]
 }
