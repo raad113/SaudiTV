@@ -149,6 +149,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.TrailCedars_EN-US2240500417_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Take+a+Hike+Day&form=hpcapt&filters=HpDate%3a%2220261117_0800%22",
+"a": "DBushue Photography/Getty Images",
+"l": "Bing",
+"p": "Trail of the Cedars, Glacier National Park, Montana",
+"b": 0.32
+},
+{
 "u": "https://www.bing.com/th?id=OHR.GilaCliff_EN-US2139490645_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Gila+Cliff+Dwellings+National+Monument&form=hpcapt&filters=HpDate%3a%2220261116_0800%22",
 "a": "Chiara Salvadori/Getty Images",
@@ -203,14 +211,6 @@
 "l": "Bing",
 "p": "Aerial view of Rose Island, The Bahamas",
 "b": 0.45
-},
-{
-"u": "https://www.bing.com/th?id=OHR.TrianaSpain_EN-US0872031458_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Seville+Spain&form=hpcapt&filters=HpDate%3a%2220261109_0800%22",
-"a": "Andrzej Rostek/Getty Images",
-"l": "Bing",
-"p": "Historic district of Triana, Seville, Spain",
-"b": 0.39
 }
 ],
 "art": [
