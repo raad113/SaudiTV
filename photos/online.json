@@ -149,6 +149,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.KnowledgeSculpture_EN-US9746703110_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=World+Philosophy+Day&form=hpcapt&filters=HpDate%3a%2220261119_0800%22",
+"a": "Todamo/Shutterstock",
+"l": "Bing",
+"p": "The \"Body of Knowledge\" sculpture by Jaume Plensa at Goethe ",
+"b": 0.48
+},
+{
 "u": "https://www.bing.com/th?id=OHR.BarnOwlsUnite_EN-US9661992435_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Barn+owl&form=hpcapt&filters=HpDate%3a%2220261118_0800%22",
 "a": "Zahoor Salmi/Getty Images",
@@ -203,14 +211,6 @@
 "l": "Bing",
 "p": "North Window, Arches National Park, Moab, Utah",
 "b": 0.41
-},
-{
-"u": "https://www.bing.com/th?id=OHR.SunsetFlags_EN-US1046151448_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Veterans+Day&form=hpcapt&filters=HpDate%3a%2220261111_0800%22",
-"a": "Matt Champlin/Getty Images",
-"l": "Bing",
-"p": "American flags in a public park in upstate New York",
-"b": 0.31
 }
 ],
 "art": [
