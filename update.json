@@ -1,24 +1,24 @@
 {
-  "versionCode": 9249,
-  "versionName": "9.249",
-  "tag": "v9249",
-  "notes": "عادت ملخصات الأخبار الرياضية، والأذان يتأكد من اختياراتك قبل أن يؤذن، مع سجل للأذان وشريط زجاجي شفاف.",
+  "versionCode": 9250,
+  "versionName": "9.250",
+  "tag": "v9250",
+  "notes": "شاشة التوقف لم تعد تبدّل أماكن الساعة والبطاقة كل ساعة، مع خيار لتشغيل التبديل لشاشات OLED.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9249,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9249/saudi-tv-installer.apk",
-      "sha256": "cfa4131dae004010758b3f75fd82188100704bf7d564e5e3392265556fded1d5",
-      "size": 20043066
+      "versionCode": 9250,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9250/saudi-tv-installer.apk",
+      "sha256": "83e79812387ffdc2ad46a57e44f5bdddd8a20c3e2ffb04a247033e8f9f702c69",
+      "size": 20043591
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9249,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9249/saudi-tv-home.apk",
-      "sha256": "6b44870e25c48ca94b3fc2ae41ff363d846ba5f438fb279212031dd9ac22b082",
-      "size": 2775069
+      "versionCode": 9250,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9250/saudi-tv-home.apk",
+      "sha256": "3fffdd1f4f8b041046ff92c080472b442ae5ba3ddd3699c610ca577a97a09295",
+      "size": 2775141
     }
   ]
 }
