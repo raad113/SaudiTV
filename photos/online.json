@@ -3,6 +3,14 @@
 "saudi": [],
 "world": [
 {
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Andiast-Breil-Brigels._24-09-2025._%28d.j.b.%29_08.jpg/1920px-Andiast-Breil-Brigels._24-09-2025._%28d.j.b.%29_08.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Andiast-Breil-Brigels._24-09-2025._(d.j.b.)_08.jpg",
+"a": "Dominicus Johannes Bergsma.",
+"l": "CC BY-SA 4.0",
+"p": "",
+"b": 0.5
+},
+{
 "u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Ponte_Vittorio_Emanuele_II_San_Pietro%2C_Rome%2C_Italy.jpg/1920px-Ponte_Vittorio_Emanuele_II_San_Pietro%2C_Rome%2C_Italy.jpg",
 "page": "https://commons.wikimedia.org/wiki/File:Ponte_Vittorio_Emanuele_II_San_Pietro,_Rome,_Italy.jpg",
 "a": "Jebulon",
@@ -149,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.Megaptera_EN-US1728719939_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=humpback+whales&form=hpcapt&filters=HpDate%3a%2220261120_0800%22",
+"a": "Espen Bergersen/Minden Pictures",
+"l": "Bing",
+"p": "Diving humpback whale, Kvaloya, Troms, Northern Norway",
+"b": 0.56
+},
+{
 "u": "https://www.bing.com/th?id=OHR.KnowledgeSculpture_EN-US9746703110_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=World+Philosophy+Day&form=hpcapt&filters=HpDate%3a%2220261119_0800%22",
 "a": "Todamo/Shutterstock",
@@ -203,14 +219,6 @@
 "l": "Bing",
 "p": "Abraham Lake in Alberta, Canada",
 "b": 0.35
-},
-{
-"u": "https://www.bing.com/th?id=OHR.NorthWindow_EN-US1170338293_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Arches+National+Park&form=hpcapt&filters=HpDate%3a%2220261112_0800%22",
-"a": "lightphoto/Getty Images",
-"l": "Bing",
-"p": "North Window, Arches National Park, Moab, Utah",
-"b": 0.41
 }
 ],
 "art": [
