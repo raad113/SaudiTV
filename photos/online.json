@@ -3,6 +3,14 @@
 "saudi": [],
 "world": [
 {
+"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Red_Avadavat_in_Baruipur_September_2025_by_Tisha_Mukherjee_06.jpg/1920px-Red_Avadavat_in_Baruipur_September_2025_by_Tisha_Mukherjee_06.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Red_Avadavat_in_Baruipur_September_2025_by_Tisha_Mukherjee_06.jpg",
+"a": "Tisha Mukherjee",
+"l": "CC BY-SA 4.0",
+"p": "",
+"b": 0.48
+},
+{
 "u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/Starburst_in_NGC_4449_%28captured_by_the_Hubble_Space_Telescope%29.jpg/1920px-Starburst_in_NGC_4449_%28captured_by_the_Hubble_Space_Telescope%29.jpg",
 "page": "https://commons.wikimedia.org/wiki/File:Starburst_in_NGC_4449_(captured_by_the_Hubble_Space_Telescope).jpg",
 "a": "NASA, ESA, A. Aloisi (STScI/ESA), and The Hubble Heritage (S…",
@@ -145,17 +153,17 @@
 "l": "CC BY-SA 4.0",
 "p": "",
 "b": 0.64
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Zabytkowa_cerkiew_wpisana_na_list%C4%99_UNESCO.jpg/1920px-Zabytkowa_cerkiew_wpisana_na_list%C4%99_UNESCO.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:Zabytkowa_cerkiew_wpisana_na_list%C4%99_UNESCO.jpg",
-"a": "Piter329c",
-"l": "CC BY 4.0",
-"p": "",
-"b": 0.39
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.JustaHermitage_EN-US0130271816_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Ermita+Santa+Justa+chapel&form=hpcapt&filters=HpDate%3a%2220261122_0800%22",
+"a": "Tramont_ana/Getty Images",
+"l": "Bing",
+"p": "The chapel and hermitage of Santa Justa in Cantabria, Spain",
+"b": 0.43
+},
 {
 "u": "https://www.bing.com/th?id=OHR.RedNice_EN-US9978351403_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Nice+France&form=hpcapt&filters=HpDate%3a%2220261121_0800%22",
@@ -211,14 +219,6 @@
 "l": "Bing",
 "p": "Frozen azalea with red leaves",
 "b": 0.42
-},
-{
-"u": "https://www.bing.com/th?id=OHR.BlueHK_EN-US7870996687_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Victoria+Harbour+Hong+Kong&form=hpcapt&filters=HpDate%3a%2220261114_0800%22",
-"a": "Juan Romero/Cavan Images",
-"l": "Bing",
-"p": "Victoria Harbour, Hong Kong, China",
-"b": 0.29
 }
 ],
 "art": [
