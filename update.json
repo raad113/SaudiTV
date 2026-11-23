@@ -1,24 +1,24 @@
 {
-  "versionCode": 9250,
-  "versionName": "9.250",
-  "tag": "v9250",
-  "notes": "شاشة التوقف لم تعد تبدّل أماكن الساعة والبطاقة كل ساعة، مع خيار لتشغيل التبديل لشاشات OLED.",
+  "versionCode": 9253,
+  "versionName": "9.253",
+  "tag": "v9253",
+  "notes": "لا شاشة سوداء بعد الإعداد الكامل، والإذاعة تعود بعد تغيير المصدر، وفحص التحديث عند تشغيل التلفاز، وإصلاح تداخل شريط المعلومات.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9250,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9250/saudi-tv-installer.apk",
-      "sha256": "83e79812387ffdc2ad46a57e44f5bdddd8a20c3e2ffb04a247033e8f9f702c69",
-      "size": 20043591
+      "versionCode": 9253,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9253/saudi-tv-installer.apk",
+      "sha256": "024e5e2caceba12c58abc579e120cfa178b5076e93b8f7e7ee2ce42dc9ead8c7",
+      "size": 20046791
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9250,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9250/saudi-tv-home.apk",
-      "sha256": "3fffdd1f4f8b041046ff92c080472b442ae5ba3ddd3699c610ca577a97a09295",
-      "size": 2775141
+      "versionCode": 9253,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9253/saudi-tv-home.apk",
+      "sha256": "74353c8304e99e99f98a7119804ce5c9e5016b8280994293222072cf53baac43",
+      "size": 2780389
     }
   ]
 }
