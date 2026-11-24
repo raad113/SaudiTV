@@ -145,17 +145,17 @@
 "l": "CC BY-SA 4.0",
 "p": "",
 "b": 0.3
-},
-{
-"u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/NE_Lac_Bab_Louta_Tazekka_Nov25_A7CR_09270-4_HDR1.jpg/1920px-NE_Lac_Bab_Louta_Tazekka_Nov25_A7CR_09270-4_HDR1.jpg",
-"page": "https://commons.wikimedia.org/wiki/File:NE_Lac_Bab_Louta_Tazekka_Nov25_A7CR_09270-4_HDR1.jpg",
-"a": "This Photo was taken by Timothy A. Gonsalves . Feel free to…",
-"l": "CC BY-SA 4.0",
-"p": "",
-"b": 0.55
 }
 ],
 "bing": [
+{
+"u": "https://www.bing.com/th?id=OHR.CairngormsSquirrel_EN-US7053432564_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Eurasian+red+squirrel&form=hpcapt&filters=HpDate%3a%2220261124_0800%22",
+"a": "Scotland: The Big Picture/Minden Pictures",
+"l": "Bing",
+"p": "Red squirrel in Cairngorms National Park, Highlands, Scotlan",
+"b": 0.4
+},
 {
 "u": "https://www.bing.com/th?id=OHR.FibonacciFern_EN-US6307771770_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=fibonacci+day&form=hpcapt&filters=HpDate%3a%2220261123_0800%22",
@@ -211,14 +211,6 @@
 "l": "Bing",
 "p": "Trail of the Cedars, Glacier National Park, Montana",
 "b": 0.32
-},
-{
-"u": "https://www.bing.com/th?id=OHR.GilaCliff_EN-US2139490645_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Gila+Cliff+Dwellings+National+Monument&form=hpcapt&filters=HpDate%3a%2220261116_0800%22",
-"a": "Chiara Salvadori/Getty Images",
-"l": "Bing",
-"p": "Gila Cliff Dwellings National Monument, New Mexico",
-"b": 0.45
 }
 ],
 "art": [
