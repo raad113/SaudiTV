@@ -18,6 +18,11 @@
    ```
 3. إذا طلب التلفزيون إذن «تثبيت التطبيقات غير المعروفة» لـ Downloader فعّله، ثم اضغط **تثبيت**.
 
+**إذا طلعت لك رسالة «App blocked to protect your device» من Google Play Protect:** كانت تطلع مع النسخ القديمة
+(قبل 9.254) بسبب ميزة «زر النجمة»، وانشالت. نزّل التطبيق من جديد بنفس الرمز **4791832**، والرابط دايم يجيب آخر نسخة.
+إذا ما زالت تطلع: افتح **Play Store** ← صورة الحساب ← **Play Protect** ← ⚙️ وأوقف «فحص التطبيقات باستخدام Play Protect»
+مؤقتًا، ثبّت التطبيق، ثم رجّع الخيار.
+
 ## الإعداد
 
 - افتح **سعودي TV** من قائمة التطبيقات، وتطلع لك شاشة **«الإعداد السريع»**: اضغط على كل سطر وتابع إلى أن تصير
@@ -25,6 +30,14 @@
 - اللي ما يسمح فيه التلفزيون من داخله (جعلها **الشاشة الرئيسية الافتراضية**، وشاشة التوقف على Google TV) يسويه
   **«الإعداد الكامل»**: الإعدادات ← «التطبيق» ← «الإعداد الكامل». تفعّل «خيارات المطوّر» و«تصحيح أخطاء USB» مرة وحدة
   ويشرح لك كيف، ومعه «تراجع» يرجّع كل شي.
+- **أجهزة Google TV الحديثة** (مثل Google TV Streamer، وأغلب أجهزة Android 12 وأحدث) ما تفتح منفذ التصحيح العادي،
+  فيطلب «الإعداد الكامل» إقران مرة وحدة من **جوالك**:
+  1. في «خيارات المطوّر» فعّل **Wireless debugging** (تصحيح الأخطاء اللاسلكي).
+  2. يطلع لك في التلفزيون رمز QR: امسحه بجوالك وهو على **نفس الواي فاي**، وتنفتح صفحة الإقران في الجوال.
+  3. في التلفزيون اضغط **«فتح الإقران»** ← **Wireless debugging** ← **Pair device with pairing code**، ويطلع رمز من 6 أرقام.
+  4. اكتب الأرقام الستة في الجوال واضغط **«إقران»**. بعدها لا تلمس شي: التلفزيون يرجع للإعداد ويكمله لحاله.
+
+  الجوال يكلم التلفزيون مباشرة داخل شبكة البيت، وما يمر شي عبر الإنترنت.
 - بعدها يكمل معك «معالج الإعداد»: الشكل والمدينة والبطاقات والإذاعة والفريق، ثم جولة قصيرة في التطبيق. والتحديثات توصل من الإعدادات ← «تحديث التطبيق».
 
 ## الإزالة
@@ -45,6 +58,13 @@ dates, prayer times and the athan, Ramadan, your teams' matches, weather, market
 - «الإعداد السريع» (quick setup) installs the home screen and opens each TV setting it needs, with a ✓ per step.
 - «الإعداد الكامل» (full setup: settings → «التطبيق» → «الإعداد الكامل») makes it the default Home and picks the
   screensaver on Google TV, over the TV's own ADB (Developer options and USB debugging, once), with «تراجع» (undo).
+  Newer Google TV devices (e.g. Google TV Streamer, most Android 12+) keep that port closed: turn on **Wireless
+  debugging** in Developer options, scan the QR code on the TV with a phone on the same Wi-Fi, press «فتح الإقران» →
+  Wireless debugging → Pair device with pairing code, and type the 6 digits on the phone. The TV finishes on its own;
+  nothing leaves your home network.
+- **"App blocked to protect your device" (Play Protect):** versions before 9.254 asked for Accessibility (the star
+  key) and were blocked. Download the latest again with the same code. If it still shows, turn off "Scan apps with Play
+  Protect" in the Play Store's Play Protect settings for the install, then turn it back on.
 - Then the setup wizard: look, city, cards, radio and team. Updates: settings → «تحديث التطبيق».
 
 **Removing:** settings → «التطبيق» → «إزالة سعودي TV» puts the TV's own home screen and screensaver back first, then
