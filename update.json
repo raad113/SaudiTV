@@ -1,24 +1,24 @@
 {
-  "versionCode": 9253,
-  "versionName": "9.253",
-  "tag": "v9253",
-  "notes": "لا شاشة سوداء بعد الإعداد الكامل، والإذاعة تعود بعد تغيير المصدر، وفحص التحديث عند تشغيل التلفاز، وإصلاح تداخل شريط المعلومات.",
+  "versionCode": 9254,
+  "versionName": "9.254",
+  "tag": "v9254",
+  "notes": "يثبت التطبيق دون أن يمنعه Google Play Protect، و«الإعداد الكامل» يعمل على أجهزة Google TV الحديثة بإقران من الهاتف.",
   "apks": [
     {
       "package": "com.raad.sauditv.screensaver",
       "file": "saudi-tv-installer.apk",
-      "versionCode": 9253,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9253/saudi-tv-installer.apk",
-      "sha256": "024e5e2caceba12c58abc579e120cfa178b5076e93b8f7e7ee2ce42dc9ead8c7",
-      "size": 20046791
+      "versionCode": 9254,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9254/saudi-tv-installer.apk",
+      "sha256": "2783267bdee909ed1d3e83d4c9e2f3b4484315801db5d0e11e4adf3eeed633fc",
+      "size": 20053390
     },
     {
       "package": "com.raad.sauditv.home",
       "file": "saudi-tv-home.apk",
-      "versionCode": 9253,
-      "url": "https://github.com/raad113/SaudiTV/releases/download/v9253/saudi-tv-home.apk",
-      "sha256": "74353c8304e99e99f98a7119804ce5c9e5016b8280994293222072cf53baac43",
-      "size": 2780389
+      "versionCode": 9254,
+      "url": "https://github.com/raad113/SaudiTV/releases/download/v9254/saudi-tv-home.apk",
+      "sha256": "c0e274531a06cc045f4a25e6bc090384408419a6dafd59327dbf13c029ccbfee",
+      "size": 2778885
     }
   ]
 }
