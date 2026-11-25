@@ -149,6 +149,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.SunsetPoint_EN-US0827880440_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Bryce+Canyon+National+Park&form=hpcapt&filters=HpDate%3a%2220261125_0800%22",
+"a": "Colin D. Young/Alamy",
+"l": "Bing",
+"p": "Sunset Point, Bryce Canyon National Park, Utah",
+"b": 0.55
+},
+{
 "u": "https://www.bing.com/th?id=OHR.CairngormsSquirrel_EN-US7053432564_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Eurasian+red+squirrel&form=hpcapt&filters=HpDate%3a%2220261124_0800%22",
 "a": "Scotland: The Big Picture/Minden Pictures",
@@ -203,14 +211,6 @@
 "l": "Bing",
 "p": "Pair of barn owls",
 "b": 0.23
-},
-{
-"u": "https://www.bing.com/th?id=OHR.TrailCedars_EN-US2240500417_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Take+a+Hike+Day&form=hpcapt&filters=HpDate%3a%2220261117_0800%22",
-"a": "DBushue Photography/Getty Images",
-"l": "Bing",
-"p": "Trail of the Cedars, Glacier National Park, Montana",
-"b": 0.32
 }
 ],
 "art": [
