@@ -149,6 +149,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.WildTom_EN-US1069249609_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Thanksgiving&form=hpcapt&filters=HpDate%3a%2220261126_0800%22",
+"a": "davidsdodd/Getty Images",
+"l": "Bing",
+"p": "Two wild tom turkeys",
+"b": 0.39
+},
+{
 "u": "https://www.bing.com/th?id=OHR.SunsetPoint_EN-US0827880440_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Bryce+Canyon+National+Park&form=hpcapt&filters=HpDate%3a%2220261125_0800%22",
 "a": "Colin D. Young/Alamy",
@@ -203,14 +211,6 @@
 "l": "Bing",
 "p": "The \"Body of Knowledge\" sculpture by Jaume Plensa at Goethe ",
 "b": 0.48
-},
-{
-"u": "https://www.bing.com/th?id=OHR.BarnOwlsUnite_EN-US9661992435_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=Barn+owl&form=hpcapt&filters=HpDate%3a%2220261118_0800%22",
-"a": "Zahoor Salmi/Getty Images",
-"l": "Bing",
-"p": "Pair of barn owls",
-"b": 0.23
 }
 ],
 "art": [
