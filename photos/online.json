@@ -3,6 +3,14 @@
 "saudi": [],
 "world": [
 {
+"u": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Liquid_Crystal_Phase_Transition.jpg",
+"page": "https://commons.wikimedia.org/wiki/File:Liquid_Crystal_Phase_Transition.jpg",
+"a": "KarlGaff",
+"l": "CC BY 4.0",
+"p": "",
+"b": 0.43
+},
+{
 "u": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Pointe_Saint_Mathieu_-_Phare.jpg/1920px-Pointe_Saint_Mathieu_-_Phare.jpg",
 "page": "https://commons.wikimedia.org/wiki/File:Pointe_Saint_Mathieu_-_Phare.jpg",
 "a": "JackyM59",
@@ -149,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.FaceCanyon_EN-US6254374163_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Lake+Powell&form=hpcapt&filters=HpDate%3a%2220261127_0800%22",
+"a": "Jeff Foott/Minden",
+"l": "Bing",
+"p": "Butte at sunset, Face Canyon, Lake Powell, Utah",
+"b": 0.48
+},
+{
 "u": "https://www.bing.com/th?id=OHR.WildTom_EN-US1069249609_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Thanksgiving&form=hpcapt&filters=HpDate%3a%2220261126_0800%22",
 "a": "davidsdodd/Getty Images",
@@ -203,14 +219,6 @@
 "l": "Bing",
 "p": "Diving humpback whale, Kvaloya, Troms, Northern Norway",
 "b": 0.56
-},
-{
-"u": "https://www.bing.com/th?id=OHR.KnowledgeSculpture_EN-US9746703110_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=World+Philosophy+Day&form=hpcapt&filters=HpDate%3a%2220261119_0800%22",
-"a": "Todamo/Shutterstock",
-"l": "Bing",
-"p": "The \"Body of Knowledge\" sculpture by Jaume Plensa at Goethe ",
-"b": 0.48
 }
 ],
 "art": [
