@@ -157,6 +157,14 @@
 ],
 "bing": [
 {
+"u": "https://www.bing.com/th?id=OHR.VltavaPrague_EN-US6068116977_1920x1080.jpg",
+"page": "https://www.bing.com/search?q=Prague+bridges&form=hpcapt&filters=HpDate%3a%2220261128_0800%22",
+"a": "Lara_Uhryn/Getty Images",
+"l": "Bing",
+"p": "Old town and Vltava River, Prague, Czechia",
+"b": 0.51
+},
+{
 "u": "https://www.bing.com/th?id=OHR.FaceCanyon_EN-US6254374163_1920x1080.jpg",
 "page": "https://www.bing.com/search?q=Lake+Powell&form=hpcapt&filters=HpDate%3a%2220261127_0800%22",
 "a": "Jeff Foott/Minden",
@@ -211,14 +219,6 @@
 "l": "Bing",
 "p": "Nice, Provence-Alpes-Côte d'Azur, France",
 "b": 0.47
-},
-{
-"u": "https://www.bing.com/th?id=OHR.Megaptera_EN-US1728719939_1920x1080.jpg",
-"page": "https://www.bing.com/search?q=humpback+whales&form=hpcapt&filters=HpDate%3a%2220261120_0800%22",
-"a": "Espen Bergersen/Minden Pictures",
-"l": "Bing",
-"p": "Diving humpback whale, Kvaloya, Troms, Northern Norway",
-"b": 0.56
 }
 ],
 "art": [
